@@ -38,5 +38,5 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "Multi-AI Agents Panel ${{ github.ref_name }}"
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
