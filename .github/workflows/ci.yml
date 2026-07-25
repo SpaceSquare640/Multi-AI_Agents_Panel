@@ -29,9 +29,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workingDirectories: src-tauri
-      - name: Install Linux Tauri build deps
+      - name: Install Linux Tauri + keyring build deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libdbus-1-dev pkg-config
       - run: cargo check --manifest-path src-tauri/Cargo.toml
       - run: cargo test --manifest-path src-tauri/Cargo.toml
