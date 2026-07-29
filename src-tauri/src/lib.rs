@@ -1,4 +1,5 @@
 mod agent_manager;
+mod commands;
 mod fallback;
 mod file_access;
 mod key_vault;
@@ -30,7 +31,19 @@ pub fn run() {
             app.manage(storage);
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![greet])
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            commands::list_provider_keys,
+            commands::add_provider_key,
+            commands::batch_add_provider_keys,
+            commands::delete_provider_key,
+            commands::get_usage_summary,
+            commands::list_curated_models,
+            commands::ollama_is_running,
+            commands::list_ollama_installed_models,
+            commands::pull_ollama_model,
+            commands::delete_ollama_model,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

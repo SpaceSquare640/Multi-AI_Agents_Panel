@@ -6,32 +6,38 @@
 //! macOS Keychain, Linux Secret Service) via the `keyring` crate, per the
 //! decision in Tech Stack.md to prefer native keychains over a bespoke
 //! encryption scheme.
+//!
+//! Secrets are addressed by an opaque entry id (a UUID minted by
+//! `storage::create_provider_key`), not by provider name — a user can hold
+//! several keys for the same provider (e.g. several free OpenRouter keys,
+//! one per model), so "provider" is metadata that lives in `storage`, not
+//! the credential store's lookup key.
 
 use keyring::Entry;
 
 const SERVICE: &str = "multi-ai-agents-panel";
 
-fn entry(provider: &str) -> keyring::Result<Entry> {
-    Entry::new(SERVICE, provider)
+fn entry(id: &str) -> keyring::Result<Entry> {
+    Entry::new(SERVICE, id)
 }
 
-/// Store (or overwrite) the API key for a provider, e.g. "openai", "anthropic", "openrouter".
-pub fn set_api_key(provider: &str, key: &str) -> keyring::Result<()> {
-    entry(provider)?.set_password(key)
+/// Store (or overwrite) the secret for an entry id.
+pub fn set_secret(id: &str, value: &str) -> keyring::Result<()> {
+    entry(id)?.set_password(value)
 }
 
-/// Look up the API key for a provider. Returns `Ok(None)` if nothing is stored yet.
-pub fn get_api_key(provider: &str) -> keyring::Result<Option<String>> {
-    match entry(provider)?.get_password() {
-        Ok(key) => Ok(Some(key)),
+/// Look up the secret for an entry id. Returns `Ok(None)` if nothing is stored.
+pub fn get_secret(id: &str) -> keyring::Result<Option<String>> {
+    match entry(id)?.get_password() {
+        Ok(value) => Ok(Some(value)),
         Err(keyring::Error::NoEntry) => Ok(None),
         Err(err) => Err(err),
     }
 }
 
-/// Remove the stored API key for a provider, if any.
-pub fn delete_api_key(provider: &str) -> keyring::Result<()> {
-    match entry(provider)?.delete_credential() {
+/// Remove the stored secret for an entry id, if any.
+pub fn delete_secret(id: &str) -> keyring::Result<()> {
+    match entry(id)?.delete_credential() {
         Ok(()) => Ok(()),
         Err(keyring::Error::NoEntry) => Ok(()),
         Err(err) => Err(err),
@@ -42,23 +48,20 @@ pub fn delete_api_key(provider: &str) -> keyring::Result<()> {
 mod tests {
     use super::*;
 
-    // These hit the real OS credential store, so they use a provider name
-    // that won't collide with anything real, and clean up after themselves.
-    const TEST_PROVIDER: &str = "map-key-vault-test";
+    // These hit the real OS credential store, so they use an id that won't
+    // collide with anything real, and clean up after themselves.
+    const TEST_ID: &str = "map-key-vault-test";
 
     #[test]
     fn set_get_delete_round_trip() {
-        delete_api_key(TEST_PROVIDER).ok();
+        delete_secret(TEST_ID).ok();
 
-        assert_eq!(get_api_key(TEST_PROVIDER).unwrap(), None);
+        assert_eq!(get_secret(TEST_ID).unwrap(), None);
 
-        set_api_key(TEST_PROVIDER, "sk-test-123").unwrap();
-        assert_eq!(
-            get_api_key(TEST_PROVIDER).unwrap(),
-            Some("sk-test-123".to_string())
-        );
+        set_secret(TEST_ID, "sk-test-123").unwrap();
+        assert_eq!(get_secret(TEST_ID).unwrap(), Some("sk-test-123".to_string()));
 
-        delete_api_key(TEST_PROVIDER).unwrap();
-        assert_eq!(get_api_key(TEST_PROVIDER).unwrap(), None);
+        delete_secret(TEST_ID).unwrap();
+        assert_eq!(get_secret(TEST_ID).unwrap(), None);
     }
 }

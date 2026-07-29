@@ -1,0 +1,109 @@
+.ai-control-center {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+  text-align: left;
+}
+
+.acc-section {
+  margin-bottom: 2.5rem;
+}
+
+.acc-section h2 {
+  border-bottom: 1px solid rgba(128, 128, 128, 0.3);
+  padding-bottom: 0.4rem;
+}
+
+.acc-error {
+  background: #4a1414;
+  color: #ffb4b4;
+  border: 1px solid #a33;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.acc-error button {
+  background: none;
+  box-shadow: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.acc-form {
+  margin-bottom: 1.25rem;
+}
+
+.acc-form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.acc-form-row input,
+.acc-form-row select {
+  flex: 1 1 auto;
+  min-width: 8rem;
+}
+
+.acc-hint {
+  font-size: 0.85rem;
+  opacity: 0.75;
+  margin: 0.2rem 0 0.5rem;
+}
+
+.acc-hint code {
+  font-family: monospace;
+}
+
+textarea {
+  width: 100%;
+  font-family: monospace;
+  font-size: 0.85rem;
+  border-radius: 8px;
+  padding: 0.6rem;
+  box-sizing: border-box;
+}
+
+.acc-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.75rem;
+}
+
+.acc-table th,
+.acc-table td {
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.2);
+  font-size: 0.9rem;
+}
+
+.acc-empty {
+  opacity: 0.6;
+  font-style: italic;
+}
+
+.acc-mono {
+  font-family: monospace;
+  font-size: 0.85em;
+}
+
+.acc-model-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0 0;
+}
+
+.acc-model-list li {
+  padding: 0.3rem 0;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}

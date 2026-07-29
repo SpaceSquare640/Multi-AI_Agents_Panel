@@ -2,36 +2,80 @@
 //! local and cloud providers behind one interface.
 //! Design: `Multi-AI Agent Panel Document/04 Agents & Orchestration/Agent Registry.md`
 
+pub mod curated_models;
 pub mod providers;
 
 use crate::key_vault;
-use crate::storage::Agent;
+use crate::storage::{Agent, Storage};
 pub use providers::{ChatMessage, ProviderError};
 
-/// Looks up a cloud provider's API key in the Key Vault, turning "not set"
-/// and "vault error" into the same `ProviderError::Api` shape callers
-/// already handle.
-fn cloud_key(provider_name: &str) -> Result<String, ProviderError> {
-    key_vault::get_api_key(provider_name)
+/// Resolves the API key to use for a cloud provider: picks that provider's
+/// most recently added Key Vault entry (a user can hold several keys per
+/// provider — see `storage::ProviderKey` — but an `Agent` doesn't pin one
+/// explicitly yet, so "latest" is the default until agent creation grows
+/// that option). Returns the entry id (for usage logging) plus the secret.
+fn resolve_cloud_key(storage: &Storage, provider_name: &str) -> Result<(String, String), ProviderError> {
+    let entry = storage
+        .latest_provider_key(provider_name)
+        .map_err(|e| ProviderError::Api(format!("storage error: {e}")))?
+        .ok_or_else(|| ProviderError::Api(format!("no {provider_name} API key set in the Key Vault")))?;
+
+    let secret = key_vault::get_secret(&entry.id)
         .map_err(|e| ProviderError::Api(format!("key vault error: {e}")))?
-        .ok_or_else(|| ProviderError::Api(format!("no {provider_name} API key set in the Key Vault")))
+        .ok_or_else(|| {
+            ProviderError::Api(format!(
+                "Key Vault entry {} is indexed but its secret is missing",
+                entry.id
+            ))
+        })?;
+
+    Ok((entry.id, secret))
 }
 
 /// Sends `messages` to whichever provider `agent` is configured to use,
-/// fetching its API key from the Key Vault along the way. This is the one
+/// fetching its API key from the Key Vault along the way, and records the
+/// call (success or failure) in `storage::usage_log`. This is the one
 /// place in the app that knows how to go from a stored `Agent` to an
 /// actual provider call — everything above this layer just deals in
 /// `Agent`s and `ChatMessage`s.
-pub fn send_message(agent: &Agent, messages: &[ChatMessage]) -> Result<String, ProviderError> {
+pub fn send_message(
+    storage: &Storage,
+    agent: &Agent,
+    messages: &[ChatMessage],
+) -> Result<String, ProviderError> {
+    let result = dispatch(storage, agent, messages);
+
+    if agent.provider_kind == "cloud" {
+        // Usage logging is best-effort: a logging failure shouldn't mask
+        // the real result of the call.
+        let provider_key_id = storage
+            .latest_provider_key(&agent.provider_name)
+            .ok()
+            .flatten()
+            .map(|k| k.id);
+        let _ = storage.record_usage(
+            provider_key_id.as_deref(),
+            Some(&agent.id),
+            &agent.provider_name,
+            &agent.model,
+            result.is_ok(),
+        );
+    }
+
+    result
+}
+
+fn dispatch(storage: &Storage, agent: &Agent, messages: &[ChatMessage]) -> Result<String, ProviderError> {
     match agent.provider_name.as_str() {
         "anthropic" => {
-            let api_key = cloud_key("anthropic")?;
+            let (_, api_key) = resolve_cloud_key(storage, "anthropic")?;
             providers::anthropic::send(&api_key, &agent.model, messages)
         }
         "openrouter" => {
-            let api_key = cloud_key("openrouter")?;
+            let (_, api_key) = resolve_cloud_key(storage, "openrouter")?;
             providers::openrouter::send(&api_key, &agent.model, messages)
         }
+        "ollama" => providers::ollama::send(&agent.model, messages),
         other => Err(ProviderError::Unsupported(other.to_string())),
     }
 }
@@ -40,12 +84,12 @@ pub fn send_message(agent: &Agent, messages: &[ChatMessage]) -> Result<String, P
 mod tests {
     use super::*;
 
-    fn agent_with_provider(provider_name: &str) -> Agent {
+    fn agent_with_provider(provider_kind: &str, provider_name: &str) -> Agent {
         Agent {
             id: "test-agent".to_string(),
             name: "Test Agent".to_string(),
             role_template: None,
-            provider_kind: "cloud".to_string(),
+            provider_kind: provider_kind.to_string(),
             provider_name: provider_name.to_string(),
             model: "claude-sonnet".to_string(),
             created_at: "2026-01-01T00:00:00Z".to_string(),
@@ -54,12 +98,32 @@ mod tests {
 
     #[test]
     fn unsupported_provider_is_rejected_before_any_network_call() {
-        let agent = agent_with_provider("some-provider-with-no-adapter-yet");
+        let storage = Storage::open_in_memory().unwrap();
+        let agent = agent_with_provider("cloud", "some-provider-with-no-adapter-yet");
         let messages = vec![ChatMessage {
             role: "user".to_string(),
             content: "hi".to_string(),
         }];
-        let err = send_message(&agent, &messages).unwrap_err();
+        let err = send_message(&storage, &agent, &messages).unwrap_err();
         assert!(matches!(err, ProviderError::Unsupported(name) if name == "some-provider-with-no-adapter-yet"));
+    }
+
+    #[test]
+    fn missing_cloud_key_is_reported_and_logged_as_a_failure() {
+        let storage = Storage::open_in_memory().unwrap();
+        let agent = agent_with_provider("cloud", "anthropic");
+        let messages = vec![ChatMessage {
+            role: "user".to_string(),
+            content: "hi".to_string(),
+        }];
+
+        let err = send_message(&storage, &agent, &messages).unwrap_err();
+        assert!(matches!(err, ProviderError::Api(_)));
+
+        let summary = storage.usage_summary().unwrap();
+        // No provider_key row exists yet (no key was ever added), so there's
+        // nothing to attribute usage to — this just confirms we didn't panic
+        // trying to log against a nonexistent key.
+        assert!(summary.is_empty());
     }
 }

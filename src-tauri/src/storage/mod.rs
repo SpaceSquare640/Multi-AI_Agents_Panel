@@ -5,10 +5,11 @@
 use std::path::Path;
 use std::sync::Mutex;
 
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Agent {
     pub id: String,
     pub name: String,
@@ -22,6 +23,7 @@ pub struct Agent {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Session {
     pub id: String,
     /// "independent" | "group"
@@ -31,6 +33,7 @@ pub struct Session {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Message {
     pub id: String,
     pub session_id: String,
@@ -40,6 +43,36 @@ pub struct Message {
     pub role: String,
     pub content: String,
     pub created_at: String,
+}
+
+/// Metadata for one entry in the Key Vault. The actual secret lives in the
+/// OS credential store (`key_vault`), addressed by `id` — this row is only
+/// ever the non-secret index: which provider it's for, an optional label
+/// (e.g. "Ling-3.0-flash (free)"), and usage bookkeeping. A provider can
+/// have more than one key (e.g. several free OpenRouter keys).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProviderKey {
+    pub id: String,
+    /// e.g. "anthropic" | "openai" | "openrouter"
+    pub provider: String,
+    pub label: Option<String>,
+    /// Optional: the specific model this key is scoped/intended for.
+    pub model_hint: Option<String>,
+    pub created_at: String,
+    pub last_used_at: Option<String>,
+}
+
+/// Aggregated call counts for one Key Vault entry, joined with its metadata.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UsageSummary {
+    pub provider_key_id: String,
+    pub provider: String,
+    pub label: Option<String>,
+    pub success_count: i64,
+    pub failure_count: i64,
+    pub last_used_at: Option<String>,
 }
 
 pub struct Storage {
@@ -99,6 +132,25 @@ impl Storage {
                 role        TEXT NOT NULL,
                 content     TEXT NOT NULL,
                 created_at  TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS provider_keys (
+                id            TEXT PRIMARY KEY,
+                provider      TEXT NOT NULL,
+                label         TEXT,
+                model_hint    TEXT,
+                created_at    TEXT NOT NULL,
+                last_used_at  TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS usage_log (
+                id                TEXT PRIMARY KEY,
+                provider_key_id   TEXT REFERENCES provider_keys(id),
+                agent_id          TEXT REFERENCES agents(id),
+                provider          TEXT NOT NULL,
+                model             TEXT NOT NULL,
+                success           INTEGER NOT NULL,
+                created_at        TEXT NOT NULL
             );
             ",
         )
@@ -227,6 +279,144 @@ impl Storage {
         })?;
         rows.collect()
     }
+
+    /// Indexes a new Key Vault entry. Does **not** touch the secret itself
+    /// — callers are expected to also call `key_vault::set_secret(&id, ...)`
+    /// with the returned id.
+    pub fn create_provider_key(
+        &self,
+        provider: &str,
+        label: Option<&str>,
+        model_hint: Option<&str>,
+    ) -> rusqlite::Result<ProviderKey> {
+        let key = ProviderKey {
+            id: uuid::Uuid::new_v4().to_string(),
+            provider: provider.to_string(),
+            label: label.map(str::to_string),
+            model_hint: model_hint.map(str::to_string),
+            created_at: chrono::Utc::now().to_rfc3339(),
+            last_used_at: None,
+        };
+        self.conn.lock().unwrap().execute(
+            "INSERT INTO provider_keys (id, provider, label, model_hint, created_at, last_used_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, NULL)",
+            params![key.id, key.provider, key.label, key.model_hint, key.created_at],
+        )?;
+        Ok(key)
+    }
+
+    pub fn list_provider_keys(&self) -> rusqlite::Result<Vec<ProviderKey>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, provider, label, model_hint, created_at, last_used_at
+             FROM provider_keys ORDER BY created_at ASC",
+        )?;
+        let rows = stmt.query_map([], |row| {
+            Ok(ProviderKey {
+                id: row.get(0)?,
+                provider: row.get(1)?,
+                label: row.get(2)?,
+                model_hint: row.get(3)?,
+                created_at: row.get(4)?,
+                last_used_at: row.get(5)?,
+            })
+        })?;
+        rows.collect()
+    }
+
+    /// The most recently created key for a provider — used as the default
+    /// when an agent doesn't explicitly pin a specific key entry.
+    pub fn latest_provider_key(&self, provider: &str) -> rusqlite::Result<Option<ProviderKey>> {
+        let conn = self.conn.lock().unwrap();
+        conn.query_row(
+            "SELECT id, provider, label, model_hint, created_at, last_used_at
+             FROM provider_keys WHERE provider = ?1 ORDER BY created_at DESC LIMIT 1",
+            params![provider],
+            |row| {
+                Ok(ProviderKey {
+                    id: row.get(0)?,
+                    provider: row.get(1)?,
+                    label: row.get(2)?,
+                    model_hint: row.get(3)?,
+                    created_at: row.get(4)?,
+                    last_used_at: row.get(5)?,
+                })
+            },
+        )
+        .optional()
+    }
+
+    /// Deletes the metadata row only — callers should also call
+    /// `key_vault::delete_secret(id)`.
+    pub fn delete_provider_key(&self, id: &str) -> rusqlite::Result<()> {
+        self.conn
+            .lock()
+            .unwrap()
+            .execute("DELETE FROM provider_keys WHERE id = ?1", params![id])?;
+        Ok(())
+    }
+
+    /// Records one provider call (success or failure) and bumps the key's
+    /// `last_used_at`, if a specific key was used.
+    pub fn record_usage(
+        &self,
+        provider_key_id: Option<&str>,
+        agent_id: Option<&str>,
+        provider: &str,
+        model: &str,
+        success: bool,
+    ) -> rusqlite::Result<()> {
+        let now = chrono::Utc::now().to_rfc3339();
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "INSERT INTO usage_log (id, provider_key_id, agent_id, provider, model, success, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![
+                uuid::Uuid::new_v4().to_string(),
+                provider_key_id,
+                agent_id,
+                provider,
+                model,
+                success as i64,
+                now,
+            ],
+        )?;
+        if let Some(id) = provider_key_id {
+            conn.execute(
+                "UPDATE provider_keys SET last_used_at = ?1 WHERE id = ?2",
+                params![now, id],
+            )?;
+        }
+        Ok(())
+    }
+
+    pub fn usage_summary(&self) -> rusqlite::Result<Vec<UsageSummary>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT
+                pk.id,
+                pk.provider,
+                pk.label,
+                COALESCE(SUM(CASE WHEN u.success = 1 THEN 1 ELSE 0 END), 0) AS success_count,
+                COALESCE(SUM(CASE WHEN u.success = 0 THEN 1 ELSE 0 END), 0) AS failure_count,
+                pk.last_used_at
+             FROM provider_keys pk
+             LEFT JOIN usage_log u ON u.provider_key_id = pk.id
+             GROUP BY pk.id
+             ORDER BY pk.created_at ASC",
+        )?;
+        let rows = stmt.query_map([], |row| {
+            Ok(UsageSummary {
+                provider_key_id: row.get(0)?,
+                provider: row.get(1)?,
+                label: row.get(2)?,
+                success_count: row.get(3)?,
+                failure_count: row.get(4)?,
+                last_used_at: row.get(5)?,
+            })
+        })?;
+        rows.collect()
+    }
 }
 
 #[cfg(test)]
@@ -273,5 +463,56 @@ mod tests {
     fn empty_db_has_no_agents() {
         let storage = Storage::open_in_memory().unwrap();
         assert!(storage.list_agents().unwrap().is_empty());
+    }
+
+    #[test]
+    fn provider_key_crud_and_latest_lookup() {
+        let storage = Storage::open_in_memory().unwrap();
+        assert!(storage.latest_provider_key("openrouter").unwrap().is_none());
+
+        let first = storage
+            .create_provider_key("openrouter", Some("Ling-3.0-flash (free)"), Some("inclusionai/ling-3.0-flash:free"))
+            .unwrap();
+        let second = storage
+            .create_provider_key("openrouter", Some("Poolside S (free)"), None)
+            .unwrap();
+
+        let keys = storage.list_provider_keys().unwrap();
+        assert_eq!(keys.len(), 2);
+
+        // "latest" is the most recently created one for that provider.
+        let latest = storage.latest_provider_key("openrouter").unwrap().unwrap();
+        assert_eq!(latest.id, second.id);
+
+        storage.delete_provider_key(&first.id).unwrap();
+        assert_eq!(storage.list_provider_keys().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn usage_summary_aggregates_success_and_failure() {
+        let storage = Storage::open_in_memory().unwrap();
+        let key = storage
+            .create_provider_key("anthropic", Some("main"), None)
+            .unwrap();
+
+        storage
+            .record_usage(Some(&key.id), None, "anthropic", "claude-sonnet", true)
+            .unwrap();
+        storage
+            .record_usage(Some(&key.id), None, "anthropic", "claude-sonnet", true)
+            .unwrap();
+        storage
+            .record_usage(Some(&key.id), None, "anthropic", "claude-sonnet", false)
+            .unwrap();
+
+        let summary = storage.usage_summary().unwrap();
+        assert_eq!(summary.len(), 1);
+        assert_eq!(summary[0].provider_key_id, key.id);
+        assert_eq!(summary[0].success_count, 2);
+        assert_eq!(summary[0].failure_count, 1);
+        assert!(summary[0].last_used_at.is_some());
+
+        let refreshed = storage.list_provider_keys().unwrap();
+        assert!(refreshed[0].last_used_at.is_some());
     }
 }

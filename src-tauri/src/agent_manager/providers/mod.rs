@@ -4,6 +4,7 @@
 //! Design: `Multi-AI Agent Panel Document/03 Development Notes/Architecture.md`
 
 pub mod anthropic;
+pub mod ollama;
 pub mod openrouter;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
