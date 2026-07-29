@@ -175,6 +175,39 @@ mod tests {
         assert!(matches!(err, ProviderError::Unsupported(name) if name == "some-provider-with-no-adapter-yet"));
     }
 
+    /// Multiple independent sessions must be able to run concurrently —
+    /// per Session Types.md, an agent "thinking" in one session shouldn't
+    /// block interacting with another. `Storage`'s internal `Mutex` is
+    /// only held for quick DB reads/writes, never across a provider call
+    /// (see `dispatch`/`fetch_secret`), so two calls sharing one `Storage`
+    /// should complete independently without deadlocking each other.
+    #[test]
+    fn two_sessions_can_call_send_message_concurrently_without_deadlock() {
+        use std::sync::Arc;
+        use std::thread;
+
+        let storage = Arc::new(Storage::open_in_memory().unwrap());
+        let agent_a = agent_with_provider("cloud", "unsupported-a");
+        let agent_b = agent_with_provider("cloud", "unsupported-b");
+
+        let storage_a = Arc::clone(&storage);
+        let handle_a = thread::spawn(move || {
+            let messages = vec![ChatMessage { role: "user".to_string(), content: "hi from a".to_string() }];
+            send_message(&storage_a, &agent_a, &messages)
+        });
+        let storage_b = Arc::clone(&storage);
+        let handle_b = thread::spawn(move || {
+            let messages = vec![ChatMessage { role: "user".to_string(), content: "hi from b".to_string() }];
+            send_message(&storage_b, &agent_b, &messages)
+        });
+
+        let result_a = handle_a.join().expect("thread a panicked");
+        let result_b = handle_b.join().expect("thread b panicked");
+
+        assert!(matches!(result_a, Err(ProviderError::Unsupported(name)) if name == "unsupported-a"));
+        assert!(matches!(result_b, Err(ProviderError::Unsupported(name)) if name == "unsupported-b"));
+    }
+
     #[test]
     fn missing_cloud_key_falls_back_to_nothing_and_is_coded_e3001() {
         let storage = Storage::open_in_memory().unwrap();
@@ -333,5 +366,63 @@ mod live {
         );
 
         key_vault::delete_secret(&key_meta.id).ok();
+    }
+
+    /// Proves real, concurrent multi-agent chat: two different agents,
+    /// each with their own key, both hit the real API *at the same time*
+    /// (not one after another) and both get a correct, independent reply.
+    /// This is the backend half of "multi-agent parallel" (dev order step
+    /// 10) — the Chat UI change is what actually lets a user drive two
+    /// sessions like this side by side.
+    #[test]
+    #[ignore]
+    fn two_agents_can_chat_concurrently_and_get_independent_replies() {
+        let key_a = std::env::var("OPENROUTER_TEST_KEY")
+            .expect("set OPENROUTER_TEST_KEY to run this test");
+        // Reuse the same key for both agents — the point here is proving
+        // concurrent *dispatch*, not exercising multiple keys again (that's
+        // already covered by the fallback live test).
+        let key_b = key_a.clone();
+
+        let storage = std::sync::Arc::new(Storage::open_in_memory().unwrap());
+
+        let meta_a = storage.create_provider_key("openrouter", Some("concurrent test a"), None).unwrap();
+        key_vault::set_secret(&meta_a.id, &key_a).unwrap();
+        let agent_a = storage
+            .create_agent("Agent A", None, None, "cloud", "openrouter", "inclusionai/ling-3.0-flash:free")
+            .unwrap();
+
+        let meta_b = storage.create_provider_key("openrouter", Some("concurrent test b"), None).unwrap();
+        key_vault::set_secret(&meta_b.id, &key_b).unwrap();
+        let agent_b = storage
+            .create_agent("Agent B", None, None, "cloud", "openrouter", "inclusionai/ling-3.0-flash:free")
+            .unwrap();
+
+        let storage_a = std::sync::Arc::clone(&storage);
+        let handle_a = std::thread::spawn(move || {
+            let messages = vec![ChatMessage {
+                role: "user".to_string(),
+                content: "Reply with exactly one word: alpha".to_string(),
+            }];
+            send_message(&storage_a, &agent_a, &messages)
+        });
+
+        let storage_b = std::sync::Arc::clone(&storage);
+        let handle_b = std::thread::spawn(move || {
+            let messages = vec![ChatMessage {
+                role: "user".to_string(),
+                content: "Reply with exactly one word: beta".to_string(),
+            }];
+            send_message(&storage_b, &agent_b, &messages)
+        });
+
+        let reply_a = handle_a.join().unwrap().expect("agent A's live call failed");
+        let reply_b = handle_b.join().unwrap().expect("agent B's live call failed");
+
+        assert!(!reply_a.trim().is_empty());
+        assert!(!reply_b.trim().is_empty());
+
+        key_vault::delete_secret(&meta_a.id).ok();
+        key_vault::delete_secret(&meta_b.id).ok();
     }
 }

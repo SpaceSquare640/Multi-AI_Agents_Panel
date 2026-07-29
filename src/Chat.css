@@ -151,6 +151,83 @@
   flex: 1;
 }
 
+.chat-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.chat-tab {
+  display: flex;
+  align-items: center;
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.chat-tab.active {
+  border-color: #396cd8;
+}
+
+.chat-tab-select {
+  background: none;
+  box-shadow: none;
+  border: none;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+}
+
+.chat-tab.active .chat-tab-select {
+  font-weight: 600;
+}
+
+.chat-tab-close {
+  background: none;
+  box-shadow: none;
+  border: none;
+  border-left: 1px solid rgba(128, 128, 128, 0.3);
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.chat-tab-close:hover {
+  opacity: 1;
+}
+
+.chat-unread-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ffb347;
+}
+
+.chat-tab-spinner {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid rgba(128, 128, 128, 0.4);
+  border-top-color: #396cd8;
+  animation: chat-spin 0.8s linear infinite;
+}
+
+@keyframes chat-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.chat-bubble-pending {
+  opacity: 0.6;
+}
+
 .chat-error {
   background: #4a1414;
   color: #ffb4b4;

@@ -6,17 +6,40 @@ import "./Chat.css";
 
 const PROVIDER_OPTIONS = ["anthropic", "openrouter", "ollama"] as const;
 
+/// Per-session state, kept independently for every *open* tab so that
+/// sending a message in one session never blocks, resets, or loses state
+/// in another — this is what makes "multiple agents in parallel" real
+/// rather than just a session picker. See dev order step 10 /
+/// Session Types.md.
+interface TabState {
+  messages: Message[];
+  agent: Agent | null;
+  fileGrants: FileAccessGrant[];
+  draft: string;
+  sending: boolean;
+  /** True while this tab is open but not the one currently in view — used
+   *  to show a "new reply" dot without disturbing the active tab. */
+  hasUnseenReply: boolean;
+}
+
+function emptyTab(): TabState {
+  return { messages: [], agent: null, fileGrants: [], draft: "", sending: false, hasUnseenReply: false };
+}
+
 export default function Chat() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [openTabIds, setOpenTabIds] = useState<string[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [activeAgent, setActiveAgent] = useState<Agent | null>(null);
-  const [fileGrants, setFileGrants] = useState<FileAccessGrant[]>([]);
-  const [draft, setDraft] = useState("");
-  const [sending, setSending] = useState(false);
+  const [tabs, setTabs] = useState<Record<string, TabState>>({});
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  const activeTab = activeSessionId ? tabs[activeSessionId] : undefined;
+
+  function patchTab(sessionId: string, patch: Partial<TabState>) {
+    setTabs((prev) => ({ ...prev, [sessionId]: { ...(prev[sessionId] ?? emptyTab()), ...patch } }));
+  }
 
   // New-agent form state.
   const [showNewAgent, setShowNewAgent] = useState(false);
@@ -49,14 +72,6 @@ export default function Chat() {
     setSessions(all.filter((s) => s.kind === "independent"));
   }
 
-  async function refreshMessages(sessionId: string) {
-    setMessages(await invoke<Message[]>("list_messages", { sessionId }));
-  }
-
-  async function refreshFileGrants(agentId: string) {
-    setFileGrants(await invoke<FileAccessGrant[]>("list_file_access_grants", { agentId }));
-  }
-
   async function refreshRoleTemplates() {
     const [defaults, custom] = await Promise.all([
       invoke<RoleTemplate[]>("list_default_role_templates"),
@@ -73,29 +88,8 @@ export default function Chat() {
   }, []);
 
   useEffect(() => {
-    if (!activeSessionId) {
-      setActiveAgent(null);
-      return;
-    }
-    refreshMessages(activeSessionId).catch((e) => setError(String(e)));
-    invoke<string | null>("get_session_agent_id", { sessionId: activeSessionId })
-      .then((agentId) => setActiveAgent(agents.find((a) => a.id === agentId) ?? null))
-      .catch((e) => setError(String(e)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeSessionId, agents]);
-
-  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  useEffect(() => {
-    if (activeAgent) {
-      refreshFileGrants(activeAgent.id).catch((e) => setError(String(e)));
-    } else {
-      setFileGrants([]);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeAgent]);
+  }, [activeTab?.messages]);
 
   useEffect(() => {
     if (!showNewAgent) return;
@@ -147,6 +141,43 @@ export default function Chat() {
     }
   }
 
+  /// Opens a session as a tab (loading its messages/agent/grants the
+  /// first time) and brings it to the front. Already-open tabs keep
+  /// whatever state they had — switching tabs never re-fetches or resets.
+  async function openTab(sessionId: string) {
+    setActiveSessionId(sessionId);
+    patchTab(sessionId, { hasUnseenReply: false });
+    setOpenTabIds((prev) => (prev.includes(sessionId) ? prev : [...prev, sessionId]));
+    if (tabs[sessionId]) return; // already loaded
+
+    try {
+      const [messages, agentId] = await Promise.all([
+        invoke<Message[]>("list_messages", { sessionId }),
+        invoke<string | null>("get_session_agent_id", { sessionId }),
+      ]);
+      const agent = agents.find((a) => a.id === agentId) ?? null;
+      const fileGrants = agent
+        ? await invoke<FileAccessGrant[]>("list_file_access_grants", { agentId: agent.id })
+        : [];
+      patchTab(sessionId, { messages, agent, fileGrants });
+    } catch (err) {
+      setError(String(err));
+    }
+  }
+
+  function closeTab(sessionId: string) {
+    setOpenTabIds((prev) => prev.filter((id) => id !== sessionId));
+    setTabs((prev) => {
+      const next = { ...prev };
+      delete next[sessionId];
+      return next;
+    });
+    if (activeSessionId === sessionId) {
+      const remaining = openTabIds.filter((id) => id !== sessionId);
+      setActiveSessionId(remaining[remaining.length - 1] ?? null);
+    }
+  }
+
   async function handleCreateSession(e: FormEvent) {
     e.preventDefault();
     setError(null);
@@ -163,7 +194,7 @@ export default function Chat() {
       });
       setNewSessionTitle("");
       await refreshSessions();
-      setActiveSessionId(session.id);
+      await openTab(session.id);
     } catch (err) {
       setError(String(err));
     }
@@ -191,45 +222,66 @@ export default function Chat() {
     }
   }
 
-  async function handleGrantFolder() {
-    if (!activeAgent) return;
+  async function handleGrantFolder(sessionId: string) {
+    const agent = tabs[sessionId]?.agent;
+    if (!agent) return;
     setError(null);
     try {
       const folder = await openFolderPicker({ directory: true, multiple: false });
       if (!folder) return; // user cancelled the picker
-      await invoke("grant_folder_access", { agentId: activeAgent.id, folderPath: folder });
-      await refreshFileGrants(activeAgent.id);
+      await invoke("grant_folder_access", { agentId: agent.id, folderPath: folder });
+      const fileGrants = await invoke<FileAccessGrant[]>("list_file_access_grants", { agentId: agent.id });
+      patchTab(sessionId, { fileGrants });
     } catch (err) {
       setError(String(err));
     }
   }
 
-  async function handleRevokeGrant(id: string) {
-    if (!activeAgent) return;
+  async function handleRevokeGrant(sessionId: string, id: string) {
+    const agent = tabs[sessionId]?.agent;
+    if (!agent) return;
     setError(null);
     try {
       await invoke("revoke_file_access_grant", { id });
-      await refreshFileGrants(activeAgent.id);
+      const fileGrants = await invoke<FileAccessGrant[]>("list_file_access_grants", { agentId: agent.id });
+      patchTab(sessionId, { fileGrants });
     } catch (err) {
       setError(String(err));
     }
   }
 
-  async function handleSend(e: FormEvent) {
-    e.preventDefault();
-    if (!activeSessionId || !draft.trim()) return;
+  /// Sends whatever `sessionId`'s draft is. Deliberately keyed off the
+  /// session, not "the active session" — this is what lets the user
+  /// switch to a different tab while this call is still in flight and
+  /// keep working there; the reply lands in the right tab whenever it
+  /// arrives, active or not.
+  async function sendForSession(sessionId: string) {
+    const tab = tabs[sessionId];
+    if (!tab || !tab.draft.trim() || tab.sending) return;
     setError(null);
-    setSending(true);
-    const content = draft;
-    setDraft("");
+    const content = tab.draft;
+    patchTab(sessionId, { draft: "", sending: true });
     try {
-      await invoke("send_chat_message", { sessionId: activeSessionId, content });
-      await refreshMessages(activeSessionId);
+      await invoke("send_chat_message", { sessionId, content });
+      const messages = await invoke<Message[]>("list_messages", { sessionId });
+      setTabs((prev) => ({
+        ...prev,
+        [sessionId]: {
+          ...(prev[sessionId] ?? emptyTab()),
+          messages,
+          sending: false,
+          hasUnseenReply: sessionId !== activeSessionId,
+        },
+      }));
     } catch (err) {
       setError(String(err));
-    } finally {
-      setSending(false);
+      patchTab(sessionId, { sending: false });
     }
+  }
+
+  function handleSend(e: FormEvent, sessionId: string) {
+    e.preventDefault();
+    void sendForSession(sessionId);
   }
 
   return (
@@ -240,10 +292,11 @@ export default function Chat() {
           {sessions.map((s) => (
             <li key={s.id}>
               <button
-                className={s.id === activeSessionId ? "active" : ""}
-                onClick={() => setActiveSessionId(s.id)}
+                className={openTabIds.includes(s.id) ? "active" : ""}
+                onClick={() => openTab(s.id)}
               >
                 {s.title}
+                {tabs[s.id]?.hasUnseenReply && <span className="chat-unread-dot" />}
               </button>
             </li>
           ))}
@@ -354,53 +407,88 @@ export default function Chat() {
           </div>
         )}
 
-        {!activeSessionId && <p className="chat-empty">Pick or start a session on the left.</p>}
+        {openTabIds.length > 0 && (
+          <div className="chat-tabs">
+            {openTabIds.map((id) => {
+              const title = sessions.find((s) => s.id === id)?.title ?? "…";
+              const tab = tabs[id];
+              return (
+                <div key={id} className={`chat-tab ${id === activeSessionId ? "active" : ""}`}>
+                  <button className="chat-tab-select" onClick={() => setActiveSessionId(id)}>
+                    {title}
+                    {tab?.sending && <span className="chat-tab-spinner" title="Waiting for reply…" />}
+                    {tab?.hasUnseenReply && <span className="chat-unread-dot" />}
+                  </button>
+                  <button className="chat-tab-close" onClick={() => closeTab(id)} title="Close tab">
+                    ×
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
-        {activeSessionId && (
+        {!activeSessionId && (
+          <p className="chat-empty">
+            Pick or start a session on the left. You can open several at once — each keeps chatting
+            independently, even in the background.
+          </p>
+        )}
+
+        {activeSessionId && activeTab && (
           <>
-            {activeAgent && (
+            {activeTab.agent && (
               <div className="chat-header">
                 <div>
-                  Chatting with <strong>{activeAgent.name}</strong> ({activeAgent.providerName}/
-                  {activeAgent.model})
+                  Chatting with <strong>{activeTab.agent.name}</strong> ({activeTab.agent.providerName}/
+                  {activeTab.agent.model})
                 </div>
                 <div className="chat-file-access">
                   <span>Files:</span>
-                  {fileGrants.length === 0 && <span className="chat-empty">no folders granted</span>}
-                  {fileGrants.map((g) => (
+                  {activeTab.fileGrants.length === 0 && (
+                    <span className="chat-empty">no folders granted</span>
+                  )}
+                  {activeTab.fileGrants.map((g) => (
                     <span key={g.id} className="chat-file-chip">
                       {g.folderPath}
-                      <button onClick={() => handleRevokeGrant(g.id)} title="Revoke access">
+                      <button onClick={() => handleRevokeGrant(activeSessionId, g.id)} title="Revoke access">
                         ×
                       </button>
                     </span>
                   ))}
-                  <button className="chat-link-button" onClick={handleGrantFolder}>
+                  <button className="chat-link-button" onClick={() => handleGrantFolder(activeSessionId)}>
                     + Grant folder…
                   </button>
                 </div>
               </div>
             )}
             <div className="chat-thread">
-              {messages.length === 0 && <p className="chat-empty">No messages yet — say hello.</p>}
-              {messages.map((m) => (
+              {activeTab.messages.length === 0 && (
+                <p className="chat-empty">No messages yet — say hello.</p>
+              )}
+              {activeTab.messages.map((m) => (
                 <div key={m.id} className={`chat-bubble chat-bubble-${m.role}`}>
                   <div className="chat-bubble-role">{m.role}</div>
                   <div className="chat-bubble-content">{m.content}</div>
                 </div>
               ))}
+              {activeTab.sending && (
+                <div className="chat-bubble chat-bubble-assistant chat-bubble-pending">
+                  <div className="chat-bubble-role">assistant</div>
+                  <div className="chat-bubble-content">…</div>
+                </div>
+              )}
               <div ref={bottomRef} />
             </div>
-            <form className="chat-input-row" onSubmit={handleSend}>
+            <form className="chat-input-row" onSubmit={(e) => handleSend(e, activeSessionId)}>
               <input
                 type="text"
                 placeholder="Type a message… (use @file:C:\path\to\file.txt to attach a granted file)"
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                disabled={sending}
+                value={activeTab.draft}
+                onChange={(e) => patchTab(activeSessionId, { draft: e.target.value })}
               />
-              <button type="submit" disabled={sending || !draft.trim()}>
-                {sending ? "Sending…" : "Send"}
+              <button type="submit" disabled={!activeTab.draft.trim()}>
+                {activeTab.sending ? "Sending…" : "Send"}
               </button>
             </form>
           </>
