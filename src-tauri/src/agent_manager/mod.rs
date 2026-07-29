@@ -5,32 +5,25 @@
 pub mod curated_models;
 pub mod providers;
 
+use crate::fallback::run_with_fallback;
 use crate::guardrails;
 use crate::key_vault;
-use crate::storage::{Agent, Storage};
+use crate::storage::{Agent, ProviderKey, Storage};
 pub use providers::{ChatMessage, ProviderError};
 
-/// Resolves the API key to use for a cloud provider: picks that provider's
-/// most recently added Key Vault entry (a user can hold several keys per
-/// provider — see `storage::ProviderKey` — but an `Agent` doesn't pin one
-/// explicitly yet, so "latest" is the default until agent creation grows
-/// that option). Returns the entry id (for usage logging) plus the secret.
-fn resolve_cloud_key(storage: &Storage, provider_name: &str) -> Result<(String, String), ProviderError> {
-    let entry = storage
-        .latest_provider_key(provider_name)
-        .map_err(|e| ProviderError::Api(format!("storage error: {e}")))?
-        .ok_or_else(|| ProviderError::Api(format!("no {provider_name} API key set in the Key Vault")))?;
-
-    let secret = key_vault::get_secret(&entry.id)
+/// Fetches the secret for a Key Vault entry, turning "indexed but the
+/// secret vanished from the OS credential store" into a normal error
+/// rather than a panic — that mismatch shouldn't happen, but if the user
+/// (or another app) touches the OS credential store directly, it could.
+fn fetch_secret(entry: &ProviderKey) -> Result<String, ProviderError> {
+    key_vault::get_secret(&entry.id)
         .map_err(|e| ProviderError::Api(format!("key vault error: {e}")))?
         .ok_or_else(|| {
             ProviderError::Api(format!(
                 "Key Vault entry {} is indexed but its secret is missing",
                 entry.id
             ))
-        })?;
-
-    Ok((entry.id, secret))
+        })
 }
 
 /// Sends `messages` to whichever provider `agent` is configured to use,
@@ -91,17 +84,45 @@ pub fn send_message(
     result
 }
 
+/// Dispatches to the agent's provider, falling back through every Key
+/// Vault entry for that provider (see `storage::keys_for_provider`, most
+/// recently added first) before giving up with E3001. Local providers
+/// (Ollama) have no keys to fall back across, but still go through
+/// `run_with_fallback` with a single candidate so a failure there is
+/// coded the same consistent way as a cloud failure.
 fn dispatch(storage: &Storage, agent: &Agent, messages: &[ChatMessage]) -> Result<String, ProviderError> {
     match agent.provider_name.as_str() {
         "anthropic" => {
-            let (_, api_key) = resolve_cloud_key(storage, "anthropic")?;
-            providers::anthropic::send(&api_key, &agent.model, messages)
+            let candidates = storage
+                .keys_for_provider("anthropic")
+                .map_err(|e| ProviderError::Api(format!("storage error: {e}")))?;
+            run_with_fallback(
+                &candidates,
+                |k| k.label.clone().unwrap_or_else(|| format!("key {}", k.id)),
+                |k| {
+                    let secret = fetch_secret(k)?;
+                    providers::anthropic::send(&secret, &agent.model, messages)
+                },
+            )
         }
         "openrouter" => {
-            let (_, api_key) = resolve_cloud_key(storage, "openrouter")?;
-            providers::openrouter::send(&api_key, &agent.model, messages)
+            let candidates = storage
+                .keys_for_provider("openrouter")
+                .map_err(|e| ProviderError::Api(format!("storage error: {e}")))?;
+            run_with_fallback(
+                &candidates,
+                |k| k.label.clone().unwrap_or_else(|| format!("key {}", k.id)),
+                |k| {
+                    let secret = fetch_secret(k)?;
+                    providers::openrouter::send(&secret, &agent.model, messages)
+                },
+            )
         }
-        "ollama" => providers::ollama::send(&agent.model, messages),
+        "ollama" => run_with_fallback(
+            &[()],
+            |_| "local Ollama".to_string(),
+            |_| providers::ollama::send(&agent.model, messages),
+        ),
         other => Err(ProviderError::Unsupported(other.to_string())),
     }
 }
@@ -153,7 +174,7 @@ mod tests {
     }
 
     #[test]
-    fn missing_cloud_key_is_reported_and_logged_as_a_failure() {
+    fn missing_cloud_key_falls_back_to_nothing_and_is_coded_e3001() {
         let storage = Storage::open_in_memory().unwrap();
         let agent = agent_with_provider("cloud", "anthropic");
         let messages = vec![ChatMessage {
@@ -162,7 +183,7 @@ mod tests {
         }];
 
         let err = send_message(&storage, &agent, &messages).unwrap_err();
-        assert!(matches!(err, ProviderError::Api(_)));
+        assert!(matches!(err, ProviderError::AllProvidersFailed { error_code: "E3001", .. }));
 
         let summary = storage.usage_summary().unwrap();
         // No provider_key row exists yet (no key was ever added), so there's
@@ -217,5 +238,51 @@ mod live {
         assert_eq!(summary[0].failure_count, 0);
 
         key_vault::delete_secret(&key_meta.id).ok();
+    }
+
+    /// Proves the fallback chain is real, not just plumbing: a bad key
+    /// added *after* a working one is tried first (most-recently-added
+    /// wins ordering), fails, and the chain actually falls through to the
+    /// working key rather than giving up.
+    #[test]
+    #[ignore]
+    fn falls_back_past_a_bad_key_to_a_working_one() {
+        let api_key = std::env::var("OPENROUTER_TEST_KEY")
+            .expect("set OPENROUTER_TEST_KEY to run this test");
+        let storage = Storage::open_in_memory().unwrap();
+
+        // Older key: the real, working one.
+        let good_key = storage
+            .create_provider_key("openrouter", Some("good key"), None)
+            .unwrap();
+        key_vault::set_secret(&good_key.id, &api_key).unwrap();
+
+        // Newer key: garbage, so it's tried first and must fail.
+        let bad_key = storage
+            .create_provider_key("openrouter", Some("bad key"), None)
+            .unwrap();
+        key_vault::set_secret(&bad_key.id, "sk-or-v1-not-a-real-key").unwrap();
+
+        let agent = storage
+            .create_agent(
+                "Fallback Test Agent",
+                None,
+                "cloud",
+                "openrouter",
+                "inclusionai/ling-3.0-flash:free",
+            )
+            .unwrap();
+
+        let messages = vec![ChatMessage {
+            role: "user".to_string(),
+            content: "Reply with exactly one word: pong".to_string(),
+        }];
+
+        let reply = send_message(&storage, &agent, &messages)
+            .expect("fallback should have recovered via the good key");
+        assert!(!reply.trim().is_empty());
+
+        key_vault::delete_secret(&good_key.id).ok();
+        key_vault::delete_secret(&bad_key.id).ok();
     }
 }

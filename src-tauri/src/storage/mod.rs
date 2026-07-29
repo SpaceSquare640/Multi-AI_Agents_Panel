@@ -409,6 +409,27 @@ impl Storage {
         .optional()
     }
 
+    /// All keys for a provider, most recently added first — the order
+    /// `agent_manager`'s fallback chain tries them in.
+    pub fn keys_for_provider(&self, provider: &str) -> rusqlite::Result<Vec<ProviderKey>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, provider, label, model_hint, created_at, last_used_at
+             FROM provider_keys WHERE provider = ?1 ORDER BY created_at DESC",
+        )?;
+        let rows = stmt.query_map(params![provider], |row| {
+            Ok(ProviderKey {
+                id: row.get(0)?,
+                provider: row.get(1)?,
+                label: row.get(2)?,
+                model_hint: row.get(3)?,
+                created_at: row.get(4)?,
+                last_used_at: row.get(5)?,
+            })
+        })?;
+        rows.collect()
+    }
+
     /// Deletes the metadata row only — callers should also call
     /// `key_vault::delete_secret(id)`.
     pub fn delete_provider_key(&self, id: &str) -> rusqlite::Result<()> {
@@ -615,6 +636,10 @@ mod tests {
         // "latest" is the most recently created one for that provider.
         let latest = storage.latest_provider_key("openrouter").unwrap().unwrap();
         assert_eq!(latest.id, second.id);
+
+        // The fallback chain tries most-recently-added first.
+        let ordered = storage.keys_for_provider("openrouter").unwrap();
+        assert_eq!(ordered.iter().map(|k| &k.id).collect::<Vec<_>>(), vec![&second.id, &first.id]);
 
         storage.delete_provider_key(&first.id).unwrap();
         assert_eq!(storage.list_provider_keys().unwrap().len(), 1);

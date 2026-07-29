@@ -25,6 +25,10 @@ pub enum ProviderError {
     /// Blocked by `guardrails` before any provider was ever contacted.
     /// Carries the Error Code Registry code (e.g. "E9002").
     GuardrailBlocked { error_code: &'static str, reason: String },
+    /// Every candidate `fallback::run_with_fallback` tried failed (or
+    /// there were none to try). Carries the Error Code Registry code
+    /// ("E3001") and a description of each attempt.
+    AllProvidersFailed { error_code: &'static str, attempts: Vec<String> },
 }
 
 impl std::fmt::Display for ProviderError {
@@ -35,6 +39,9 @@ impl std::fmt::Display for ProviderError {
             ProviderError::Unsupported(name) => write!(f, "no provider adapter for '{name}' yet"),
             ProviderError::GuardrailBlocked { error_code, reason } => {
                 write!(f, "{error_code} blocked by Guardrails: {reason}")
+            }
+            ProviderError::AllProvidersFailed { error_code, attempts } => {
+                write!(f, "{error_code} all providers failed: {}", attempts.join("; "))
             }
         }
     }
