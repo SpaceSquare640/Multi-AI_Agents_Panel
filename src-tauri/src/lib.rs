@@ -91,6 +91,12 @@ pub fn run() {
             commands::list_skill_access_grants,
             commands::revoke_skill_access,
             commands::invoke_skill,
+            commands::create_group_session,
+            commands::list_session_members,
+            commands::send_group_message,
+            commands::advance_group_turn,
+            commands::end_group_chat_meeting,
+            commands::pull_out_to_independent_session,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

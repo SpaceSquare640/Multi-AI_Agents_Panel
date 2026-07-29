@@ -12,8 +12,13 @@ const PROVIDER_OPTIONS = ["anthropic", "openrouter", "ollama"] as const;
 /// rather than just a session picker. See dev order step 10 /
 /// Session Types.md.
 interface TabState {
+  /** "independent" | "group" — decides which send/turn commands this tab uses. */
+  kind: string;
   messages: Message[];
+  /** Independent Session's single agent. Null for group tabs — see `members`. */
   agent: Agent | null;
+  /** Group Chat's participants, in round-robin (join) order. Empty for independent tabs. */
+  members: Agent[];
   fileGrants: FileAccessGrant[];
   draft: string;
   sending: boolean;
@@ -23,7 +28,16 @@ interface TabState {
 }
 
 function emptyTab(): TabState {
-  return { messages: [], agent: null, fileGrants: [], draft: "", sending: false, hasUnseenReply: false };
+  return {
+    kind: "independent",
+    messages: [],
+    agent: null,
+    members: [],
+    fileGrants: [],
+    draft: "",
+    sending: false,
+    hasUnseenReply: false,
+  };
 }
 
 export default function Chat() {
@@ -61,6 +75,11 @@ export default function Chat() {
   const [newSessionAgentId, setNewSessionAgentId] = useState("");
   const [newSessionTitle, setNewSessionTitle] = useState("");
 
+  // New-group-session form state.
+  const [showNewGroup, setShowNewGroup] = useState(false);
+  const [newGroupTitle, setNewGroupTitle] = useState("");
+  const [newGroupAgentIds, setNewGroupAgentIds] = useState<string[]>([]);
+
   async function refreshAgents() {
     const list = await invoke<Agent[]>("list_agents");
     setAgents(list);
@@ -69,8 +88,11 @@ export default function Chat() {
 
   async function refreshSessions() {
     const all = await invoke<Session[]>("list_sessions");
-    setSessions(all.filter((s) => s.kind === "independent"));
+    setSessions(all);
   }
+
+  const independentSessions = sessions.filter((s) => s.kind === "independent");
+  const groupSessions = sessions.filter((s) => s.kind === "group");
 
   async function refreshRoleTemplates() {
     const [defaults, custom] = await Promise.all([
@@ -141,25 +163,38 @@ export default function Chat() {
     }
   }
 
-  /// Opens a session as a tab (loading its messages/agent/grants the
+  /// Opens a session as a tab (loading its messages/agent(s)/grants the
   /// first time) and brings it to the front. Already-open tabs keep
   /// whatever state they had — switching tabs never re-fetches or resets.
-  async function openTab(sessionId: string) {
+  async function openTab(sessionId: string, knownKind?: string) {
     setActiveSessionId(sessionId);
     patchTab(sessionId, { hasUnseenReply: false });
     setOpenTabIds((prev) => (prev.includes(sessionId) ? prev : [...prev, sessionId]));
     if (tabs[sessionId]) return; // already loaded
 
+    // `sessions` may not have re-rendered yet if this is called right
+    // after creating the session (state updates aren't synchronous), so
+    // a freshly created session's kind is passed in explicitly.
+    const kind = knownKind ?? sessions.find((s) => s.id === sessionId)?.kind ?? "independent";
+
     try {
-      const [messages, agentId] = await Promise.all([
-        invoke<Message[]>("list_messages", { sessionId }),
-        invoke<string | null>("get_session_agent_id", { sessionId }),
-      ]);
-      const agent = agents.find((a) => a.id === agentId) ?? null;
-      const fileGrants = agent
-        ? await invoke<FileAccessGrant[]>("list_file_access_grants", { agentId: agent.id })
-        : [];
-      patchTab(sessionId, { messages, agent, fileGrants });
+      if (kind === "group") {
+        const [messages, members] = await Promise.all([
+          invoke<Message[]>("list_messages", { sessionId }),
+          invoke<Agent[]>("list_session_members", { sessionId }),
+        ]);
+        patchTab(sessionId, { kind, messages, members, agent: null, fileGrants: [] });
+      } else {
+        const [messages, agentId] = await Promise.all([
+          invoke<Message[]>("list_messages", { sessionId }),
+          invoke<string | null>("get_session_agent_id", { sessionId }),
+        ]);
+        const agent = agents.find((a) => a.id === agentId) ?? null;
+        const fileGrants = agent
+          ? await invoke<FileAccessGrant[]>("list_file_access_grants", { agentId: agent.id })
+          : [];
+        patchTab(sessionId, { kind, messages, agent, members: [], fileGrants });
+      }
     } catch (err) {
       setError(String(err));
     }
@@ -194,7 +229,34 @@ export default function Chat() {
       });
       setNewSessionTitle("");
       await refreshSessions();
-      await openTab(session.id);
+      await openTab(session.id, "independent");
+    } catch (err) {
+      setError(String(err));
+    }
+  }
+
+  function toggleNewGroupAgent(agentId: string) {
+    setNewGroupAgentIds((prev) => (prev.includes(agentId) ? prev.filter((id) => id !== agentId) : [...prev, agentId]));
+  }
+
+  async function handleCreateGroupSession(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (newGroupAgentIds.length === 0) {
+      setError("Pick at least one agent for the Group Chat.");
+      return;
+    }
+    try {
+      const title = newGroupTitle || "Group Chat";
+      const session = await invoke<Session>("create_group_session", {
+        title,
+        agentIds: newGroupAgentIds,
+      });
+      setNewGroupTitle("");
+      setNewGroupAgentIds([]);
+      setShowNewGroup(false);
+      await refreshSessions();
+      await openTab(session.id, "group");
     } catch (err) {
       setError(String(err));
     }
@@ -262,7 +324,8 @@ export default function Chat() {
     const content = tab.draft;
     patchTab(sessionId, { draft: "", sending: true });
     try {
-      await invoke("send_chat_message", { sessionId, content });
+      const command = tab.kind === "group" ? "send_group_message" : "send_chat_message";
+      await invoke(command, { sessionId, content });
       const messages = await invoke<Message[]>("list_messages", { sessionId });
       setTabs((prev) => ({
         ...prev,
@@ -284,24 +347,96 @@ export default function Chat() {
     void sendForSession(sessionId);
   }
 
+  /// "Let them keep talking" — one more agent turn in rotation with no
+  /// new user message. This is the path Guardrails' loop safety-net
+  /// (E6001) actually guards against, since nothing else stops the user
+  /// from clicking this repeatedly.
+  async function handleAdvanceTurn(sessionId: string) {
+    setError(null);
+    patchTab(sessionId, { sending: true });
+    try {
+      await invoke("advance_group_turn", { sessionId });
+      const messages = await invoke<Message[]>("list_messages", { sessionId });
+      patchTab(sessionId, { messages, sending: false, hasUnseenReply: sessionId !== activeSessionId });
+    } catch (err) {
+      setError(String(err));
+      patchTab(sessionId, { sending: false });
+    }
+  }
+
+  /// Ends the meeting: the backend picks a summarizer (Product Lead
+  /// member, else whoever joined first) and asks them to wrap up.
+  async function handleEndMeeting(sessionId: string) {
+    setError(null);
+    patchTab(sessionId, { sending: true });
+    try {
+      await invoke("end_group_chat_meeting", { sessionId, summarizerAgentId: null });
+      const messages = await invoke<Message[]>("list_messages", { sessionId });
+      patchTab(sessionId, { messages, sending: false });
+    } catch (err) {
+      setError(String(err));
+      patchTab(sessionId, { sending: false });
+    }
+  }
+
   return (
     <div className="chat-page">
       <aside className="chat-sidebar">
-        <h2>Sessions</h2>
+        <h2>Independent Sessions</h2>
         <ul className="chat-session-list">
-          {sessions.map((s) => (
+          {independentSessions.map((s) => (
             <li key={s.id}>
-              <button
-                className={openTabIds.includes(s.id) ? "active" : ""}
-                onClick={() => openTab(s.id)}
-              >
+              <button className={openTabIds.includes(s.id) ? "active" : ""} onClick={() => openTab(s.id, s.kind)}>
                 {s.title}
                 {tabs[s.id]?.hasUnseenReply && <span className="chat-unread-dot" />}
               </button>
             </li>
           ))}
-          {sessions.length === 0 && <li className="chat-empty">No sessions yet.</li>}
+          {independentSessions.length === 0 && <li className="chat-empty">No sessions yet.</li>}
         </ul>
+
+        <h2>Group Chats</h2>
+        <ul className="chat-session-list">
+          {groupSessions.map((s) => (
+            <li key={s.id}>
+              <button className={openTabIds.includes(s.id) ? "active" : ""} onClick={() => openTab(s.id, s.kind)}>
+                {s.title}
+                {tabs[s.id]?.hasUnseenReply && <span className="chat-unread-dot" />}
+              </button>
+            </li>
+          ))}
+          {groupSessions.length === 0 && <li className="chat-empty">No group chats yet.</li>}
+        </ul>
+
+        <button className="chat-link-button" onClick={() => setShowNewGroup((v) => !v)}>
+          {showNewGroup ? "Cancel" : "+ New group chat"}
+        </button>
+        {showNewGroup && (
+          <form className="chat-form" onSubmit={handleCreateGroupSession}>
+            <input
+              type="text"
+              placeholder="Meeting title (optional)"
+              value={newGroupTitle}
+              onChange={(e) => setNewGroupTitle(e.target.value)}
+            />
+            <div className="chat-group-agent-picker">
+              {agents.length === 0 && <span className="chat-empty">No agents yet.</span>}
+              {agents.map((a) => (
+                <label key={a.id} className="chat-group-agent-option">
+                  <input
+                    type="checkbox"
+                    checked={newGroupAgentIds.includes(a.id)}
+                    onChange={() => toggleNewGroupAgent(a.id)}
+                  />
+                  {a.name}
+                </label>
+              ))}
+            </div>
+            <button type="submit" disabled={agents.length === 0}>
+              Start meeting
+            </button>
+          </form>
+        )}
 
         <h3>New session</h3>
         <form className="chat-form" onSubmit={handleCreateSession}>
@@ -462,16 +597,45 @@ export default function Chat() {
                 </div>
               </div>
             )}
+            {activeTab.kind === "group" && (
+              <div className="chat-header">
+                <div>
+                  Group Chat: {activeTab.members.map((m) => m.name).join(", ") || "(no members)"}
+                </div>
+                <div className="chat-group-actions">
+                  <button
+                    className="chat-link-button"
+                    disabled={activeTab.sending}
+                    onClick={() => handleAdvanceTurn(activeSessionId)}
+                  >
+                    Let them continue →
+                  </button>
+                  <button
+                    className="chat-link-button"
+                    disabled={activeTab.sending}
+                    onClick={() => handleEndMeeting(activeSessionId)}
+                  >
+                    End meeting (summarize)
+                  </button>
+                </div>
+              </div>
+            )}
             <div className="chat-thread">
               {activeTab.messages.length === 0 && (
                 <p className="chat-empty">No messages yet — say hello.</p>
               )}
-              {activeTab.messages.map((m) => (
-                <div key={m.id} className={`chat-bubble chat-bubble-${m.role}`}>
-                  <div className="chat-bubble-role">{m.role}</div>
-                  <div className="chat-bubble-content">{m.content}</div>
-                </div>
-              ))}
+              {activeTab.messages.map((m) => {
+                const speakerName =
+                  activeTab.kind === "group" && m.agentId
+                    ? activeTab.members.find((mem) => mem.id === m.agentId)?.name ?? m.role
+                    : m.role;
+                return (
+                  <div key={m.id} className={`chat-bubble chat-bubble-${m.role}`}>
+                    <div className="chat-bubble-role">{speakerName}</div>
+                    <div className="chat-bubble-content">{m.content}</div>
+                  </div>
+                );
+              })}
               {activeTab.sending && (
                 <div className="chat-bubble chat-bubble-assistant chat-bubble-pending">
                   <div className="chat-bubble-role">assistant</div>
@@ -483,7 +647,11 @@ export default function Chat() {
             <form className="chat-input-row" onSubmit={(e) => handleSend(e, activeSessionId)}>
               <input
                 type="text"
-                placeholder="Type a message… (use @file:C:\path\to\file.txt to attach a granted file)"
+                placeholder={
+                  activeTab.kind === "group"
+                    ? "Type a message… (use @AgentName to call on someone specific)"
+                    : "Type a message… (use @file:C:\\path\\to\\file.txt to attach a granted file)"
+                }
                 value={activeTab.draft}
                 onChange={(e) => patchTab(activeSessionId, { draft: e.target.value })}
               />

@@ -124,6 +124,21 @@ pub struct CustomRoleTemplate {
     pub created_at: String,
 }
 
+/// Per-Group-Chat-session turn-taking state. `rotation_cursor` indexes into
+/// the session's members (ordered by `joined_at`) for round-robin
+/// speaking order; an `@mention` speaks out of turn without consuming a
+/// rotation slot. `consecutive_agent_turns` is the mechanical loop
+/// safety-net behind Error Code Registry E6001 — see `orchestrator`
+/// module docs for why it's a turn cap rather than real disagreement
+/// detection.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GroupSessionState {
+    pub session_id: String,
+    pub rotation_cursor: i64,
+    pub consecutive_agent_turns: i64,
+}
+
 pub struct Storage {
     conn: Mutex<Connection>,
 }
@@ -186,6 +201,12 @@ impl Storage {
                 PRIMARY KEY (session_id, agent_id)
             );
 
+            CREATE TABLE IF NOT EXISTS group_session_state (
+                session_id              TEXT PRIMARY KEY REFERENCES sessions(id),
+                rotation_cursor         INTEGER NOT NULL DEFAULT 0,
+                consecutive_agent_turns INTEGER NOT NULL DEFAULT 0
+            );
+
             CREATE TABLE IF NOT EXISTS messages (
                 id          TEXT PRIMARY KEY,
                 session_id  TEXT NOT NULL REFERENCES sessions(id),
@@ -228,7 +249,22 @@ impl Storage {
                 granted_at    TEXT NOT NULL
             );
             ",
-        )
+        )?;
+        // `session_agents` predates Group Chat's need for a stable join
+        // order (round-robin speaking order); add the column for
+        // pre-existing local databases rather than requiring a fresh one.
+        Self::ensure_column(&conn, "session_agents", "joined_at", "joined_at TEXT")
+    }
+
+    fn ensure_column(conn: &Connection, table: &str, column: &str, ddl: &str) -> rusqlite::Result<()> {
+        let mut stmt = conn.prepare(&format!("PRAGMA table_info({table})"))?;
+        let existing: Vec<String> = stmt
+            .query_map([], |row| row.get::<_, String>(1))?
+            .collect::<rusqlite::Result<_>>()?;
+        if !existing.iter().any(|c| c == column) {
+            conn.execute(&format!("ALTER TABLE {table} ADD COLUMN {ddl}"), [])?;
+        }
+        Ok(())
     }
 
     pub fn create_agent(
@@ -342,17 +378,72 @@ impl Storage {
 
     pub fn add_agent_to_session(&self, session_id: &str, agent_id: &str) -> rusqlite::Result<()> {
         self.conn.lock().unwrap().execute(
-            "INSERT OR IGNORE INTO session_agents (session_id, agent_id) VALUES (?1, ?2)",
-            params![session_id, agent_id],
+            "INSERT OR IGNORE INTO session_agents (session_id, agent_id, joined_at) VALUES (?1, ?2, ?3)",
+            params![session_id, agent_id, chrono::Utc::now().to_rfc3339()],
         )?;
         Ok(())
     }
 
+    /// Members of a session, ordered by when they joined — for an
+    /// Independent Session this is just the one agent; for a Group Chat
+    /// it's the round-robin speaking order (`session_manager`).
     pub fn agents_for_session(&self, session_id: &str) -> rusqlite::Result<Vec<String>> {
         let conn = self.conn.lock().unwrap();
-        let mut stmt = conn.prepare("SELECT agent_id FROM session_agents WHERE session_id = ?1")?;
+        let mut stmt = conn.prepare(
+            "SELECT agent_id FROM session_agents WHERE session_id = ?1 ORDER BY joined_at ASC",
+        )?;
         let rows = stmt.query_map(params![session_id], |row| row.get::<_, String>(0))?;
         rows.collect()
+    }
+
+    /// Reads (creating with defaults if absent) a Group Chat session's
+    /// turn-taking state.
+    pub fn get_group_session_state(&self, session_id: &str) -> rusqlite::Result<GroupSessionState> {
+        let conn = self.conn.lock().unwrap();
+        let existing = conn
+            .query_row(
+                "SELECT session_id, rotation_cursor, consecutive_agent_turns FROM group_session_state WHERE session_id = ?1",
+                params![session_id],
+                |row| {
+                    Ok(GroupSessionState {
+                        session_id: row.get(0)?,
+                        rotation_cursor: row.get(1)?,
+                        consecutive_agent_turns: row.get(2)?,
+                    })
+                },
+            )
+            .optional()?;
+        if let Some(state) = existing {
+            return Ok(state);
+        }
+        conn.execute(
+            "INSERT INTO group_session_state (session_id, rotation_cursor, consecutive_agent_turns) VALUES (?1, 0, 0)",
+            params![session_id],
+        )?;
+        Ok(GroupSessionState { session_id: session_id.to_string(), rotation_cursor: 0, consecutive_agent_turns: 0 })
+    }
+
+    pub fn save_group_session_state(&self, state: &GroupSessionState) -> rusqlite::Result<()> {
+        self.conn.lock().unwrap().execute(
+            "INSERT INTO group_session_state (session_id, rotation_cursor, consecutive_agent_turns)
+             VALUES (?1, ?2, ?3)
+             ON CONFLICT(session_id) DO UPDATE SET rotation_cursor = ?2, consecutive_agent_turns = ?3",
+            params![state.session_id, state.rotation_cursor, state.consecutive_agent_turns],
+        )?;
+        Ok(())
+    }
+
+    /// Called whenever a real user message lands in a Group Chat — the
+    /// loop safety-net (E6001) only cares about *consecutive* agent turns
+    /// with no user in between.
+    pub fn reset_group_session_turn_counter(&self, session_id: &str) -> rusqlite::Result<()> {
+        self.conn.lock().unwrap().execute(
+            "INSERT INTO group_session_state (session_id, rotation_cursor, consecutive_agent_turns)
+             VALUES (?1, 0, 0)
+             ON CONFLICT(session_id) DO UPDATE SET consecutive_agent_turns = 0",
+            params![session_id],
+        )?;
+        Ok(())
     }
 
     pub fn add_message(
@@ -783,6 +874,46 @@ mod tests {
 
         storage.revoke_file_access_grant(&grant.id).unwrap();
         assert!(storage.list_file_access_grants(&agent.id).unwrap().is_empty());
+    }
+
+    #[test]
+    fn agents_for_session_preserves_join_order() {
+        let storage = Storage::open_in_memory().unwrap();
+        let a = storage.create_agent("A", None, None, "cloud", "anthropic", "claude").unwrap();
+        let b = storage.create_agent("B", None, None, "cloud", "anthropic", "claude").unwrap();
+        let c = storage.create_agent("C", None, None, "cloud", "anthropic", "claude").unwrap();
+        let session = storage.create_session("group", "Standup").unwrap();
+        storage.add_agent_to_session(&session.id, &b.id).unwrap();
+        storage.add_agent_to_session(&session.id, &a.id).unwrap();
+        storage.add_agent_to_session(&session.id, &c.id).unwrap();
+
+        assert_eq!(storage.agents_for_session(&session.id).unwrap(), vec![b.id, a.id, c.id]);
+    }
+
+    #[test]
+    fn group_session_state_defaults_then_persists_updates() {
+        let storage = Storage::open_in_memory().unwrap();
+        let session = storage.create_session("group", "Standup").unwrap();
+
+        let state = storage.get_group_session_state(&session.id).unwrap();
+        assert_eq!(state.rotation_cursor, 0);
+        assert_eq!(state.consecutive_agent_turns, 0);
+
+        storage
+            .save_group_session_state(&GroupSessionState {
+                session_id: session.id.clone(),
+                rotation_cursor: 2,
+                consecutive_agent_turns: 4,
+            })
+            .unwrap();
+        let reloaded = storage.get_group_session_state(&session.id).unwrap();
+        assert_eq!(reloaded.rotation_cursor, 2);
+        assert_eq!(reloaded.consecutive_agent_turns, 4);
+
+        storage.reset_group_session_turn_counter(&session.id).unwrap();
+        let after_reset = storage.get_group_session_state(&session.id).unwrap();
+        assert_eq!(after_reset.consecutive_agent_turns, 0);
+        assert_eq!(after_reset.rotation_cursor, 2, "resetting the turn counter must not touch the rotation cursor");
     }
 
     #[test]

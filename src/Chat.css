@@ -80,6 +80,29 @@
   gap: 0.3rem;
 }
 
+.chat-group-agent-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  max-height: 140px;
+  overflow-y: auto;
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  border-radius: 6px;
+  padding: 0.4rem;
+}
+
+.chat-group-agent-option {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+}
+
+.chat-group-actions {
+  display: flex;
+  gap: 0.8rem;
+}
+
 .chat-file-access {
   display: flex;
   flex-wrap: wrap;
