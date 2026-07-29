@@ -40,6 +40,7 @@ export interface Agent {
   id: string;
   name: string;
   roleTemplate: string | null;
+  systemPrompt: string | null;
   /** "local" | "cloud" */
   providerKind: string;
   providerName: string;
@@ -70,4 +71,16 @@ export interface FileAccessGrant {
   agentId: string;
   folderPath: string;
   grantedAt: string;
+}
+
+export interface RoleTemplate {
+  id: string;
+  name: string;
+  description: string;
+  systemPrompt: string;
+  suggestedProviderKind: string | null;
+  suggestedProviderName: string | null;
+  suggestedModel: string | null;
+  /** "default" | "custom" */
+  source: string;
 }

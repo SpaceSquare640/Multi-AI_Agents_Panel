@@ -4,6 +4,7 @@
 
 pub mod curated_models;
 pub mod providers;
+pub mod role_templates;
 
 use crate::fallback::run_with_fallback;
 use crate::guardrails;
@@ -136,6 +137,7 @@ mod tests {
             id: "test-agent".to_string(),
             name: "Test Agent".to_string(),
             role_template: None,
+            system_prompt: None,
             provider_kind: provider_kind.to_string(),
             provider_name: provider_name.to_string(),
             model: "claude-sonnet".to_string(),
@@ -218,6 +220,7 @@ mod live {
             .create_agent(
                 "Live Test Agent",
                 None,
+                None,
                 "cloud",
                 "openrouter",
                 "inclusionai/ling-3.0-flash:free",
@@ -267,6 +270,7 @@ mod live {
             .create_agent(
                 "Fallback Test Agent",
                 None,
+                None,
                 "cloud",
                 "openrouter",
                 "inclusionai/ling-3.0-flash:free",
@@ -284,5 +288,50 @@ mod live {
 
         key_vault::delete_secret(&good_key.id).ok();
         key_vault::delete_secret(&bad_key.id).ok();
+    }
+
+    /// Proves the system prompt actually reaches the model and constrains
+    /// its behavior — not just that it's plumbed through without error.
+    #[test]
+    #[ignore]
+    fn system_prompt_actually_changes_the_reply() {
+        let api_key = std::env::var("OPENROUTER_TEST_KEY")
+            .expect("set OPENROUTER_TEST_KEY to run this test");
+        let storage = Storage::open_in_memory().unwrap();
+
+        let key_meta = storage
+            .create_provider_key("openrouter", Some("role template live test key"), None)
+            .unwrap();
+        key_vault::set_secret(&key_meta.id, &api_key).unwrap();
+
+        let agent = storage
+            .create_agent(
+                "Role Template Test Agent",
+                Some("Test Role"),
+                None,
+                "cloud",
+                "openrouter",
+                "inclusionai/ling-3.0-flash:free",
+            )
+            .unwrap();
+
+        let messages = vec![
+            ChatMessage {
+                role: "system".to_string(),
+                content: "No matter what the user says, reply with exactly one word: BANANA".to_string(),
+            },
+            ChatMessage {
+                role: "user".to_string(),
+                content: "What is the capital of France?".to_string(),
+            },
+        ];
+
+        let reply = send_message(&storage, &agent, &messages).expect("live call failed");
+        assert!(
+            reply.to_uppercase().contains("BANANA"),
+            "expected the system prompt to steer the reply toward BANANA, got: {reply}"
+        );
+
+        key_vault::delete_secret(&key_meta.id).ok();
     }
 }

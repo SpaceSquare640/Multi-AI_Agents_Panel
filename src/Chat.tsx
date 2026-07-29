@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { open as openFolderPicker } from "@tauri-apps/plugin-dialog";
-import type { Agent, CuratedModel, FileAccessGrant, Message, Session } from "./types";
+import type { Agent, CuratedModel, FileAccessGrant, Message, RoleTemplate, Session } from "./types";
 import "./Chat.css";
 
 const PROVIDER_OPTIONS = ["anthropic", "openrouter", "ollama"] as const;
@@ -24,6 +24,15 @@ export default function Chat() {
   const [newAgentProvider, setNewAgentProvider] = useState<string>("openrouter");
   const [newAgentModels, setNewAgentModels] = useState<CuratedModel[]>([]);
   const [newAgentModel, setNewAgentModel] = useState("");
+  const [newAgentSystemPrompt, setNewAgentSystemPrompt] = useState("");
+  const [newAgentTemplateId, setNewAgentTemplateId] = useState("");
+
+  // Role templates ("1 人公司"): default (built-in) + custom (user-authored).
+  const [roleTemplates, setRoleTemplates] = useState<RoleTemplate[]>([]);
+  const [showNewTemplate, setShowNewTemplate] = useState(false);
+  const [templateName, setTemplateName] = useState("");
+  const [templateDescription, setTemplateDescription] = useState("");
+  const [templatePrompt, setTemplatePrompt] = useState("");
 
   // New-session form state.
   const [newSessionAgentId, setNewSessionAgentId] = useState("");
@@ -48,9 +57,18 @@ export default function Chat() {
     setFileGrants(await invoke<FileAccessGrant[]>("list_file_access_grants", { agentId }));
   }
 
+  async function refreshRoleTemplates() {
+    const [defaults, custom] = await Promise.all([
+      invoke<RoleTemplate[]>("list_default_role_templates"),
+      invoke<RoleTemplate[]>("list_custom_role_templates"),
+    ]);
+    setRoleTemplates([...defaults, ...custom]);
+  }
+
   useEffect(() => {
     refreshAgents().catch((e) => setError(String(e)));
     refreshSessions().catch((e) => setError(String(e)));
+    refreshRoleTemplates().catch((e) => setError(String(e)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -81,26 +99,46 @@ export default function Chat() {
 
   useEffect(() => {
     if (!showNewAgent) return;
+    const selectedTemplate = roleTemplates.find((t) => t.id === newAgentTemplateId);
     invoke<CuratedModel[]>("list_curated_models", { provider: newAgentProvider })
       .then((models) => {
         setNewAgentModels(models);
-        setNewAgentModel(models[0]?.id ?? "");
+        const suggested = selectedTemplate?.suggestedModel;
+        const suggestedIsAvailable = suggested && models.some((m) => m.id === suggested);
+        setNewAgentModel(suggestedIsAvailable ? suggested : models[0]?.id ?? "");
       })
       .catch((e) => setError(String(e)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showNewAgent, newAgentProvider]);
+
+  function handleSelectTemplate(templateId: string) {
+    setNewAgentTemplateId(templateId);
+    const template = roleTemplates.find((t) => t.id === templateId);
+    if (!template) {
+      setNewAgentSystemPrompt("");
+      return;
+    }
+    if (!newAgentName.trim()) setNewAgentName(template.name);
+    setNewAgentSystemPrompt(template.systemPrompt);
+    if (template.suggestedProviderName) setNewAgentProvider(template.suggestedProviderName);
+  }
 
   async function handleCreateAgent(e: FormEvent) {
     e.preventDefault();
     setError(null);
     try {
+      const selectedTemplate = roleTemplates.find((t) => t.id === newAgentTemplateId);
       const agent = await invoke<Agent>("create_agent", {
         name: newAgentName,
-        roleTemplate: null,
+        roleTemplate: selectedTemplate?.name ?? null,
+        systemPrompt: newAgentSystemPrompt || null,
         providerKind: newAgentProvider === "ollama" ? "local" : "cloud",
         providerName: newAgentProvider,
         model: newAgentModel,
       });
       setNewAgentName("");
+      setNewAgentSystemPrompt("");
+      setNewAgentTemplateId("");
       setShowNewAgent(false);
       await refreshAgents();
       setNewSessionAgentId(agent.id);
@@ -126,6 +164,28 @@ export default function Chat() {
       setNewSessionTitle("");
       await refreshSessions();
       setActiveSessionId(session.id);
+    } catch (err) {
+      setError(String(err));
+    }
+  }
+
+  async function handleCreateTemplate(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    try {
+      await invoke("create_custom_role_template", {
+        name: templateName,
+        description: templateDescription,
+        systemPrompt: templatePrompt,
+        suggestedProviderKind: null,
+        suggestedProviderName: null,
+        suggestedModel: null,
+      });
+      setTemplateName("");
+      setTemplateDescription("");
+      setTemplatePrompt("");
+      setShowNewTemplate(false);
+      await refreshRoleTemplates();
     } catch (err) {
       setError(String(err));
     }
@@ -216,6 +276,14 @@ export default function Chat() {
         </button>
         {showNewAgent && (
           <form className="chat-form" onSubmit={handleCreateAgent}>
+            <select value={newAgentTemplateId} onChange={(e) => handleSelectTemplate(e.target.value)}>
+              <option value="">No role template (write your own prompt)</option>
+              {roleTemplates.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name} {t.source === "custom" ? "(custom)" : ""}
+                </option>
+              ))}
+            </select>
             <input
               type="text"
               placeholder="Agent name"
@@ -237,7 +305,43 @@ export default function Chat() {
                 </option>
               ))}
             </select>
+            <textarea
+              rows={3}
+              placeholder="System prompt (optional — filled in automatically by a role template)"
+              value={newAgentSystemPrompt}
+              onChange={(e) => setNewAgentSystemPrompt(e.target.value)}
+            />
             <button type="submit">Create agent</button>
+          </form>
+        )}
+
+        <button className="chat-link-button" onClick={() => setShowNewTemplate((v) => !v)}>
+          {showNewTemplate ? "Cancel" : "+ New role template"}
+        </button>
+        {showNewTemplate && (
+          <form className="chat-form" onSubmit={handleCreateTemplate}>
+            <input
+              type="text"
+              placeholder="Template name"
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
+              required
+            />
+            <input
+              type="text"
+              placeholder="Short description"
+              value={templateDescription}
+              onChange={(e) => setTemplateDescription(e.target.value)}
+              required
+            />
+            <textarea
+              rows={3}
+              placeholder="System prompt"
+              value={templatePrompt}
+              onChange={(e) => setTemplatePrompt(e.target.value)}
+              required
+            />
+            <button type="submit">Save template</button>
           </form>
         )}
       </aside>

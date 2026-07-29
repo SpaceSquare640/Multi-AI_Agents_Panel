@@ -6,6 +6,7 @@ use tauri::State;
 
 use crate::agent_manager::curated_models::{self, CuratedModel};
 use crate::agent_manager::providers::{ollama, ChatMessage};
+use crate::agent_manager::role_templates::{self, RoleTemplate};
 use crate::agent_manager::{self};
 use crate::file_access;
 use crate::key_vault;
@@ -140,12 +141,20 @@ pub fn create_agent(
     storage: State<Storage>,
     name: String,
     role_template: Option<String>,
+    system_prompt: Option<String>,
     provider_kind: String,
     provider_name: String,
     model: String,
 ) -> Result<Agent, String> {
     storage
-        .create_agent(&name, role_template.as_deref(), &provider_kind, &provider_name, &model)
+        .create_agent(
+            &name,
+            role_template.as_deref(),
+            system_prompt.as_deref(),
+            &provider_kind,
+            &provider_name,
+            &model,
+        )
         .map_err(|e| e.to_string())
 }
 
@@ -233,6 +242,15 @@ pub fn send_chat_message(storage: State<Storage>, session_id: String, content: S
     if let Some(last) = history.last_mut() {
         last.content = expanded_content;
     }
+    if let Some(system_prompt) = &agent.system_prompt {
+        history.insert(
+            0,
+            ChatMessage {
+                role: "system".to_string(),
+                content: system_prompt.clone(),
+            },
+        );
+    }
 
     let reply = agent_manager::send_message(&storage, &agent, &history).map_err(|e| e.to_string())?;
 
@@ -268,4 +286,47 @@ pub fn list_file_access_grants(storage: State<Storage>, agent_id: String) -> Res
 #[tauri::command]
 pub fn revoke_file_access_grant(storage: State<Storage>, id: String) -> Result<(), String> {
     storage.revoke_file_access_grant(&id).map_err(|e| e.to_string())
+}
+
+// --- Role Templates ("1 人公司") ---
+
+#[tauri::command]
+pub fn list_default_role_templates() -> Vec<RoleTemplate> {
+    role_templates::default_templates()
+}
+
+#[tauri::command]
+pub fn list_custom_role_templates(storage: State<Storage>) -> Result<Vec<RoleTemplate>, String> {
+    storage
+        .list_custom_role_templates()
+        .map(|templates| templates.into_iter().map(RoleTemplate::from).collect())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn create_custom_role_template(
+    storage: State<Storage>,
+    name: String,
+    description: String,
+    system_prompt: String,
+    suggested_provider_kind: Option<String>,
+    suggested_provider_name: Option<String>,
+    suggested_model: Option<String>,
+) -> Result<RoleTemplate, String> {
+    storage
+        .create_custom_role_template(
+            &name,
+            &description,
+            &system_prompt,
+            suggested_provider_kind.as_deref(),
+            suggested_provider_name.as_deref(),
+            suggested_model.as_deref(),
+        )
+        .map(RoleTemplate::from)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn delete_custom_role_template(storage: State<Storage>, id: String) -> Result<(), String> {
+    storage.delete_custom_role_template(&id).map_err(|e| e.to_string())
 }

@@ -12,15 +12,35 @@ const DEFAULT_MAX_TOKENS: u32 = 1024;
 
 /// Builds the JSON request body for the Messages API. Pulled out as a pure
 /// function so the request shape can be unit-tested without any network.
+///
+/// Anthropic's API is the odd one out among our providers: the system
+/// prompt is a top-level `system` field, not a `role: "system"` entry in
+/// `messages` (which must strictly alternate user/assistant). So any
+/// `ChatMessage`s with `role == "system"` are pulled out and joined into
+/// that field instead of being passed through — unlike the OpenRouter/
+/// Ollama adapters, which accept `role: "system"` inline.
 pub fn build_request(model: &str, messages: &[ChatMessage]) -> Value {
-    json!({
+    let system_prompt: Vec<&str> = messages
+        .iter()
+        .filter(|m| m.role == "system")
+        .map(|m| m.content.as_str())
+        .collect();
+
+    let mut body = json!({
         "model": model,
         "max_tokens": DEFAULT_MAX_TOKENS,
         "messages": messages
             .iter()
+            .filter(|m| m.role != "system")
             .map(|m| json!({ "role": m.role, "content": m.content }))
             .collect::<Vec<_>>(),
-    })
+    });
+
+    if !system_prompt.is_empty() {
+        body["system"] = json!(system_prompt.join("\n\n"));
+    }
+
+    body
 }
 
 /// Extracts the assistant's reply text from a Messages API response body.
@@ -76,6 +96,35 @@ mod tests {
         assert_eq!(body["model"], "claude-sonnet");
         assert_eq!(body["messages"][0]["role"], "user");
         assert_eq!(body["messages"][0]["content"], "hello");
+    }
+
+    #[test]
+    fn build_request_pulls_system_messages_into_the_top_level_field() {
+        let messages = vec![
+            ChatMessage {
+                role: "system".to_string(),
+                content: "You are the Product Lead.".to_string(),
+            },
+            ChatMessage {
+                role: "user".to_string(),
+                content: "hello".to_string(),
+            },
+        ];
+        let body = build_request("claude-sonnet", &messages);
+        assert_eq!(body["system"], "You are the Product Lead.");
+        // Only the non-system message remains in `messages`.
+        assert_eq!(body["messages"].as_array().unwrap().len(), 1);
+        assert_eq!(body["messages"][0]["role"], "user");
+    }
+
+    #[test]
+    fn build_request_omits_system_field_when_there_is_none() {
+        let messages = vec![ChatMessage {
+            role: "user".to_string(),
+            content: "hi".to_string(),
+        }];
+        let body = build_request("claude-sonnet", &messages);
+        assert!(body.get("system").is_none());
     }
 
     #[test]

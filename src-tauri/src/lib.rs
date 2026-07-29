@@ -55,6 +55,10 @@ pub fn run() {
             commands::grant_folder_access,
             commands::list_file_access_grants,
             commands::revoke_file_access_grant,
+            commands::list_default_role_templates,
+            commands::list_custom_role_templates,
+            commands::create_custom_role_template,
+            commands::delete_custom_role_template,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

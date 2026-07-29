@@ -13,7 +13,15 @@ use serde::{Deserialize, Serialize};
 pub struct Agent {
     pub id: String,
     pub name: String,
+    /// Name of the role template this agent was created from, if any
+    /// (e.g. "Product Lead"). Purely informational — the actual behavior
+    /// comes from `system_prompt`, which is copied in at creation time so
+    /// editing/deleting the template later doesn't change existing agents.
     pub role_template: Option<String>,
+    /// Sent to the provider as the system prompt (Anthropic: the top-level
+    /// `system` field; others: a `role: "system"` message) — see
+    /// `agent_manager::role_templates`.
+    pub system_prompt: Option<String>,
     /// "local" | "cloud"
     pub provider_kind: String,
     /// e.g. "ollama" | "openai" | "anthropic" | "openrouter"
@@ -87,6 +95,23 @@ pub struct FileAccessGrant {
     pub granted_at: String,
 }
 
+/// A user-authored role template ("User Custom" in
+/// `Role Templates Index.md` — as opposed to the 10 built-in "Default"
+/// ones, which live in `agent_manager::role_templates` as Rust constants
+/// and are never stored here, so an app update can safely refresh them).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CustomRoleTemplate {
+    pub id: String,
+    pub name: String,
+    pub description: String,
+    pub system_prompt: String,
+    pub suggested_provider_kind: Option<String>,
+    pub suggested_provider_name: Option<String>,
+    pub suggested_model: Option<String>,
+    pub created_at: String,
+}
+
 pub struct Storage {
     conn: Mutex<Connection>,
 }
@@ -118,10 +143,22 @@ impl Storage {
                 id             TEXT PRIMARY KEY,
                 name           TEXT NOT NULL,
                 role_template  TEXT,
+                system_prompt  TEXT,
                 provider_kind  TEXT NOT NULL,
                 provider_name  TEXT NOT NULL,
                 model          TEXT NOT NULL,
                 created_at     TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS role_templates_custom (
+                id                      TEXT PRIMARY KEY,
+                name                    TEXT NOT NULL,
+                description             TEXT NOT NULL,
+                system_prompt           TEXT NOT NULL,
+                suggested_provider_kind TEXT,
+                suggested_provider_name TEXT,
+                suggested_model         TEXT,
+                created_at              TEXT NOT NULL
             );
 
             CREATE TABLE IF NOT EXISTS sessions (
@@ -179,6 +216,7 @@ impl Storage {
         &self,
         name: &str,
         role_template: Option<&str>,
+        system_prompt: Option<&str>,
         provider_kind: &str,
         provider_name: &str,
         model: &str,
@@ -187,18 +225,20 @@ impl Storage {
             id: uuid::Uuid::new_v4().to_string(),
             name: name.to_string(),
             role_template: role_template.map(|s| s.to_string()),
+            system_prompt: system_prompt.map(|s| s.to_string()),
             provider_kind: provider_kind.to_string(),
             provider_name: provider_name.to_string(),
             model: model.to_string(),
             created_at: chrono::Utc::now().to_rfc3339(),
         };
         self.conn.lock().unwrap().execute(
-            "INSERT INTO agents (id, name, role_template, provider_kind, provider_name, model, created_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            "INSERT INTO agents (id, name, role_template, system_prompt, provider_kind, provider_name, model, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
             params![
                 agent.id,
                 agent.name,
                 agent.role_template,
+                agent.system_prompt,
                 agent.provider_kind,
                 agent.provider_name,
                 agent.model,
@@ -211,7 +251,7 @@ impl Storage {
     pub fn list_agents(&self) -> rusqlite::Result<Vec<Agent>> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT id, name, role_template, provider_kind, provider_name, model, created_at
+            "SELECT id, name, role_template, system_prompt, provider_kind, provider_name, model, created_at
              FROM agents ORDER BY created_at ASC",
         )?;
         let rows = stmt.query_map([], |row| {
@@ -219,10 +259,11 @@ impl Storage {
                 id: row.get(0)?,
                 name: row.get(1)?,
                 role_template: row.get(2)?,
-                provider_kind: row.get(3)?,
-                provider_name: row.get(4)?,
-                model: row.get(5)?,
-                created_at: row.get(6)?,
+                system_prompt: row.get(3)?,
+                provider_kind: row.get(4)?,
+                provider_name: row.get(5)?,
+                model: row.get(6)?,
+                created_at: row.get(7)?,
             })
         })?;
         rows.collect()
@@ -231,7 +272,7 @@ impl Storage {
     pub fn get_agent(&self, id: &str) -> rusqlite::Result<Option<Agent>> {
         let conn = self.conn.lock().unwrap();
         conn.query_row(
-            "SELECT id, name, role_template, provider_kind, provider_name, model, created_at
+            "SELECT id, name, role_template, system_prompt, provider_kind, provider_name, model, created_at
              FROM agents WHERE id = ?1",
             params![id],
             |row| {
@@ -239,10 +280,11 @@ impl Storage {
                     id: row.get(0)?,
                     name: row.get(1)?,
                     role_template: row.get(2)?,
-                    provider_kind: row.get(3)?,
-                    provider_name: row.get(4)?,
-                    model: row.get(5)?,
-                    created_at: row.get(6)?,
+                    system_prompt: row.get(3)?,
+                    provider_kind: row.get(4)?,
+                    provider_name: row.get(5)?,
+                    model: row.get(6)?,
+                    created_at: row.get(7)?,
                 })
             },
         )
@@ -540,6 +582,73 @@ impl Storage {
             .execute("DELETE FROM file_access_grants WHERE id = ?1", params![id])?;
         Ok(())
     }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn create_custom_role_template(
+        &self,
+        name: &str,
+        description: &str,
+        system_prompt: &str,
+        suggested_provider_kind: Option<&str>,
+        suggested_provider_name: Option<&str>,
+        suggested_model: Option<&str>,
+    ) -> rusqlite::Result<CustomRoleTemplate> {
+        let template = CustomRoleTemplate {
+            id: uuid::Uuid::new_v4().to_string(),
+            name: name.to_string(),
+            description: description.to_string(),
+            system_prompt: system_prompt.to_string(),
+            suggested_provider_kind: suggested_provider_kind.map(str::to_string),
+            suggested_provider_name: suggested_provider_name.map(str::to_string),
+            suggested_model: suggested_model.map(str::to_string),
+            created_at: chrono::Utc::now().to_rfc3339(),
+        };
+        self.conn.lock().unwrap().execute(
+            "INSERT INTO role_templates_custom
+                (id, name, description, system_prompt, suggested_provider_kind, suggested_provider_name, suggested_model, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            params![
+                template.id,
+                template.name,
+                template.description,
+                template.system_prompt,
+                template.suggested_provider_kind,
+                template.suggested_provider_name,
+                template.suggested_model,
+                template.created_at,
+            ],
+        )?;
+        Ok(template)
+    }
+
+    pub fn list_custom_role_templates(&self) -> rusqlite::Result<Vec<CustomRoleTemplate>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, name, description, system_prompt, suggested_provider_kind, suggested_provider_name, suggested_model, created_at
+             FROM role_templates_custom ORDER BY created_at ASC",
+        )?;
+        let rows = stmt.query_map([], |row| {
+            Ok(CustomRoleTemplate {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                description: row.get(2)?,
+                system_prompt: row.get(3)?,
+                suggested_provider_kind: row.get(4)?,
+                suggested_provider_name: row.get(5)?,
+                suggested_model: row.get(6)?,
+                created_at: row.get(7)?,
+            })
+        })?;
+        rows.collect()
+    }
+
+    pub fn delete_custom_role_template(&self, id: &str) -> rusqlite::Result<()> {
+        self.conn
+            .lock()
+            .unwrap()
+            .execute("DELETE FROM role_templates_custom WHERE id = ?1", params![id])?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -550,7 +659,7 @@ mod tests {
     fn create_and_list_agent() {
         let storage = Storage::open_in_memory().unwrap();
         let agent = storage
-            .create_agent("Full-Stack Developer", Some("Full-Stack Developer"), "cloud", "anthropic", "claude")
+            .create_agent("Full-Stack Developer", Some("Full-Stack Developer"), None, "cloud", "anthropic", "claude")
             .unwrap();
 
         let agents = storage.list_agents().unwrap();
@@ -577,7 +686,7 @@ mod tests {
     fn session_and_messages_round_trip() {
         let storage = Storage::open_in_memory().unwrap();
         let agent = storage
-            .create_agent("Local Agent", None, "local", "ollama", "llama3.1:8b")
+            .create_agent("Local Agent", None, None, "local", "ollama", "llama3.1:8b")
             .unwrap();
         let session = storage.create_session("independent", "Test session").unwrap();
         storage.add_agent_to_session(&session.id, &agent.id).unwrap();
@@ -606,7 +715,7 @@ mod tests {
     #[test]
     fn file_access_grant_crud() {
         let storage = Storage::open_in_memory().unwrap();
-        let agent = storage.create_agent("Test", None, "cloud", "anthropic", "claude").unwrap();
+        let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude").unwrap();
         assert!(storage.list_file_access_grants(&agent.id).unwrap().is_empty());
 
         let grant = storage.grant_folder_access(&agent.id, "/tmp/notes").unwrap();
@@ -616,6 +725,48 @@ mod tests {
 
         storage.revoke_file_access_grant(&grant.id).unwrap();
         assert!(storage.list_file_access_grants(&agent.id).unwrap().is_empty());
+    }
+
+    #[test]
+    fn custom_role_template_crud() {
+        let storage = Storage::open_in_memory().unwrap();
+        assert!(storage.list_custom_role_templates().unwrap().is_empty());
+
+        let template = storage
+            .create_custom_role_template(
+                "Release Notes Writer",
+                "Turns a diff into a changelog entry",
+                "You are a release notes writer. Summarize the change in one sentence.",
+                Some("cloud"),
+                Some("anthropic"),
+                Some("claude-sonnet-4-5"),
+            )
+            .unwrap();
+
+        let templates = storage.list_custom_role_templates().unwrap();
+        assert_eq!(templates.len(), 1);
+        assert_eq!(templates[0].name, "Release Notes Writer");
+        assert_eq!(templates[0].suggested_model.as_deref(), Some("claude-sonnet-4-5"));
+
+        storage.delete_custom_role_template(&template.id).unwrap();
+        assert!(storage.list_custom_role_templates().unwrap().is_empty());
+    }
+
+    #[test]
+    fn agent_persists_its_system_prompt() {
+        let storage = Storage::open_in_memory().unwrap();
+        let agent = storage
+            .create_agent(
+                "PM Bot",
+                Some("Product Lead"),
+                Some("You are the Product Lead."),
+                "cloud",
+                "anthropic",
+                "claude-sonnet-4-5",
+            )
+            .unwrap();
+        let fetched = storage.get_agent(&agent.id).unwrap().unwrap();
+        assert_eq!(fetched.system_prompt.as_deref(), Some("You are the Product Lead."));
     }
 
     #[test]

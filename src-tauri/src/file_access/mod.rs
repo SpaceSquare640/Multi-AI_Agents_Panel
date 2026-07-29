@@ -112,7 +112,7 @@ mod tests {
     #[test]
     fn reads_a_file_inside_a_granted_folder() {
         let storage = Storage::open_in_memory().unwrap();
-        let agent = storage.create_agent("Test", None, "cloud", "anthropic", "claude").unwrap();
+        let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude").unwrap();
         let dir = temp_dir("granted");
         storage.grant_folder_access(&agent.id, dir.to_str().unwrap()).unwrap();
 
@@ -127,7 +127,7 @@ mod tests {
     #[test]
     fn rejects_reads_with_no_grant_at_all() {
         let storage = Storage::open_in_memory().unwrap();
-        let agent = storage.create_agent("Test", None, "cloud", "anthropic", "claude").unwrap();
+        let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude").unwrap();
         let dir = temp_dir("no-grant");
         let file_path = dir.join("note.txt");
         fs::File::create(&file_path).unwrap();
@@ -140,7 +140,7 @@ mod tests {
     #[test]
     fn rejects_reads_outside_the_granted_folder() {
         let storage = Storage::open_in_memory().unwrap();
-        let agent = storage.create_agent("Test", None, "cloud", "anthropic", "claude").unwrap();
+        let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude").unwrap();
         let granted_dir = temp_dir("scope-granted");
         let other_dir = temp_dir("scope-other");
         storage.grant_folder_access(&agent.id, granted_dir.to_str().unwrap()).unwrap();
@@ -156,7 +156,7 @@ mod tests {
     #[test]
     fn reports_missing_file_inside_a_granted_folder() {
         let storage = Storage::open_in_memory().unwrap();
-        let agent = storage.create_agent("Test", None, "cloud", "anthropic", "claude").unwrap();
+        let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude").unwrap();
         let dir = temp_dir("missing");
         storage.grant_folder_access(&agent.id, dir.to_str().unwrap()).unwrap();
 
@@ -168,8 +168,8 @@ mod tests {
     #[test]
     fn one_agents_grant_does_not_authorize_another_agent() {
         let storage = Storage::open_in_memory().unwrap();
-        let granted_agent = storage.create_agent("Granted", None, "cloud", "anthropic", "claude").unwrap();
-        let other_agent = storage.create_agent("Other", None, "cloud", "anthropic", "claude").unwrap();
+        let granted_agent = storage.create_agent("Granted", None, None, "cloud", "anthropic", "claude").unwrap();
+        let other_agent = storage.create_agent("Other", None, None, "cloud", "anthropic", "claude").unwrap();
         let dir = temp_dir("per-agent");
         storage.grant_folder_access(&granted_agent.id, dir.to_str().unwrap()).unwrap();
 
