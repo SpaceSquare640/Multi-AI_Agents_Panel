@@ -22,6 +22,9 @@ pub enum ProviderError {
     Network(String),
     /// No adapter exists yet for this `provider_name`.
     Unsupported(String),
+    /// Blocked by `guardrails` before any provider was ever contacted.
+    /// Carries the Error Code Registry code (e.g. "E9002").
+    GuardrailBlocked { error_code: &'static str, reason: String },
 }
 
 impl std::fmt::Display for ProviderError {
@@ -30,6 +33,9 @@ impl std::fmt::Display for ProviderError {
             ProviderError::Api(msg) => write!(f, "provider returned an error: {msg}"),
             ProviderError::Network(msg) => write!(f, "could not reach provider: {msg}"),
             ProviderError::Unsupported(name) => write!(f, "no provider adapter for '{name}' yet"),
+            ProviderError::GuardrailBlocked { error_code, reason } => {
+                write!(f, "{error_code} blocked by Guardrails: {reason}")
+            }
         }
     }
 }

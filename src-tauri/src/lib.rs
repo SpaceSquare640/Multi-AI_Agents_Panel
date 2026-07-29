@@ -2,6 +2,7 @@ mod agent_manager;
 mod commands;
 mod fallback;
 mod file_access;
+mod guardrails;
 mod key_vault;
 mod orchestrator;
 mod session_manager;

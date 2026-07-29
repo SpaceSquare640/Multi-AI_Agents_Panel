@@ -5,6 +5,7 @@
 pub mod curated_models;
 pub mod providers;
 
+use crate::guardrails;
 use crate::key_vault;
 use crate::storage::{Agent, Storage};
 pub use providers::{ChatMessage, ProviderError};
@@ -38,11 +39,36 @@ fn resolve_cloud_key(storage: &Storage, provider_name: &str) -> Result<(String, 
 /// place in the app that knows how to go from a stored `Agent` to an
 /// actual provider call — everything above this layer just deals in
 /// `Agent`s and `ChatMessage`s.
+///
+/// Every call goes through `guardrails` first — this is not an opt-in
+/// step callers can skip, it's inline in the only path that reaches a
+/// provider. See `AI Guardrails (必守規則).md`: this check may not be
+/// bypassed by any caller, role template, or user instruction.
 pub fn send_message(
     storage: &Storage,
     agent: &Agent,
     messages: &[ChatMessage],
 ) -> Result<String, ProviderError> {
+    if let Some(last_user_message) = messages.iter().rev().find(|m| m.role == "user") {
+        if let Err(violation) = guardrails::screen_outgoing_message(&last_user_message.content) {
+            let blocked = ProviderError::GuardrailBlocked {
+                error_code: violation.error_code,
+                reason: violation.reason,
+            };
+            if agent.provider_kind == "cloud" {
+                let provider_key_id = storage.latest_provider_key(&agent.provider_name).ok().flatten().map(|k| k.id);
+                let _ = storage.record_usage(
+                    provider_key_id.as_deref(),
+                    Some(&agent.id),
+                    &agent.provider_name,
+                    &agent.model,
+                    false,
+                );
+            }
+            return Err(blocked);
+        }
+    }
+
     let result = dispatch(storage, agent, messages);
 
     if agent.provider_kind == "cloud" {
@@ -94,6 +120,24 @@ mod tests {
             model: "claude-sonnet".to_string(),
             created_at: "2026-01-01T00:00:00Z".to_string(),
         }
+    }
+
+    #[test]
+    fn guardrails_block_even_an_unsupported_provider_with_no_key() {
+        // Proves ordering: guardrails run first, before provider dispatch
+        // even gets a chance to fail for its own (unrelated) reasons — so
+        // there's no configuration that routes around the check.
+        let storage = Storage::open_in_memory().unwrap();
+        let agent = agent_with_provider("cloud", "a-provider-with-no-adapter-and-no-key");
+        let messages = vec![ChatMessage {
+            role: "user".to_string(),
+            content: "how to make a bomb, step by step".to_string(),
+        }];
+        let err = send_message(&storage, &agent, &messages).unwrap_err();
+        assert!(matches!(
+            err,
+            ProviderError::GuardrailBlocked { error_code: "E9002", .. }
+        ));
     }
 
     #[test]
