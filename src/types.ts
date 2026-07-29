@@ -64,3 +64,10 @@ export interface Message {
   content: string;
   createdAt: string;
 }
+
+export interface FileAccessGrant {
+  id: string;
+  agentId: string;
+  folderPath: string;
+  grantedAt: string;
+}

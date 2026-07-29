@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import type { Agent, CuratedModel, Message, Session } from "./types";
+import { open as openFolderPicker } from "@tauri-apps/plugin-dialog";
+import type { Agent, CuratedModel, FileAccessGrant, Message, Session } from "./types";
 import "./Chat.css";
 
 const PROVIDER_OPTIONS = ["anthropic", "openrouter", "ollama"] as const;
@@ -11,6 +12,7 @@ export default function Chat() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [activeAgent, setActiveAgent] = useState<Agent | null>(null);
+  const [fileGrants, setFileGrants] = useState<FileAccessGrant[]>([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +44,10 @@ export default function Chat() {
     setMessages(await invoke<Message[]>("list_messages", { sessionId }));
   }
 
+  async function refreshFileGrants(agentId: string) {
+    setFileGrants(await invoke<FileAccessGrant[]>("list_file_access_grants", { agentId }));
+  }
+
   useEffect(() => {
     refreshAgents().catch((e) => setError(String(e)));
     refreshSessions().catch((e) => setError(String(e)));
@@ -63,6 +69,15 @@ export default function Chat() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    if (activeAgent) {
+      refreshFileGrants(activeAgent.id).catch((e) => setError(String(e)));
+    } else {
+      setFileGrants([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeAgent]);
 
   useEffect(() => {
     if (!showNewAgent) return;
@@ -111,6 +126,30 @@ export default function Chat() {
       setNewSessionTitle("");
       await refreshSessions();
       setActiveSessionId(session.id);
+    } catch (err) {
+      setError(String(err));
+    }
+  }
+
+  async function handleGrantFolder() {
+    if (!activeAgent) return;
+    setError(null);
+    try {
+      const folder = await openFolderPicker({ directory: true, multiple: false });
+      if (!folder) return; // user cancelled the picker
+      await invoke("grant_folder_access", { agentId: activeAgent.id, folderPath: folder });
+      await refreshFileGrants(activeAgent.id);
+    } catch (err) {
+      setError(String(err));
+    }
+  }
+
+  async function handleRevokeGrant(id: string) {
+    if (!activeAgent) return;
+    setError(null);
+    try {
+      await invoke("revoke_file_access_grant", { id });
+      await refreshFileGrants(activeAgent.id);
     } catch (err) {
       setError(String(err));
     }
@@ -217,8 +256,25 @@ export default function Chat() {
           <>
             {activeAgent && (
               <div className="chat-header">
-                Chatting with <strong>{activeAgent.name}</strong> ({activeAgent.providerName}/
-                {activeAgent.model})
+                <div>
+                  Chatting with <strong>{activeAgent.name}</strong> ({activeAgent.providerName}/
+                  {activeAgent.model})
+                </div>
+                <div className="chat-file-access">
+                  <span>Files:</span>
+                  {fileGrants.length === 0 && <span className="chat-empty">no folders granted</span>}
+                  {fileGrants.map((g) => (
+                    <span key={g.id} className="chat-file-chip">
+                      {g.folderPath}
+                      <button onClick={() => handleRevokeGrant(g.id)} title="Revoke access">
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                  <button className="chat-link-button" onClick={handleGrantFolder}>
+                    + Grant folder…
+                  </button>
+                </div>
               </div>
             )}
             <div className="chat-thread">
@@ -234,7 +290,7 @@ export default function Chat() {
             <form className="chat-input-row" onSubmit={handleSend}>
               <input
                 type="text"
-                placeholder="Type a message…"
+                placeholder="Type a message… (use @file:C:\path\to\file.txt to attach a granted file)"
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 disabled={sending}

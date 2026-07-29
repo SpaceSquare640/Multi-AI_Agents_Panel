@@ -75,6 +75,18 @@ pub struct UsageSummary {
     pub last_used_at: Option<String>,
 }
 
+/// One folder an agent has been explicitly granted read access to.
+/// Created only after the user picks the folder via the OS's native
+/// folder picker — see `file_access` module docs.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FileAccessGrant {
+    pub id: String,
+    pub agent_id: String,
+    pub folder_path: String,
+    pub granted_at: String,
+}
+
 pub struct Storage {
     conn: Mutex<Connection>,
 }
@@ -151,6 +163,13 @@ impl Storage {
                 model             TEXT NOT NULL,
                 success           INTEGER NOT NULL,
                 created_at        TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS file_access_grants (
+                id            TEXT PRIMARY KEY,
+                agent_id      TEXT NOT NULL REFERENCES agents(id),
+                folder_path   TEXT NOT NULL,
+                granted_at    TEXT NOT NULL
             );
             ",
         )
@@ -461,6 +480,45 @@ impl Storage {
         })?;
         rows.collect()
     }
+
+    pub fn grant_folder_access(&self, agent_id: &str, folder_path: &str) -> rusqlite::Result<FileAccessGrant> {
+        let grant = FileAccessGrant {
+            id: uuid::Uuid::new_v4().to_string(),
+            agent_id: agent_id.to_string(),
+            folder_path: folder_path.to_string(),
+            granted_at: chrono::Utc::now().to_rfc3339(),
+        };
+        self.conn.lock().unwrap().execute(
+            "INSERT INTO file_access_grants (id, agent_id, folder_path, granted_at) VALUES (?1, ?2, ?3, ?4)",
+            params![grant.id, grant.agent_id, grant.folder_path, grant.granted_at],
+        )?;
+        Ok(grant)
+    }
+
+    pub fn list_file_access_grants(&self, agent_id: &str) -> rusqlite::Result<Vec<FileAccessGrant>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, agent_id, folder_path, granted_at
+             FROM file_access_grants WHERE agent_id = ?1 ORDER BY granted_at ASC",
+        )?;
+        let rows = stmt.query_map(params![agent_id], |row| {
+            Ok(FileAccessGrant {
+                id: row.get(0)?,
+                agent_id: row.get(1)?,
+                folder_path: row.get(2)?,
+                granted_at: row.get(3)?,
+            })
+        })?;
+        rows.collect()
+    }
+
+    pub fn revoke_file_access_grant(&self, id: &str) -> rusqlite::Result<()> {
+        self.conn
+            .lock()
+            .unwrap()
+            .execute("DELETE FROM file_access_grants WHERE id = ?1", params![id])?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -522,6 +580,21 @@ mod tests {
     fn empty_db_has_no_agents() {
         let storage = Storage::open_in_memory().unwrap();
         assert!(storage.list_agents().unwrap().is_empty());
+    }
+
+    #[test]
+    fn file_access_grant_crud() {
+        let storage = Storage::open_in_memory().unwrap();
+        let agent = storage.create_agent("Test", None, "cloud", "anthropic", "claude").unwrap();
+        assert!(storage.list_file_access_grants(&agent.id).unwrap().is_empty());
+
+        let grant = storage.grant_folder_access(&agent.id, "/tmp/notes").unwrap();
+        let grants = storage.list_file_access_grants(&agent.id).unwrap();
+        assert_eq!(grants.len(), 1);
+        assert_eq!(grants[0].folder_path, "/tmp/notes");
+
+        storage.revoke_file_access_grant(&grant.id).unwrap();
+        assert!(storage.list_file_access_grants(&agent.id).unwrap().is_empty());
     }
 
     #[test]

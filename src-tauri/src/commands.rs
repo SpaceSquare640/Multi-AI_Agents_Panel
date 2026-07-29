@@ -7,8 +7,9 @@ use tauri::State;
 use crate::agent_manager::curated_models::{self, CuratedModel};
 use crate::agent_manager::providers::{ollama, ChatMessage};
 use crate::agent_manager::{self};
+use crate::file_access;
 use crate::key_vault;
-use crate::storage::{Agent, Message, ProviderKey, Session, Storage, UsageSummary};
+use crate::storage::{Agent, FileAccessGrant, Message, ProviderKey, Session, Storage, UsageSummary};
 
 /// A `ProviderKey` plus a masked preview of the secret (never the real
 /// value) — this is what the frontend actually renders.
@@ -177,6 +178,25 @@ pub fn get_session_agent_id(storage: State<Storage>, session_id: String) -> Resu
     Ok(agents.into_iter().next())
 }
 
+/// Expands `@file:<path>` references in a chat message into the referenced
+/// file's content, subject to the same File Access authorization as
+/// everything else — an unauthorized or missing reference fails the whole
+/// send rather than silently sending a broken reference to the model.
+/// Only ever applied to the message about to be sent, never to history,
+/// so old turns don't re-read files (or fail on ones since deleted/moved)
+/// every time the conversation continues.
+fn expand_file_references(storage: &Storage, agent_id: &str, content: &str) -> Result<String, String> {
+    let mut expanded = content.to_string();
+    for token in content.split_whitespace() {
+        if let Some(path) = token.strip_prefix("@file:") {
+            let file_content = file_access::read_file(storage, agent_id, std::path::Path::new(path))
+                .map_err(|e| e.to_string())?;
+            expanded.push_str(&format!("\n\n[Contents of {path}]\n{file_content}"));
+        }
+    }
+    Ok(expanded)
+}
+
 /// Sends a user message in a session, gets the (single, for an independent
 /// session) agent's reply, and persists both. Returns the assistant's
 /// message. The user's message is persisted even if the agent call then
@@ -198,7 +218,9 @@ pub fn send_chat_message(storage: State<Storage>, session_id: String, content: S
         .map_err(|e| e.to_string())?
         .ok_or_else(|| format!("agent {agent_id} not found"))?;
 
-    let history: Vec<ChatMessage> = storage
+    let expanded_content = expand_file_references(&storage, &agent_id, &content)?;
+
+    let mut history: Vec<ChatMessage> = storage
         .list_messages(&session_id)
         .map_err(|e| e.to_string())?
         .into_iter()
@@ -208,10 +230,42 @@ pub fn send_chat_message(storage: State<Storage>, session_id: String, content: S
             content: m.content,
         })
         .collect();
+    if let Some(last) = history.last_mut() {
+        last.content = expanded_content;
+    }
 
     let reply = agent_manager::send_message(&storage, &agent, &history).map_err(|e| e.to_string())?;
 
     storage
         .add_message(&session_id, Some(&agent_id), "assistant", &reply)
         .map_err(|e| e.to_string())
+}
+
+// --- File Access grants ---
+//
+// Note what's intentionally missing from this command surface: there's no
+// `request_folder_access` that opens the OS folder picker itself. The
+// frontend calls `@tauri-apps/plugin-dialog`'s picker directly and only
+// invokes `grant_folder_access` with whatever the user actually chose —
+// that keeps the one place capable of creating a grant tied to a real,
+// user-initiated OS dialog, not a Rust-side prompt that could be called
+// from anywhere.
+
+#[tauri::command]
+pub fn grant_folder_access(
+    storage: State<Storage>,
+    agent_id: String,
+    folder_path: String,
+) -> Result<FileAccessGrant, String> {
+    storage.grant_folder_access(&agent_id, &folder_path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn list_file_access_grants(storage: State<Storage>, agent_id: String) -> Result<Vec<FileAccessGrant>, String> {
+    storage.list_file_access_grants(&agent_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn revoke_file_access_grant(storage: State<Storage>, id: String) -> Result<(), String> {
+    storage.revoke_file_access_grant(&id).map_err(|e| e.to_string())
 }

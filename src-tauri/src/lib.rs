@@ -23,6 +23,7 @@ fn greet(name: &str) -> String {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let data_dir = app.path().app_data_dir()?;
             std::fs::create_dir_all(&data_dir)?;
@@ -51,6 +52,9 @@ pub fn run() {
             commands::list_messages,
             commands::get_session_agent_id,
             commands::send_chat_message,
+            commands::grant_folder_access,
+            commands::list_file_access_grants,
+            commands::revoke_file_access_grant,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
