@@ -8,6 +8,15 @@ use crate::key_vault;
 use crate::storage::Agent;
 pub use providers::{ChatMessage, ProviderError};
 
+/// Looks up a cloud provider's API key in the Key Vault, turning "not set"
+/// and "vault error" into the same `ProviderError::Api` shape callers
+/// already handle.
+fn cloud_key(provider_name: &str) -> Result<String, ProviderError> {
+    key_vault::get_api_key(provider_name)
+        .map_err(|e| ProviderError::Api(format!("key vault error: {e}")))?
+        .ok_or_else(|| ProviderError::Api(format!("no {provider_name} API key set in the Key Vault")))
+}
+
 /// Sends `messages` to whichever provider `agent` is configured to use,
 /// fetching its API key from the Key Vault along the way. This is the one
 /// place in the app that knows how to go from a stored `Agent` to an
@@ -16,12 +25,12 @@ pub use providers::{ChatMessage, ProviderError};
 pub fn send_message(agent: &Agent, messages: &[ChatMessage]) -> Result<String, ProviderError> {
     match agent.provider_name.as_str() {
         "anthropic" => {
-            let api_key = key_vault::get_api_key("anthropic")
-                .map_err(|e| ProviderError::Api(format!("key vault error: {e}")))?
-                .ok_or_else(|| {
-                    ProviderError::Api("no Anthropic API key set in the Key Vault".to_string())
-                })?;
+            let api_key = cloud_key("anthropic")?;
             providers::anthropic::send(&api_key, &agent.model, messages)
+        }
+        "openrouter" => {
+            let api_key = cloud_key("openrouter")?;
+            providers::openrouter::send(&api_key, &agent.model, messages)
         }
         other => Err(ProviderError::Unsupported(other.to_string())),
     }
