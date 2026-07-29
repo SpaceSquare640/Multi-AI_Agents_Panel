@@ -162,6 +162,19 @@ pub fn create_agent(
         .map_err(|e| e.to_string())
 }
 
+/// Pins (or, with `providerKeyId: null`, un-pins) which Key Vault entry an
+/// agent uses for cloud calls — see `Agent::pinned_provider_key_id`.
+/// Separate from `create_agent` so that command's signature doesn't grow
+/// for an optional, post-creation choice.
+#[tauri::command]
+pub fn pin_agent_provider_key(
+    storage: State<Storage>,
+    agent_id: String,
+    provider_key_id: Option<String>,
+) -> Result<(), String> {
+    storage.pin_agent_provider_key(&agent_id, provider_key_id.as_deref()).map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 pub fn list_sessions(storage: State<Storage>) -> Result<Vec<Session>, String> {
     storage.list_sessions().map_err(|e| e.to_string())

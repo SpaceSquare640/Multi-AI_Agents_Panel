@@ -16,8 +16,24 @@ Notably:
 
 ## Status
 
-Early scaffold only — no working features yet. See the vault's `Roadmap.md`
-and `Backlog.md` for what's next.
+**Alpha** (`-alpha` version tags). Core features work end-to-end and are
+covered by tests, but interfaces and storage formats may still change
+without a migration path. Implemented so far:
+
+- Independent Sessions with multiple providers (Anthropic, OpenRouter,
+  Ollama), each with real fallback across multiple keys per provider
+- Multiple Independent Sessions open and chatting in parallel
+- Group Chat: round-robin turn-taking, `@mention` interruption, a loop
+  safety-net, and meeting summarization
+- Role Templates (10 built-in "1人公司" roles + user-defined custom ones)
+- File Access with explicit per-folder, per-agent consent
+- A Python Skills bridge (JSON-RPC over localhost) with per-agent allowlists
+- Guardrails: absolute-prohibition content screening and
+  prompt/tool-injection screening, enforced inline (not opt-in) at every
+  point an Agent can act
+
+See the vault's `Roadmap.md` and `Backlog.md` for what's next and what's
+deliberately not built yet, with reasoning.
 
 ## Stack
 
@@ -32,6 +48,12 @@ npm install
 npm run tauri dev
 ```
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for how to run tests and submit changes.
+
+## Security
+
+See [SECURITY.md](SECURITY.md) for how to report a vulnerability.
+
 ## License
 
-Not yet chosen — see the vault's open-source governance checklist.
+[MIT](LICENSE).

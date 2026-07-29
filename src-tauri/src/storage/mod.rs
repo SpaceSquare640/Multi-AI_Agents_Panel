@@ -27,6 +27,15 @@ pub struct Agent {
     /// e.g. "ollama" | "openai" | "anthropic" | "openrouter"
     pub provider_name: String,
     pub model: String,
+    /// If set, `agent_manager::dispatch` uses exactly this Key Vault entry
+    /// and does not fall back to other keys for the provider if it fails
+    /// — pinning is an explicit override of the default "try the
+    /// most-recently-added key for this provider, falling back through
+    /// older ones" behavior (`storage::keys_for_provider`), e.g. so a
+    /// specific agent's usage is tracked against a specific key. Set via
+    /// `pin_agent_provider_key`, not at creation time, to keep
+    /// `create_agent`'s signature stable.
+    pub pinned_provider_key_id: Option<String>,
     pub created_at: String,
 }
 
@@ -153,6 +162,10 @@ impl Storage {
         Ok(storage)
     }
 
+    /// Only ever used by tests across the crate (`Storage::open_in_memory()`
+    /// in every module's `#[cfg(test)] mod tests`) — gated the same way so
+    /// a normal `cargo build` doesn't warn about it as dead code.
+    #[cfg(test)]
     pub fn open_in_memory() -> rusqlite::Result<Self> {
         let conn = Connection::open_in_memory()?;
         let storage = Storage {
@@ -253,7 +266,9 @@ impl Storage {
         // `session_agents` predates Group Chat's need for a stable join
         // order (round-robin speaking order); add the column for
         // pre-existing local databases rather than requiring a fresh one.
-        Self::ensure_column(&conn, "session_agents", "joined_at", "joined_at TEXT")
+        Self::ensure_column(&conn, "session_agents", "joined_at", "joined_at TEXT")?;
+        // `agents` predates key pinning; same soft-migration approach.
+        Self::ensure_column(&conn, "agents", "pinned_provider_key_id", "pinned_provider_key_id TEXT")
     }
 
     fn ensure_column(conn: &Connection, table: &str, column: &str, ddl: &str) -> rusqlite::Result<()> {
@@ -284,6 +299,7 @@ impl Storage {
             provider_kind: provider_kind.to_string(),
             provider_name: provider_name.to_string(),
             model: model.to_string(),
+            pinned_provider_key_id: None,
             created_at: chrono::Utc::now().to_rfc3339(),
         };
         self.conn.lock().unwrap().execute(
@@ -303,10 +319,39 @@ impl Storage {
         Ok(agent)
     }
 
+    /// Pins (or, with `None`, un-pins) which Key Vault entry this agent
+    /// uses for cloud calls — see `Agent::pinned_provider_key_id`.
+    pub fn pin_agent_provider_key(&self, agent_id: &str, provider_key_id: Option<&str>) -> rusqlite::Result<()> {
+        self.conn.lock().unwrap().execute(
+            "UPDATE agents SET pinned_provider_key_id = ?1 WHERE id = ?2",
+            params![provider_key_id, agent_id],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_provider_key(&self, id: &str) -> rusqlite::Result<Option<ProviderKey>> {
+        let conn = self.conn.lock().unwrap();
+        conn.query_row(
+            "SELECT id, provider, label, model_hint, created_at, last_used_at FROM provider_keys WHERE id = ?1",
+            params![id],
+            |row| {
+                Ok(ProviderKey {
+                    id: row.get(0)?,
+                    provider: row.get(1)?,
+                    label: row.get(2)?,
+                    model_hint: row.get(3)?,
+                    created_at: row.get(4)?,
+                    last_used_at: row.get(5)?,
+                })
+            },
+        )
+        .optional()
+    }
+
     pub fn list_agents(&self) -> rusqlite::Result<Vec<Agent>> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT id, name, role_template, system_prompt, provider_kind, provider_name, model, created_at
+            "SELECT id, name, role_template, system_prompt, provider_kind, provider_name, model, pinned_provider_key_id, created_at
              FROM agents ORDER BY created_at ASC",
         )?;
         let rows = stmt.query_map([], |row| {
@@ -318,7 +363,8 @@ impl Storage {
                 provider_kind: row.get(4)?,
                 provider_name: row.get(5)?,
                 model: row.get(6)?,
-                created_at: row.get(7)?,
+                pinned_provider_key_id: row.get(7)?,
+                created_at: row.get(8)?,
             })
         })?;
         rows.collect()
@@ -327,7 +373,7 @@ impl Storage {
     pub fn get_agent(&self, id: &str) -> rusqlite::Result<Option<Agent>> {
         let conn = self.conn.lock().unwrap();
         conn.query_row(
-            "SELECT id, name, role_template, system_prompt, provider_kind, provider_name, model, created_at
+            "SELECT id, name, role_template, system_prompt, provider_kind, provider_name, model, pinned_provider_key_id, created_at
              FROM agents WHERE id = ?1",
             params![id],
             |row| {
@@ -339,7 +385,8 @@ impl Storage {
                     provider_kind: row.get(4)?,
                     provider_name: row.get(5)?,
                     model: row.get(6)?,
-                    created_at: row.get(7)?,
+                    pinned_provider_key_id: row.get(7)?,
+                    created_at: row.get(8)?,
                 })
             },
         )
@@ -874,6 +921,22 @@ mod tests {
 
         storage.revoke_file_access_grant(&grant.id).unwrap();
         assert!(storage.list_file_access_grants(&agent.id).unwrap().is_empty());
+    }
+
+    #[test]
+    fn agent_key_pin_round_trips_and_can_be_cleared() {
+        let storage = Storage::open_in_memory().unwrap();
+        let agent = storage.create_agent("Test", None, None, "cloud", "openrouter", "model").unwrap();
+        assert_eq!(agent.pinned_provider_key_id, None);
+
+        let key = storage.create_provider_key("openrouter", Some("pinned"), None).unwrap();
+        storage.pin_agent_provider_key(&agent.id, Some(&key.id)).unwrap();
+        let fetched = storage.get_agent(&agent.id).unwrap().unwrap();
+        assert_eq!(fetched.pinned_provider_key_id.as_deref(), Some(key.id.as_str()));
+
+        storage.pin_agent_provider_key(&agent.id, None).unwrap();
+        let cleared = storage.get_agent(&agent.id).unwrap().unwrap();
+        assert_eq!(cleared.pinned_provider_key_id, None);
     }
 
     #[test]

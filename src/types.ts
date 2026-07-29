@@ -45,6 +45,8 @@ export interface Agent {
   providerKind: string;
   providerName: string;
   model: string;
+  /** Key Vault entry id this agent is pinned to, if any — see `pin_agent_provider_key`. */
+  pinnedProviderKeyId: string | null;
   createdAt: string;
 }
 

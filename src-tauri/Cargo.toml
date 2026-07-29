@@ -1,8 +1,9 @@
 [package]
 name = "multi-ai-agents-panel"
-version = "0.1.13-alpha"
+version = "0.1.14-alpha"
 description = "A desktop panel for running and orchestrating multiple local and cloud AI agents"
 authors = []
+license = "MIT"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

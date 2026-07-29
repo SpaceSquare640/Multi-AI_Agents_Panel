@@ -74,6 +74,7 @@ pub fn run() {
             commands::delete_ollama_model,
             commands::list_agents,
             commands::create_agent,
+            commands::pin_agent_provider_key,
             commands::list_sessions,
             commands::create_independent_session,
             commands::list_messages,

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { open as openFolderPicker } from "@tauri-apps/plugin-dialog";
-import type { Agent, CuratedModel, FileAccessGrant, Message, RoleTemplate, Session } from "./types";
+import type { Agent, CuratedModel, FileAccessGrant, Message, ProviderKeyView, RoleTemplate, Session } from "./types";
 import "./Chat.css";
 
 const PROVIDER_OPTIONS = ["anthropic", "openrouter", "ollama"] as const;
@@ -63,6 +63,8 @@ export default function Chat() {
   const [newAgentModel, setNewAgentModel] = useState("");
   const [newAgentSystemPrompt, setNewAgentSystemPrompt] = useState("");
   const [newAgentTemplateId, setNewAgentTemplateId] = useState("");
+  const [newAgentProviderKeys, setNewAgentProviderKeys] = useState<ProviderKeyView[]>([]);
+  const [newAgentPinnedKeyId, setNewAgentPinnedKeyId] = useState("");
 
   // Role templates ("1 人公司"): default (built-in) + custom (user-authored).
   const [roleTemplates, setRoleTemplates] = useState<RoleTemplate[]>([]);
@@ -124,6 +126,14 @@ export default function Chat() {
         setNewAgentModel(suggestedIsAvailable ? suggested : models[0]?.id ?? "");
       })
       .catch((e) => setError(String(e)));
+    setNewAgentPinnedKeyId("");
+    if (newAgentProvider === "ollama") {
+      setNewAgentProviderKeys([]);
+    } else {
+      invoke<ProviderKeyView[]>("list_provider_keys")
+        .then((keys) => setNewAgentProviderKeys(keys.filter((k) => k.provider === newAgentProvider)))
+        .catch((e) => setError(String(e)));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showNewAgent, newAgentProvider]);
 
@@ -152,9 +162,13 @@ export default function Chat() {
         providerName: newAgentProvider,
         model: newAgentModel,
       });
+      if (newAgentPinnedKeyId) {
+        await invoke("pin_agent_provider_key", { agentId: agent.id, providerKeyId: newAgentPinnedKeyId });
+      }
       setNewAgentName("");
       setNewAgentSystemPrompt("");
       setNewAgentTemplateId("");
+      setNewAgentPinnedKeyId("");
       setShowNewAgent(false);
       await refreshAgents();
       setNewSessionAgentId(agent.id);
@@ -499,6 +513,16 @@ export default function Chat() {
               value={newAgentSystemPrompt}
               onChange={(e) => setNewAgentSystemPrompt(e.target.value)}
             />
+            {newAgentProvider !== "ollama" && (
+              <select value={newAgentPinnedKeyId} onChange={(e) => setNewAgentPinnedKeyId(e.target.value)}>
+                <option value="">Use latest {newAgentProvider} key automatically (default)</option>
+                {newAgentProviderKeys.map((k) => (
+                  <option key={k.id} value={k.id}>
+                    Pin to: {k.label ?? k.maskedSecret}
+                  </option>
+                ))}
+              </select>
+            )}
             <button type="submit">Create agent</button>
           </form>
         )}

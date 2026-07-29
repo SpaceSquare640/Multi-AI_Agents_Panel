@@ -85,18 +85,38 @@ pub fn send_message(
     result
 }
 
+/// The Key Vault entries `dispatch` should try, in order, for `agent`'s
+/// provider. If the agent has a pinned key (`Agent::pinned_provider_key_id`
+/// — see that field's docs), this is *only* that key: pinning is an
+/// explicit override of the default rotation, not an extra candidate
+/// prepended to it, so a pinned key that fails does not silently fall
+/// back to a different key the user didn't choose. A pinned key that no
+/// longer exists (deleted from the Key Vault) resolves to zero candidates,
+/// which `run_with_fallback` reports as the normal E3001 "no keys
+/// available" case.
+fn candidate_keys(storage: &Storage, agent: &Agent, provider: &str) -> Result<Vec<ProviderKey>, ProviderError> {
+    if let Some(pinned_id) = &agent.pinned_provider_key_id {
+        let pinned = storage
+            .get_provider_key(pinned_id)
+            .map_err(|e| ProviderError::Api(format!("storage error: {e}")))?;
+        return Ok(pinned.into_iter().collect());
+    }
+    storage
+        .keys_for_provider(provider)
+        .map_err(|e| ProviderError::Api(format!("storage error: {e}")))
+}
+
 /// Dispatches to the agent's provider, falling back through every Key
 /// Vault entry for that provider (see `storage::keys_for_provider`, most
-/// recently added first) before giving up with E3001. Local providers
+/// recently added first — or, if pinned, only the pinned entry, see
+/// `candidate_keys`) before giving up with E3001. Local providers
 /// (Ollama) have no keys to fall back across, but still go through
 /// `run_with_fallback` with a single candidate so a failure there is
 /// coded the same consistent way as a cloud failure.
 fn dispatch(storage: &Storage, agent: &Agent, messages: &[ChatMessage]) -> Result<String, ProviderError> {
     match agent.provider_name.as_str() {
         "anthropic" => {
-            let candidates = storage
-                .keys_for_provider("anthropic")
-                .map_err(|e| ProviderError::Api(format!("storage error: {e}")))?;
+            let candidates = candidate_keys(storage, agent, "anthropic")?;
             run_with_fallback(
                 &candidates,
                 |k| k.label.clone().unwrap_or_else(|| format!("key {}", k.id)),
@@ -107,9 +127,7 @@ fn dispatch(storage: &Storage, agent: &Agent, messages: &[ChatMessage]) -> Resul
             )
         }
         "openrouter" => {
-            let candidates = storage
-                .keys_for_provider("openrouter")
-                .map_err(|e| ProviderError::Api(format!("storage error: {e}")))?;
+            let candidates = candidate_keys(storage, agent, "openrouter")?;
             run_with_fallback(
                 &candidates,
                 |k| k.label.clone().unwrap_or_else(|| format!("key {}", k.id)),
@@ -141,8 +159,44 @@ mod tests {
             provider_kind: provider_kind.to_string(),
             provider_name: provider_name.to_string(),
             model: "claude-sonnet".to_string(),
+            pinned_provider_key_id: None,
             created_at: "2026-01-01T00:00:00Z".to_string(),
         }
+    }
+
+    #[test]
+    fn candidate_keys_uses_only_the_pinned_key_ignoring_newer_ones() {
+        let storage = Storage::open_in_memory().unwrap();
+        let old_key = storage.create_provider_key("openrouter", Some("old"), None).unwrap();
+        let _new_key = storage.create_provider_key("openrouter", Some("new"), None).unwrap();
+
+        let mut agent = agent_with_provider("cloud", "openrouter");
+        agent.pinned_provider_key_id = Some(old_key.id.clone());
+
+        let candidates = candidate_keys(&storage, &agent, "openrouter").unwrap();
+        assert_eq!(candidates.len(), 1);
+        assert_eq!(candidates[0].id, old_key.id);
+    }
+
+    #[test]
+    fn candidate_keys_falls_back_to_full_rotation_when_nothing_is_pinned() {
+        let storage = Storage::open_in_memory().unwrap();
+        let old_key = storage.create_provider_key("openrouter", Some("old"), None).unwrap();
+        let new_key = storage.create_provider_key("openrouter", Some("new"), None).unwrap();
+
+        let agent = agent_with_provider("cloud", "openrouter");
+        let candidates = candidate_keys(&storage, &agent, "openrouter").unwrap();
+        assert_eq!(candidates.iter().map(|k| &k.id).collect::<Vec<_>>(), vec![&new_key.id, &old_key.id]);
+    }
+
+    #[test]
+    fn candidate_keys_is_empty_when_the_pinned_key_was_deleted() {
+        let storage = Storage::open_in_memory().unwrap();
+        let mut agent = agent_with_provider("cloud", "openrouter");
+        agent.pinned_provider_key_id = Some("does-not-exist".to_string());
+
+        let candidates = candidate_keys(&storage, &agent, "openrouter").unwrap();
+        assert!(candidates.is_empty());
     }
 
     #[test]

@@ -9,7 +9,7 @@
 //! own; it only checks and reads.
 
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use crate::storage::Storage;
 
@@ -88,20 +88,11 @@ pub fn read_file(storage: &Storage, agent_id: &str, path: &Path) -> Result<Strin
     fs::read_to_string(path).map_err(|e| FileAccessError::PermissionDenied(e.to_string()))
 }
 
-/// Lists the granted-folder paths as an absolute `PathBuf`, for display.
-pub fn granted_folders(storage: &Storage, agent_id: &str) -> Vec<PathBuf> {
-    storage
-        .list_file_access_grants(agent_id)
-        .unwrap_or_default()
-        .into_iter()
-        .map(|g| PathBuf::from(g.folder_path))
-        .collect()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::io::Write;
+    use std::path::PathBuf;
 
     fn temp_dir(name: &str) -> PathBuf {
         let dir = std::env::temp_dir().join(format!("map-file-access-test-{name}-{}", uuid::Uuid::new_v4()));

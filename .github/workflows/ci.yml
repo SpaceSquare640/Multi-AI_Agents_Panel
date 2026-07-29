@@ -32,6 +32,19 @@ jobs:
       - name: Install Linux Tauri + keyring build deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libdbus-1-dev pkg-config
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libdbus-1-dev pkg-config gnome-keyring dbus-x11
       - run: cargo check --manifest-path src-tauri/Cargo.toml
-      - run: cargo test --manifest-path src-tauri/Cargo.toml
+      - name: Run tests under a real D-Bus Secret Service
+        # `key_vault` uses the OS credential store — on Linux that's the
+        # D-Bus Secret Service, which a bare GitHub runner doesn't have
+        # running. `dbus-run-session` starts a throwaway session bus, and
+        # unlocking gnome-keyring with an empty password (piped via `-c`)
+        # starts a real (if not very secret) Secret Service on it, which
+        # is all `key_vault::tests::set_get_delete_round_trip` needs.
+        run: |
+          dbus-run-session -- bash -c '
+            eval "$(printf "\n" | gnome-keyring-daemon --unlock)"
+            eval "$(printf "\n" | gnome-keyring-daemon --start --components=secrets)"
+            export GNOME_KEYRING_CONTROL DBUS_SESSION_BUS_ADDRESS
+            cargo test --manifest-path src-tauri/Cargo.toml
+          '
