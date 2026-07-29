@@ -10,8 +10,21 @@ mod skill_manager;
 mod storage;
 mod usage_tracker;
 
+use std::sync::Mutex;
+
+use skill_manager::SkillRuntime;
 use storage::Storage;
 use tauri::Manager;
+
+/// Tauri managed state wrapping the optional Python skill bridge — `None`
+/// when no working Python interpreter was found or the bridge failed to
+/// start (Skills are then unavailable, but the rest of the app still
+/// works; see `skill_manager::SkillRuntime`).
+pub(crate) struct SkillRuntimeState(pub(crate) Mutex<Option<SkillRuntime>>);
+
+/// The resolved `skills/` directory, stashed as managed state so commands
+/// can re-scan it (`list_skills`) without re-deriving the path each time.
+pub(crate) struct SkillsDir(pub(crate) std::path::PathBuf);
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -31,6 +44,20 @@ pub fn run() {
             let storage = Storage::open(&db_path)
                 .map_err(|e| format!("failed to open storage at {:?}: {e}", db_path))?;
             app.manage(storage);
+
+            let resource_dir = app.path().resource_dir().ok();
+            let skills_dir = skill_manager::resolve_skills_dir(resource_dir);
+            // Best-effort: a missing/broken Python install shouldn't stop
+            // the rest of the app from working, only Skills.
+            let runtime = match SkillRuntime::start(&skills_dir) {
+                Ok(runtime) => Some(runtime),
+                Err(e) => {
+                    eprintln!("skill bridge unavailable: {e}");
+                    None
+                }
+            };
+            app.manage(SkillRuntimeState(Mutex::new(runtime)));
+            app.manage(SkillsDir(skills_dir));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -59,6 +86,11 @@ pub fn run() {
             commands::list_custom_role_templates,
             commands::create_custom_role_template,
             commands::delete_custom_role_template,
+            commands::list_skills,
+            commands::grant_skill_access,
+            commands::list_skill_access_grants,
+            commands::revoke_skill_access,
+            commands::invoke_skill,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,4 +1,5 @@
-"""Placeholder skill: echoes its input. Not yet wired into the JSON-RPC bridge."""
+"""Example skill: echoes its input. Called through `_bridge.py` via the
+Rust skill_manager's JSON-RPC bridge — see `skill_manager::invoke_skill`."""
 
 
 def run(payload: dict) -> dict:

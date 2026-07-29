@@ -95,6 +95,18 @@ pub struct FileAccessGrant {
     pub granted_at: String,
 }
 
+/// One Skill an agent has been explicitly granted permission to call.
+/// Mirrors `FileAccessGrant`'s consent model: granting is a deliberate,
+/// separate step from an agent existing — see `skill_manager` module docs.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SkillAccessGrant {
+    pub id: String,
+    pub agent_id: String,
+    pub skill_name: String,
+    pub granted_at: String,
+}
+
 /// A user-authored role template ("User Custom" in
 /// `Role Templates Index.md` — as opposed to the 10 built-in "Default"
 /// ones, which live in `agent_manager::role_templates` as Rust constants
@@ -206,6 +218,13 @@ impl Storage {
                 id            TEXT PRIMARY KEY,
                 agent_id      TEXT NOT NULL REFERENCES agents(id),
                 folder_path   TEXT NOT NULL,
+                granted_at    TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS skill_access_grants (
+                id            TEXT PRIMARY KEY,
+                agent_id      TEXT NOT NULL REFERENCES agents(id),
+                skill_name    TEXT NOT NULL,
                 granted_at    TEXT NOT NULL
             );
             ",
@@ -583,6 +602,45 @@ impl Storage {
         Ok(())
     }
 
+    pub fn grant_skill_access(&self, agent_id: &str, skill_name: &str) -> rusqlite::Result<SkillAccessGrant> {
+        let grant = SkillAccessGrant {
+            id: uuid::Uuid::new_v4().to_string(),
+            agent_id: agent_id.to_string(),
+            skill_name: skill_name.to_string(),
+            granted_at: chrono::Utc::now().to_rfc3339(),
+        };
+        self.conn.lock().unwrap().execute(
+            "INSERT INTO skill_access_grants (id, agent_id, skill_name, granted_at) VALUES (?1, ?2, ?3, ?4)",
+            params![grant.id, grant.agent_id, grant.skill_name, grant.granted_at],
+        )?;
+        Ok(grant)
+    }
+
+    pub fn list_skill_access_grants(&self, agent_id: &str) -> rusqlite::Result<Vec<SkillAccessGrant>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, agent_id, skill_name, granted_at
+             FROM skill_access_grants WHERE agent_id = ?1 ORDER BY granted_at ASC",
+        )?;
+        let rows = stmt.query_map(params![agent_id], |row| {
+            Ok(SkillAccessGrant {
+                id: row.get(0)?,
+                agent_id: row.get(1)?,
+                skill_name: row.get(2)?,
+                granted_at: row.get(3)?,
+            })
+        })?;
+        rows.collect()
+    }
+
+    pub fn revoke_skill_access_grant(&self, id: &str) -> rusqlite::Result<()> {
+        self.conn
+            .lock()
+            .unwrap()
+            .execute("DELETE FROM skill_access_grants WHERE id = ?1", params![id])?;
+        Ok(())
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn create_custom_role_template(
         &self,
@@ -725,6 +783,21 @@ mod tests {
 
         storage.revoke_file_access_grant(&grant.id).unwrap();
         assert!(storage.list_file_access_grants(&agent.id).unwrap().is_empty());
+    }
+
+    #[test]
+    fn skill_access_grant_crud() {
+        let storage = Storage::open_in_memory().unwrap();
+        let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude").unwrap();
+        assert!(storage.list_skill_access_grants(&agent.id).unwrap().is_empty());
+
+        let grant = storage.grant_skill_access(&agent.id, "example_skill").unwrap();
+        let grants = storage.list_skill_access_grants(&agent.id).unwrap();
+        assert_eq!(grants.len(), 1);
+        assert_eq!(grants[0].skill_name, "example_skill");
+
+        storage.revoke_skill_access_grant(&grant.id).unwrap();
+        assert!(storage.list_skill_access_grants(&agent.id).unwrap().is_empty());
     }
 
     #[test]

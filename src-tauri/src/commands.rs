@@ -10,7 +10,9 @@ use crate::agent_manager::role_templates::{self, RoleTemplate};
 use crate::agent_manager::{self};
 use crate::file_access;
 use crate::key_vault;
-use crate::storage::{Agent, FileAccessGrant, Message, ProviderKey, Session, Storage, UsageSummary};
+use crate::skill_manager::{self, SkillManifest};
+use crate::storage::{Agent, FileAccessGrant, Message, ProviderKey, Session, SkillAccessGrant, Storage, UsageSummary};
+use crate::{SkillRuntimeState, SkillsDir};
 
 /// A `ProviderKey` plus a masked preview of the secret (never the real
 /// value) — this is what the frontend actually renders.
@@ -329,4 +331,42 @@ pub fn create_custom_role_template(
 #[tauri::command]
 pub fn delete_custom_role_template(storage: State<Storage>, id: String) -> Result<(), String> {
     storage.delete_custom_role_template(&id).map_err(|e| e.to_string())
+}
+
+// --- Skills (Python bridge) ---
+
+#[tauri::command]
+pub fn list_skills(skills_dir: State<SkillsDir>) -> Vec<SkillManifest> {
+    skill_manager::discover_skills(&skills_dir.0)
+}
+
+#[tauri::command]
+pub fn grant_skill_access(
+    storage: State<Storage>,
+    agent_id: String,
+    skill_name: String,
+) -> Result<SkillAccessGrant, String> {
+    storage.grant_skill_access(&agent_id, &skill_name).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn list_skill_access_grants(storage: State<Storage>, agent_id: String) -> Result<Vec<SkillAccessGrant>, String> {
+    storage.list_skill_access_grants(&agent_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn revoke_skill_access(storage: State<Storage>, id: String) -> Result<(), String> {
+    storage.revoke_skill_access_grant(&id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn invoke_skill(
+    storage: State<Storage>,
+    runtime: State<SkillRuntimeState>,
+    agent_id: String,
+    skill_name: String,
+    payload: serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    let guard = runtime.0.lock().unwrap();
+    skill_manager::invoke_skill(&storage, guard.as_ref(), &agent_id, &skill_name, payload).map_err(|e| e.to_string())
 }

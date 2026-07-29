@@ -73,6 +73,20 @@ export interface FileAccessGrant {
   grantedAt: string;
 }
 
+export interface SkillManifest {
+  name: string;
+  description: string;
+  entrypoint: string;
+  version: string;
+}
+
+export interface SkillAccessGrant {
+  id: string;
+  agentId: string;
+  skillName: string;
+  grantedAt: string;
+}
+
 export interface RoleTemplate {
   id: string;
   name: string;
