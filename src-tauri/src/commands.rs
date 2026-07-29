@@ -5,9 +5,10 @@ use serde::{Deserialize, Serialize};
 use tauri::State;
 
 use crate::agent_manager::curated_models::{self, CuratedModel};
-use crate::agent_manager::providers::ollama;
+use crate::agent_manager::providers::{ollama, ChatMessage};
+use crate::agent_manager::{self};
 use crate::key_vault;
-use crate::storage::{ProviderKey, Storage, UsageSummary};
+use crate::storage::{Agent, Message, ProviderKey, Session, Storage, UsageSummary};
 
 /// A `ProviderKey` plus a masked preview of the secret (never the real
 /// value) — this is what the frontend actually renders.
@@ -124,4 +125,93 @@ pub fn pull_ollama_model(name: String) -> Result<(), String> {
 #[tauri::command]
 pub fn delete_ollama_model(name: String) -> Result<(), String> {
     ollama::delete_model(&name).map_err(|e| e.to_string())
+}
+
+// --- Independent Session chat (agents, sessions, messages) ---
+
+#[tauri::command]
+pub fn list_agents(storage: State<Storage>) -> Result<Vec<Agent>, String> {
+    storage.list_agents().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn create_agent(
+    storage: State<Storage>,
+    name: String,
+    role_template: Option<String>,
+    provider_kind: String,
+    provider_name: String,
+    model: String,
+) -> Result<Agent, String> {
+    storage
+        .create_agent(&name, role_template.as_deref(), &provider_kind, &provider_name, &model)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn list_sessions(storage: State<Storage>) -> Result<Vec<Session>, String> {
+    storage.list_sessions().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn create_independent_session(
+    storage: State<Storage>,
+    title: String,
+    agent_id: String,
+) -> Result<Session, String> {
+    let session = storage.create_session("independent", &title).map_err(|e| e.to_string())?;
+    storage
+        .add_agent_to_session(&session.id, &agent_id)
+        .map_err(|e| e.to_string())?;
+    Ok(session)
+}
+
+#[tauri::command]
+pub fn list_messages(storage: State<Storage>, session_id: String) -> Result<Vec<Message>, String> {
+    storage.list_messages(&session_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn get_session_agent_id(storage: State<Storage>, session_id: String) -> Result<Option<String>, String> {
+    let agents = storage.agents_for_session(&session_id).map_err(|e| e.to_string())?;
+    Ok(agents.into_iter().next())
+}
+
+/// Sends a user message in a session, gets the (single, for an independent
+/// session) agent's reply, and persists both. Returns the assistant's
+/// message. The user's message is persisted even if the agent call then
+/// fails, so a retry doesn't lose it.
+#[tauri::command]
+pub fn send_chat_message(storage: State<Storage>, session_id: String, content: String) -> Result<Message, String> {
+    storage
+        .add_message(&session_id, None, "user", &content)
+        .map_err(|e| e.to_string())?;
+
+    let agent_id = storage
+        .agents_for_session(&session_id)
+        .map_err(|e| e.to_string())?
+        .into_iter()
+        .next()
+        .ok_or_else(|| format!("session {session_id} has no agent"))?;
+    let agent = storage
+        .get_agent(&agent_id)
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| format!("agent {agent_id} not found"))?;
+
+    let history: Vec<ChatMessage> = storage
+        .list_messages(&session_id)
+        .map_err(|e| e.to_string())?
+        .into_iter()
+        .filter(|m| m.role == "user" || m.role == "assistant")
+        .map(|m| ChatMessage {
+            role: m.role,
+            content: m.content,
+        })
+        .collect();
+
+    let reply = agent_manager::send_message(&storage, &agent, &history).map_err(|e| e.to_string())?;
+
+    storage
+        .add_message(&session_id, Some(&agent_id), "assistant", &reply)
+        .map_err(|e| e.to_string())
 }

@@ -127,3 +127,51 @@ mod tests {
         assert!(summary.is_empty());
     }
 }
+
+/// Live smoke test covering the *whole* vertical slice this module ties
+/// together: Storage-backed key resolution -> Key Vault -> Provider adapter
+/// -> real API -> usage logged back to Storage. Not run by default — needs
+/// a real API key. Run manually with:
+///   OPENROUTER_TEST_KEY=... cargo test --manifest-path src-tauri/Cargo.toml -- --ignored agent_manager::live
+#[cfg(test)]
+mod live {
+    use super::*;
+
+    #[test]
+    #[ignore]
+    fn full_slice_storage_to_real_api_and_back() {
+        let api_key = std::env::var("OPENROUTER_TEST_KEY")
+            .expect("set OPENROUTER_TEST_KEY to run this test");
+        let storage = Storage::open_in_memory().unwrap();
+
+        let key_meta = storage
+            .create_provider_key("openrouter", Some("live test key"), None)
+            .unwrap();
+        key_vault::set_secret(&key_meta.id, &api_key).unwrap();
+
+        let agent = storage
+            .create_agent(
+                "Live Test Agent",
+                None,
+                "cloud",
+                "openrouter",
+                "inclusionai/ling-3.0-flash:free",
+            )
+            .unwrap();
+
+        let messages = vec![ChatMessage {
+            role: "user".to_string(),
+            content: "Reply with exactly one word: pong".to_string(),
+        }];
+
+        let reply = send_message(&storage, &agent, &messages).expect("live call failed");
+        assert!(!reply.trim().is_empty());
+
+        let summary = storage.usage_summary().unwrap();
+        assert_eq!(summary.len(), 1);
+        assert_eq!(summary[0].success_count, 1);
+        assert_eq!(summary[0].failure_count, 0);
+
+        key_vault::delete_secret(&key_meta.id).ok();
+    }
+}

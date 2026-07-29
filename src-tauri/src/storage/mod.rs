@@ -209,6 +209,43 @@ impl Storage {
         rows.collect()
     }
 
+    pub fn get_agent(&self, id: &str) -> rusqlite::Result<Option<Agent>> {
+        let conn = self.conn.lock().unwrap();
+        conn.query_row(
+            "SELECT id, name, role_template, provider_kind, provider_name, model, created_at
+             FROM agents WHERE id = ?1",
+            params![id],
+            |row| {
+                Ok(Agent {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    role_template: row.get(2)?,
+                    provider_kind: row.get(3)?,
+                    provider_name: row.get(4)?,
+                    model: row.get(5)?,
+                    created_at: row.get(6)?,
+                })
+            },
+        )
+        .optional()
+    }
+
+    pub fn list_sessions(&self) -> rusqlite::Result<Vec<Session>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, kind, title, created_at FROM sessions ORDER BY created_at ASC",
+        )?;
+        let rows = stmt.query_map([], |row| {
+            Ok(Session {
+                id: row.get(0)?,
+                kind: row.get(1)?,
+                title: row.get(2)?,
+                created_at: row.get(3)?,
+            })
+        })?;
+        rows.collect()
+    }
+
     pub fn create_session(&self, kind: &str, title: &str) -> rusqlite::Result<Session> {
         let session = Session {
             id: uuid::Uuid::new_v4().to_string(),
@@ -229,6 +266,13 @@ impl Storage {
             params![session_id, agent_id],
         )?;
         Ok(())
+    }
+
+    pub fn agents_for_session(&self, session_id: &str) -> rusqlite::Result<Vec<String>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare("SELECT agent_id FROM session_agents WHERE session_id = ?1")?;
+        let rows = stmt.query_map(params![session_id], |row| row.get::<_, String>(0))?;
+        rows.collect()
     }
 
     pub fn add_message(
@@ -434,6 +478,20 @@ mod tests {
         assert_eq!(agents.len(), 1);
         assert_eq!(agents[0].id, agent.id);
         assert_eq!(agents[0].name, "Full-Stack Developer");
+
+        let fetched = storage.get_agent(&agent.id).unwrap().unwrap();
+        assert_eq!(fetched.name, "Full-Stack Developer");
+        assert!(storage.get_agent("does-not-exist").unwrap().is_none());
+    }
+
+    #[test]
+    fn list_sessions_returns_created_sessions() {
+        let storage = Storage::open_in_memory().unwrap();
+        assert!(storage.list_sessions().unwrap().is_empty());
+        let session = storage.create_session("independent", "Test session").unwrap();
+        let sessions = storage.list_sessions().unwrap();
+        assert_eq!(sessions.len(), 1);
+        assert_eq!(sessions[0].id, session.id);
     }
 
     #[test]
@@ -444,6 +502,7 @@ mod tests {
             .unwrap();
         let session = storage.create_session("independent", "Test session").unwrap();
         storage.add_agent_to_session(&session.id, &agent.id).unwrap();
+        assert_eq!(storage.agents_for_session(&session.id).unwrap(), vec![agent.id.clone()]);
 
         storage
             .add_message(&session.id, None, "user", "hello")

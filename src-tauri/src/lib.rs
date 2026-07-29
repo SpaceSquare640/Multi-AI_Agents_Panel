@@ -43,6 +43,13 @@ pub fn run() {
             commands::list_ollama_installed_models,
             commands::pull_ollama_model,
             commands::delete_ollama_model,
+            commands::list_agents,
+            commands::create_agent,
+            commands::list_sessions,
+            commands::create_independent_session,
+            commands::list_messages,
+            commands::get_session_agent_id,
+            commands::send_chat_message,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -35,3 +35,32 @@ export interface OllamaModel {
 
 export const CLOUD_PROVIDERS = ["anthropic", "openai", "openrouter"] as const;
 export type CloudProvider = (typeof CLOUD_PROVIDERS)[number];
+
+export interface Agent {
+  id: string;
+  name: string;
+  roleTemplate: string | null;
+  /** "local" | "cloud" */
+  providerKind: string;
+  providerName: string;
+  model: string;
+  createdAt: string;
+}
+
+export interface Session {
+  id: string;
+  /** "independent" | "group" */
+  kind: string;
+  title: string;
+  createdAt: string;
+}
+
+export interface Message {
+  id: string;
+  sessionId: string;
+  agentId: string | null;
+  /** "user" | "assistant" | "system" */
+  role: string;
+  content: string;
+  createdAt: string;
+}

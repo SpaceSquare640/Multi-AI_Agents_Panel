@@ -1,0 +1,146 @@
+.chat-page {
+  display: flex;
+  height: 100%;
+  text-align: left;
+}
+
+.chat-sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  border-right: 1px solid rgba(128, 128, 128, 0.3);
+  padding: 1rem;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.chat-sidebar h2 {
+  margin-top: 0;
+  font-size: 1rem;
+}
+
+.chat-sidebar h3 {
+  font-size: 0.85rem;
+  opacity: 0.75;
+  margin-bottom: 0.3rem;
+}
+
+.chat-session-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+}
+
+.chat-session-list li {
+  margin-bottom: 0.25rem;
+}
+
+.chat-session-list button {
+  width: 100%;
+  text-align: left;
+  background: none;
+  box-shadow: none;
+}
+
+.chat-session-list button.active {
+  border-color: #396cd8;
+  font-weight: 600;
+}
+
+.chat-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.chat-link-button {
+  background: none;
+  box-shadow: none;
+  border: none;
+  color: #646cff;
+  padding: 0;
+  font-size: 0.85rem;
+}
+
+.chat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 1.5rem;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.chat-header {
+  font-size: 0.85rem;
+  opacity: 0.8;
+  margin-bottom: 0.5rem;
+}
+
+.chat-thread {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding-bottom: 1rem;
+}
+
+.chat-bubble {
+  max-width: 70%;
+  padding: 0.5rem 0.8rem;
+  border-radius: 10px;
+  background: rgba(128, 128, 128, 0.12);
+}
+
+.chat-bubble-user {
+  align-self: flex-end;
+  background: #396cd8;
+  color: white;
+}
+
+.chat-bubble-role {
+  font-size: 0.7rem;
+  opacity: 0.7;
+  text-transform: uppercase;
+  margin-bottom: 0.15rem;
+}
+
+.chat-bubble-content {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.chat-input-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.chat-input-row input {
+  flex: 1;
+}
+
+.chat-error {
+  background: #4a1414;
+  color: #ffb4b4;
+  border: 1px solid #a33;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chat-error button {
+  background: none;
+  box-shadow: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.chat-empty {
+  opacity: 0.6;
+  font-style: italic;
+}
