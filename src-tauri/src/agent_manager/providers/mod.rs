@@ -5,6 +5,7 @@
 
 pub mod anthropic;
 pub mod ollama;
+pub mod openai;
 pub mod openrouter;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

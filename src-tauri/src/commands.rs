@@ -107,6 +107,7 @@ pub fn get_usage_summary(storage: State<Storage>) -> Result<Vec<UsageSummary>, S
 pub fn list_curated_models(provider: String) -> Result<Vec<CuratedModel>, String> {
     match provider.as_str() {
         "anthropic" => Ok(curated_models::anthropic_models()),
+        "openai" => Ok(curated_models::openai_models()),
         "openrouter" => Ok(curated_models::openrouter_models()),
         "ollama" => Ok(curated_models::ollama_models()),
         other => Err(format!("no curated model list for '{other}' yet")),

@@ -4,7 +4,7 @@ import { open as openFolderPicker } from "@tauri-apps/plugin-dialog";
 import type { Agent, CuratedModel, FileAccessGrant, Message, ProviderKeyView, RoleTemplate, Session } from "./types";
 import "./Chat.css";
 
-const PROVIDER_OPTIONS = ["anthropic", "openrouter", "ollama"] as const;
+const PROVIDER_OPTIONS = ["anthropic", "openai", "openrouter", "ollama"] as const;
 
 /// Per-session state, kept independently for every *open* tab so that
 /// sending a message in one session never blocks, resets, or loses state

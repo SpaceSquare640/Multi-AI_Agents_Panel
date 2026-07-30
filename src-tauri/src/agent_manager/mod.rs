@@ -137,6 +137,17 @@ fn dispatch(storage: &Storage, agent: &Agent, messages: &[ChatMessage]) -> Resul
                 },
             )
         }
+        "openai" => {
+            let candidates = candidate_keys(storage, agent, "openai")?;
+            run_with_fallback(
+                &candidates,
+                |k| k.label.clone().unwrap_or_else(|| format!("key {}", k.id)),
+                |k| {
+                    let secret = fetch_secret(k)?;
+                    providers::openai::send(&secret, &agent.model, messages)
+                },
+            )
+        }
         "ollama" => run_with_fallback(
             &[()],
             |_| "local Ollama".to_string(),

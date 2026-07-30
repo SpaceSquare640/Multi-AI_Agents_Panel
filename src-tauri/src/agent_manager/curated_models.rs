@@ -29,6 +29,23 @@ pub fn anthropic_models() -> Vec<CuratedModel> {
     .collect()
 }
 
+pub fn openai_models() -> Vec<CuratedModel> {
+    [
+        ("gpt-5.6-sol", "GPT-5.6 Sol"),
+        ("gpt-5.5", "GPT-5.5"),
+        ("gpt-5.6-luna", "GPT-5.6 Luna"),
+        ("gpt-4.1-mini", "GPT-4.1 Mini"),
+        ("gpt-4.1", "GPT-4.1"),
+        ("gpt-4.1-nano", "GPT-4.1 Nano"),
+    ]
+    .into_iter()
+    .map(|(id, label)| CuratedModel {
+        id: id.to_string(),
+        label: label.to_string(),
+    })
+    .collect()
+}
+
 pub fn openrouter_models() -> Vec<CuratedModel> {
     [
         ("openai/gpt-5.6-sol", "OpenAI: GPT-5.6 Sol"),

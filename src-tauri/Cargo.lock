@@ -2143,7 +2143,7 @@ dependencies = [
 
 [[package]]
 name = "multi-ai-agents-panel"
-version = "0.1.14-alpha"
+version = "0.1.15-alpha"
 dependencies = [
  "chrono",
  "keyring",
