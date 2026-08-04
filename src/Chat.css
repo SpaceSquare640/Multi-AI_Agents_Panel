@@ -80,6 +80,20 @@
   gap: 0.3rem;
 }
 
+.chat-run-skill {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.chat-run-skill input {
+  flex: 1;
+  min-width: 220px;
+  font-family: monospace;
+  font-size: 0.8rem;
+}
+
 .chat-group-agent-picker {
   display: flex;
   flex-direction: column;

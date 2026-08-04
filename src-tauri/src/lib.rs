@@ -92,6 +92,7 @@ pub fn run() {
             commands::list_skill_access_grants,
             commands::revoke_skill_access,
             commands::invoke_skill,
+            commands::run_skill_in_session,
             commands::create_group_session,
             commands::list_session_members,
             commands::send_group_message,

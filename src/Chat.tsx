@@ -1,7 +1,17 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { open as openFolderPicker } from "@tauri-apps/plugin-dialog";
-import type { Agent, CuratedModel, FileAccessGrant, Message, ProviderKeyView, RoleTemplate, Session } from "./types";
+import type {
+  Agent,
+  CuratedModel,
+  FileAccessGrant,
+  Message,
+  ProviderKeyView,
+  RoleTemplate,
+  Session,
+  SkillAccessGrant,
+  SkillManifest,
+} from "./types";
 import "./Chat.css";
 
 const PROVIDER_OPTIONS = ["anthropic", "openai", "openrouter", "ollama"] as const;
@@ -20,6 +30,8 @@ interface TabState {
   /** Group Chat's participants, in round-robin (join) order. Empty for independent tabs. */
   members: Agent[];
   fileGrants: FileAccessGrant[];
+  /** Skills this tab's agent may call. Empty for group tabs (not wired up yet — see Backlog). */
+  skillGrants: SkillAccessGrant[];
   draft: string;
   sending: boolean;
   /** True while this tab is open but not the one currently in view — used
@@ -34,6 +46,7 @@ function emptyTab(): TabState {
     agent: null,
     members: [],
     fileGrants: [],
+    skillGrants: [],
     draft: "",
     sending: false,
     hasUnseenReply: false,
@@ -48,6 +61,14 @@ export default function Chat() {
   const [tabs, setTabs] = useState<Record<string, TabState>>({});
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Skills: the installed catalog (global) + per-tab grants (in TabState)
+  // + a small "run one now" form scoped to whichever tab is active.
+  const [availableSkills, setAvailableSkills] = useState<SkillManifest[]>([]);
+  const [skillToGrant, setSkillToGrant] = useState("");
+  const [runSkillName, setRunSkillName] = useState("");
+  const [runSkillPayload, setRunSkillPayload] = useState("{}");
+  const [runningSkill, setRunningSkill] = useState(false);
 
   const activeTab = activeSessionId ? tabs[activeSessionId] : undefined;
 
@@ -108,6 +129,9 @@ export default function Chat() {
     refreshAgents().catch((e) => setError(String(e)));
     refreshSessions().catch((e) => setError(String(e)));
     refreshRoleTemplates().catch((e) => setError(String(e)));
+    invoke<SkillManifest[]>("list_skills")
+      .then(setAvailableSkills)
+      .catch((e) => setError(String(e)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -204,10 +228,13 @@ export default function Chat() {
           invoke<string | null>("get_session_agent_id", { sessionId }),
         ]);
         const agent = agents.find((a) => a.id === agentId) ?? null;
-        const fileGrants = agent
-          ? await invoke<FileAccessGrant[]>("list_file_access_grants", { agentId: agent.id })
-          : [];
-        patchTab(sessionId, { kind, messages, agent, members: [], fileGrants });
+        const [fileGrants, skillGrants] = agent
+          ? await Promise.all([
+              invoke<FileAccessGrant[]>("list_file_access_grants", { agentId: agent.id }),
+              invoke<SkillAccessGrant[]>("list_skill_access_grants", { agentId: agent.id }),
+            ])
+          : [[], []];
+        patchTab(sessionId, { kind, messages, agent, members: [], fileGrants, skillGrants });
       }
     } catch (err) {
       setError(String(err));
@@ -323,6 +350,61 @@ export default function Chat() {
       patchTab(sessionId, { fileGrants });
     } catch (err) {
       setError(String(err));
+    }
+  }
+
+  async function handleGrantSkill(sessionId: string) {
+    const agent = tabs[sessionId]?.agent;
+    if (!agent || !skillToGrant) return;
+    setError(null);
+    try {
+      await invoke("grant_skill_access", { agentId: agent.id, skillName: skillToGrant });
+      const skillGrants = await invoke<SkillAccessGrant[]>("list_skill_access_grants", { agentId: agent.id });
+      patchTab(sessionId, { skillGrants });
+      setSkillToGrant("");
+    } catch (err) {
+      setError(String(err));
+    }
+  }
+
+  async function handleRevokeSkill(sessionId: string, id: string) {
+    const agent = tabs[sessionId]?.agent;
+    if (!agent) return;
+    setError(null);
+    try {
+      await invoke("revoke_skill_access", { id });
+      const skillGrants = await invoke<SkillAccessGrant[]>("list_skill_access_grants", { agentId: agent.id });
+      patchTab(sessionId, { skillGrants });
+    } catch (err) {
+      setError(String(err));
+    }
+  }
+
+  /// Runs `runSkillName` with the JSON typed into `runSkillPayload` on
+  /// `sessionId`'s agent, and drops the result into the transcript as a
+  /// `role: "system"` message — visible, but not attributed to "user" or
+  /// "assistant". Goes through the same Guardrails injection screen +
+  /// per-agent allowlist as every other Skill call.
+  async function handleRunSkill(sessionId: string) {
+    const agent = tabs[sessionId]?.agent;
+    if (!agent || !runSkillName) return;
+    setError(null);
+    let payload: unknown;
+    try {
+      payload = JSON.parse(runSkillPayload || "{}");
+    } catch {
+      setError("Skill payload must be valid JSON.");
+      return;
+    }
+    setRunningSkill(true);
+    try {
+      await invoke("run_skill_in_session", { sessionId, agentId: agent.id, skillName: runSkillName, payload });
+      const messages = await invoke<Message[]>("list_messages", { sessionId });
+      patchTab(sessionId, { messages });
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setRunningSkill(false);
     }
   }
 
@@ -619,6 +701,58 @@ export default function Chat() {
                     + Grant folder…
                   </button>
                 </div>
+                <div className="chat-file-access">
+                  <span>Skills:</span>
+                  {activeTab.skillGrants.length === 0 && (
+                    <span className="chat-empty">none granted</span>
+                  )}
+                  {activeTab.skillGrants.map((g) => (
+                    <span key={g.id} className="chat-file-chip">
+                      {g.skillName}
+                      <button onClick={() => handleRevokeSkill(activeSessionId, g.id)} title="Revoke access">
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                  <select value={skillToGrant} onChange={(e) => setSkillToGrant(e.target.value)}>
+                    <option value="">Grant a skill…</option>
+                    {availableSkills
+                      .filter((s) => !activeTab.skillGrants.some((g) => g.skillName === s.name))
+                      .map((s) => (
+                        <option key={s.name} value={s.name}>
+                          {s.name}
+                        </option>
+                      ))}
+                  </select>
+                  <button className="chat-link-button" disabled={!skillToGrant} onClick={() => handleGrantSkill(activeSessionId)}>
+                    + Grant
+                  </button>
+                </div>
+                {activeTab.skillGrants.length > 0 && (
+                  <div className="chat-run-skill">
+                    <select value={runSkillName} onChange={(e) => setRunSkillName(e.target.value)}>
+                      <option value="">Run a skill…</option>
+                      {activeTab.skillGrants.map((g) => (
+                        <option key={g.id} value={g.skillName}>
+                          {g.skillName}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      placeholder='JSON payload, e.g. {"action":"search","indexName":"notes","query":"..."}'
+                      value={runSkillPayload}
+                      onChange={(e) => setRunSkillPayload(e.target.value)}
+                    />
+                    <button
+                      className="chat-link-button"
+                      disabled={!runSkillName || runningSkill}
+                      onClick={() => handleRunSkill(activeSessionId)}
+                    >
+                      {runningSkill ? "Running…" : "Run"}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
             {activeTab.kind === "group" && (

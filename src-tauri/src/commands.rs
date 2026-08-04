@@ -583,6 +583,33 @@ pub fn invoke_skill(
     skill_manager::invoke_skill(&storage, guard.as_ref(), &agent_id, &skill_name, payload).map_err(|e| e.to_string())
 }
 
+/// Runs a Skill on `agent_id`'s behalf and persists the result into
+/// `session_id`'s message history (`role: "system"`) so it shows up in
+/// the transcript the same way a file attachment or a group-chat
+/// cross-agent message does — visible, but not attributed to "user" or
+/// "assistant". Goes through the exact same `skill_manager::invoke_skill`
+/// gate (Guardrails injection screen, per-agent allowlist) as
+/// `invoke_skill` above; this only adds "and remember it happened."
+#[tauri::command]
+pub fn run_skill_in_session(
+    storage: State<Storage>,
+    runtime: State<SkillRuntimeState>,
+    session_id: String,
+    agent_id: String,
+    skill_name: String,
+    payload: serde_json::Value,
+) -> Result<Message, String> {
+    let result = {
+        let guard = runtime.0.lock().unwrap();
+        skill_manager::invoke_skill(&storage, guard.as_ref(), &agent_id, &skill_name, payload).map_err(|e| e.to_string())?
+    };
+    let content = format!(
+        "[Skill \"{skill_name}\" result]\n{}",
+        serde_json::to_string_pretty(&result).unwrap_or_else(|_| result.to_string())
+    );
+    storage.add_message(&session_id, Some(&agent_id), "system", &content).map_err(|e| e.to_string())
+}
+
 /// Live end-to-end tests exercising the internal (`&Storage`-only, no
 /// `tauri::State`) Group Chat functions against real OpenRouter agents.
 /// Not run in CI (needs a real free API key) — run manually with
@@ -688,5 +715,43 @@ mod live {
 
         let summary = agent_manager::send_message(&storage, &summarizer, &history).unwrap();
         assert!(summary.to_uppercase().contains("SUMMARY DONE"), "got: {summary}");
+    }
+
+    #[test]
+    #[ignore]
+    fn running_a_skill_in_a_session_persists_its_result_as_a_system_message() {
+        // Exercises the same two calls `run_skill_in_session` makes, minus
+        // the `tauri::State` wrapper (which can't be constructed outside a
+        // running app) — spawns the real Python bridge, same as
+        // `skill_manager::live`.
+        let skills_dir = skill_manager::resolve_skills_dir(None);
+        let runtime = skill_manager::SkillRuntime::start(&skills_dir)
+            .expect("bridge should start with a real Python on PATH");
+
+        let storage = Storage::open_in_memory().unwrap();
+        let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude").unwrap();
+        storage.grant_skill_access(&agent.id, "example_skill").unwrap();
+        let session = storage.create_session("independent", "Skill test").unwrap();
+        storage.add_agent_to_session(&session.id, &agent.id).unwrap();
+
+        let result = skill_manager::invoke_skill(
+            &storage,
+            Some(&runtime),
+            &agent.id,
+            "example_skill",
+            serde_json::json!({"ping": "pong"}),
+        )
+        .unwrap();
+        let content = format!(
+            "[Skill \"example_skill\" result]\n{}",
+            serde_json::to_string_pretty(&result).unwrap()
+        );
+        let saved = storage.add_message(&session.id, Some(&agent.id), "system", &content).unwrap();
+
+        assert_eq!(saved.role, "system");
+        assert!(saved.content.contains("ping"));
+        let messages = storage.list_messages(&session.id).unwrap();
+        assert_eq!(messages.len(), 1);
+        assert_eq!(messages[0].id, saved.id);
     }
 }

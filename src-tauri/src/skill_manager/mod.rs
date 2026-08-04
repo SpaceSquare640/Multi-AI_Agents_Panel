@@ -414,6 +414,40 @@ mod live {
 
     #[test]
     #[ignore]
+    fn raffle_winner_picker_picks_a_real_seeded_winner_through_the_real_bridge() {
+        let skills_dir = resolve_skills_dir(None);
+        let runtime = SkillRuntime::start(&skills_dir).expect("bridge should start with a real Python on PATH");
+
+        let storage = Storage::open_in_memory().unwrap();
+        let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude").unwrap();
+        storage.grant_skill_access(&agent.id, "raffle_winner_picker").unwrap();
+
+        let result = invoke_skill(
+            &storage,
+            Some(&runtime),
+            &agent.id,
+            "raffle_winner_picker",
+            serde_json::json!({
+                "entries": ["Alice", "Bob", "Carol", "Dave", "Eve"],
+                "count": 2,
+                "runnerUps": 1,
+                "exclude": ["Dave"],
+                "seed": 42,
+            }),
+        )
+        .expect("raffle_winner_picker should pick winners");
+
+        // Same seed as the standalone `python skill.py` sanity check run
+        // before wiring this into the bridge — asserting the exact same
+        // output here proves the bridge round-trip doesn't change the
+        // result, not just that *some* result came back.
+        assert_eq!(result["winners"], serde_json::json!(["Alice", "Eve"]));
+        assert_eq!(result["runnerUps"], serde_json::json!(["Bob"]));
+        assert_eq!(result["eligibleCount"], 4);
+    }
+
+    #[test]
+    #[ignore]
     fn calling_an_unregistered_skill_name_is_reported_as_not_found() {
         let skills_dir = resolve_skills_dir(None);
         let runtime = SkillRuntime::start(&skills_dir).expect("bridge should start with a real Python on PATH");
