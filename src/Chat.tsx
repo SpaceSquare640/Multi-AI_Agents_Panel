@@ -90,6 +90,9 @@ export default function Chat() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searching, setSearching] = useState(false);
 
+  // Group Chat "let them keep talking for N turns" — see handleAutoContinue.
+  const [autoContinueTurns, setAutoContinueTurns] = useState(3);
+
   const activeTab = activeSessionId ? tabs[activeSessionId] : undefined;
 
   function patchTab(sessionId: string, patch: Partial<TabState>) {
@@ -615,6 +618,30 @@ export default function Chat() {
     }
   }
 
+  /// Runs up to `turns` consecutive `advance_group_turn` calls, one at a
+  /// time (awaiting + refreshing messages after each so replies appear
+  /// progressively rather than all at once). Deliberately does not add
+  /// any new client-side cap of its own — the backend's E6001 loop
+  /// safety-net (`orchestrator::MAX_CONSECUTIVE_AGENT_TURNS_WITHOUT_USER_INPUT`)
+  /// is what actually stops this from running away; hitting it here just
+  /// surfaces as the normal error banner and ends the loop early, same as
+  /// if the user had clicked "Let them continue" that many times by hand.
+  async function handleAutoContinue(sessionId: string, turns: number) {
+    setError(null);
+    for (let i = 0; i < turns; i++) {
+      patchTab(sessionId, { sending: true });
+      try {
+        await invoke("advance_group_turn", { sessionId });
+        const messages = await invoke<Message[]>("list_messages", { sessionId });
+        patchTab(sessionId, { messages, sending: false, hasUnseenReply: sessionId !== activeSessionId });
+      } catch (err) {
+        setError(String(err));
+        patchTab(sessionId, { sending: false });
+        break;
+      }
+    }
+  }
+
   /// Ends the meeting: the backend picks a summarizer (Product Lead
   /// member, else whoever joined first) and asks them to wrap up.
   async function handleEndMeeting(sessionId: string) {
@@ -998,6 +1025,24 @@ export default function Chat() {
                     onClick={() => handleAdvanceTurn(activeSessionId)}
                   >
                     Let them continue →
+                  </button>
+                  <input
+                    type="number"
+                    min={1}
+                    max={6}
+                    value={autoContinueTurns}
+                    disabled={activeTab.sending}
+                    onChange={(e) => setAutoContinueTurns(Math.max(1, Math.min(6, Number(e.target.value) || 1)))}
+                    className="chat-auto-continue-count"
+                    title="How many turns to run before stopping"
+                  />
+                  <button
+                    className="chat-link-button"
+                    disabled={activeTab.sending}
+                    onClick={() => handleAutoContinue(activeSessionId, autoContinueTurns)}
+                    title="Runs up to this many turns in a row — the backend's E6001 loop cap (6 turns without you weighing in) still applies and stops it early if hit"
+                  >
+                    Continue {autoContinueTurns} turns →→
                   </button>
                   <button
                     className="chat-link-button"

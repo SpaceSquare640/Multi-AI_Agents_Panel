@@ -114,7 +114,14 @@
 
 .chat-group-actions {
   display: flex;
+  align-items: center;
   gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.chat-auto-continue-count {
+  width: 3.2rem;
+  text-align: center;
 }
 
 .chat-file-access {
