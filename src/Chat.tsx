@@ -109,6 +109,10 @@ export default function Chat() {
   const [newAgentTemplateId, setNewAgentTemplateId] = useState("");
   const [newAgentProviderKeys, setNewAgentProviderKeys] = useState<ProviderKeyView[]>([]);
   const [newAgentPinnedKeyId, setNewAgentPinnedKeyId] = useState("");
+  // True once the user has manually picked a provider in this form session —
+  // once set, selecting a role template stops overwriting it, since the
+  // user's explicit choice should win over the template's suggestion.
+  const [newAgentProviderTouched, setNewAgentProviderTouched] = useState(false);
 
   // Role templates ("1 人公司"): default (built-in) + custom (user-authored).
   // The same form handles both creating a new template and editing an
@@ -200,7 +204,20 @@ export default function Chat() {
     }
     if (!newAgentName.trim()) setNewAgentName(template.name);
     setNewAgentSystemPrompt(template.systemPrompt);
-    if (template.suggestedProviderName) setNewAgentProvider(template.suggestedProviderName);
+    // Only auto-apply the suggested provider if the user hasn't manually
+    // picked one yet in this form session — a manual choice should never be
+    // silently overwritten by picking a template afterwards.
+    if (template.suggestedProviderName && !newAgentProviderTouched) {
+      setNewAgentProvider(template.suggestedProviderName);
+    }
+  }
+
+  function handleApplyTemplateSuggestion() {
+    const template = roleTemplates.find((t) => t.id === newAgentTemplateId);
+    if (template?.suggestedProviderName) {
+      setNewAgentProvider(template.suggestedProviderName);
+      setNewAgentProviderTouched(false);
+    }
   }
 
   async function handleCreateAgent(e: FormEvent) {
@@ -223,6 +240,7 @@ export default function Chat() {
       setNewAgentSystemPrompt("");
       setNewAgentTemplateId("");
       setNewAgentPinnedKeyId("");
+      setNewAgentProviderTouched(false);
       setShowNewAgent(false);
       await refreshAgents();
       setNewSessionAgentId(agent.id);
@@ -858,7 +876,13 @@ export default function Chat() {
           </button>
         </form>
 
-        <button className="chat-link-button" onClick={() => setShowNewAgent((v) => !v)}>
+        <button
+          className="chat-link-button"
+          onClick={() => {
+            setShowNewAgent((v) => !v);
+            setNewAgentProviderTouched(false);
+          }}
+        >
           {showNewAgent ? "Cancel" : "+ New agent"}
         </button>
         {showNewAgent && (
@@ -878,13 +902,29 @@ export default function Chat() {
               onChange={(e) => setNewAgentName(e.target.value)}
               required
             />
-            <select value={newAgentProvider} onChange={(e) => setNewAgentProvider(e.target.value)}>
+            <select
+              value={newAgentProvider}
+              onChange={(e) => {
+                setNewAgentProvider(e.target.value);
+                setNewAgentProviderTouched(true);
+              }}
+            >
               {PROVIDER_OPTIONS.map((p) => (
                 <option key={p} value={p}>
                   {p}
                 </option>
               ))}
             </select>
+            {(() => {
+              const selectedTemplate = roleTemplates.find((t) => t.id === newAgentTemplateId);
+              const suggested = selectedTemplate?.suggestedProviderName;
+              if (!suggested || suggested === newAgentProvider) return null;
+              return (
+                <button type="button" className="chat-link-button" onClick={handleApplyTemplateSuggestion}>
+                  Apply suggested provider ({suggested})
+                </button>
+              );
+            })()}
             <select value={newAgentModel} onChange={(e) => setNewAgentModel(e.target.value)}>
               {newAgentModels.map((m) => (
                 <option key={m.id} value={m.id}>
