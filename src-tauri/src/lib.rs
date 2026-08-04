@@ -136,6 +136,7 @@ pub fn run() {
             commands::list_ml_access_grants_for_agent,
             commands::list_ml_access_grants_for_session,
             commands::build_semantic_index,
+            commands::build_semantic_index_for_session,
             commands::semantic_search_query,
         ])
         .run(tauri::generate_context!())

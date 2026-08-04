@@ -111,6 +111,27 @@ pub fn read_file(storage: &Storage, agent_id: &str, path: &Path) -> Result<Strin
 /// scan, same policy as `skill_manager::discover_skills`.
 pub fn list_text_files_in_grants(storage: &Storage, agent_id: &str) -> Vec<(String, String)> {
     let folders = storage.effective_granted_folders(agent_id).unwrap_or_default();
+    collect_from_folders(folders)
+}
+
+/// Same as `list_text_files_in_grants`, but for a Group Chat's *shared*
+/// index (see `ML Engine Design.md` §4.1): sources folders from
+/// `storage::list_session_shared_file_grants` only — deliberately **not**
+/// `effective_granted_folders` for some representative member, which
+/// would also pull in that one agent's private grants and leak them into
+/// an index every meeting member can search. A shared index must only
+/// ever contain what was actually shared to the meeting.
+pub fn list_text_files_in_session_grants(storage: &Storage, session_id: &str) -> Vec<(String, String)> {
+    let folders: Vec<String> = storage
+        .list_session_shared_file_grants(session_id)
+        .unwrap_or_default()
+        .into_iter()
+        .map(|g| g.folder_path)
+        .collect();
+    collect_from_folders(folders)
+}
+
+fn collect_from_folders(folders: Vec<String>) -> Vec<(String, String)> {
     let mut results = Vec::new();
     for folder in folders {
         if results.len() >= MAX_INDEXABLE_FILES {
@@ -260,6 +281,28 @@ mod tests {
         assert_eq!(read_file(&storage, &picker.id, &file_path).unwrap(), "shared with the whole meeting");
         assert_eq!(read_file(&storage, &teammate.id, &file_path).unwrap(), "shared with the whole meeting");
         assert_eq!(read_file(&storage, &outsider.id, &file_path).unwrap_err(), FileAccessError::NotAuthorized);
+    }
+
+    #[test]
+    fn list_text_files_in_session_grants_excludes_a_members_private_folders() {
+        let storage = Storage::open_in_memory().unwrap();
+        let member = storage.create_agent("Member", None, None, "cloud", "anthropic", "claude").unwrap();
+        let session = storage.create_session("group", "Standup").unwrap();
+        storage.add_agent_to_session(&session.id, &member.id).unwrap();
+
+        let shared_dir = temp_dir("session-shared");
+        let private_dir = temp_dir("session-private");
+        storage.grant_folder_access_for_session(&session.id, &member.id, shared_dir.to_str().unwrap()).unwrap();
+        // The same member also has a private grant elsewhere — this must
+        // NOT leak into the meeting's shared index.
+        storage.grant_folder_access(&member.id, private_dir.to_str().unwrap()).unwrap();
+
+        fs::write(shared_dir.join("shared.md"), "visible to the whole meeting").unwrap();
+        fs::write(private_dir.join("private.md"), "only for this one agent").unwrap();
+
+        let files = list_text_files_in_session_grants(&storage, &session.id);
+        assert_eq!(files.len(), 1);
+        assert_eq!(files[0].1, "visible to the whole meeting");
     }
 
     #[test]

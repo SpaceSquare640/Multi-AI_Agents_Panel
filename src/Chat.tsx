@@ -514,13 +514,28 @@ export default function Chat() {
   /// Rebuilds the search index — the agent's own granted folders for an
   /// Independent Session, or the whole meeting's shared folders for a
   /// Group Chat (`group-<sessionId>`, per `ML Engine Design.md` §4.1).
+  /// Deliberately two different Tauri commands, not one with a flag:
+  /// `build_semantic_index_for_session` sources files from *only* what
+  /// was shared to the session (`list_session_shared_file_grants`), never
+  /// the acting member's own private grants — using the private-scoped
+  /// command here would leak that member's private files into an index
+  /// every meeting participant can search.
   async function handleBuildIndex(sessionId: string) {
+    const tab = tabs[sessionId];
     const scope = mlScopeFor(sessionId);
-    if (!scope) return;
+    if (!tab || !scope) return;
     setError(null);
     setIndexing(true);
     try {
-      await invoke("build_semantic_index", { agentId: scope.actingAgentId, indexName: scope.indexName });
+      if (tab.kind === "group") {
+        await invoke("build_semantic_index_for_session", {
+          sessionId,
+          agentId: scope.actingAgentId,
+          indexName: scope.indexName,
+        });
+      } else {
+        await invoke("build_semantic_index", { agentId: scope.actingAgentId, indexName: scope.indexName });
+      }
     } catch (err) {
       setError(String(err));
     } finally {

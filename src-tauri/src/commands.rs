@@ -694,13 +694,14 @@ pub fn list_ml_access_grants_for_session(
 }
 
 /// Rebuilds `index_name` from every `.md`/`.txt` file across `agent_id`'s
-/// granted folders. The Rust side reads the files (respecting File
-/// Access grants — the capability itself never receives a folder path to
-/// read on its own), then hands the text to `semantic_search`'s `index`
-/// action through the normal Guardrails + allowlist gate. Callers choose
-/// `index_name` — pass `agent_id` for an Independent Session's private
-/// index, or `group-<sessionId>` for a Group Chat's shared index (see
-/// `ML Engine Design.md` §4.1).
+/// own granted folders (private grants only — see
+/// `build_semantic_index_for_session` for a Group Chat's shared index,
+/// which deliberately does **not** reuse this function to avoid folding
+/// the acting agent's private folders into an index every meeting member
+/// can search). The Rust side reads the files (respecting File Access
+/// grants — the capability itself never receives a folder path to read
+/// on its own), then hands the text to `semantic_search`'s `index`
+/// action through the normal Guardrails + allowlist gate.
 #[tauri::command]
 pub fn build_semantic_index(
     storage: State<Storage>,
@@ -712,6 +713,39 @@ pub fn build_semantic_index(
     if documents.is_empty() {
         return Err(
             "no indexable .md/.txt files found in this agent's granted folders — grant a folder first".to_string(),
+        );
+    }
+    let payload = serde_json::json!({
+        "action": "index",
+        "indexName": index_name,
+        "documents": documents
+            .into_iter()
+            .map(|(path, text)| serde_json::json!({"path": path, "text": text}))
+            .collect::<Vec<_>>(),
+    });
+    let guard = runtime.0.lock().unwrap();
+    ml_engine::invoke(&storage, guard.as_ref(), &agent_id, "semantic_search", payload).map_err(|e| e.to_string())
+}
+
+/// The Group Chat counterpart of `build_semantic_index`: rebuilds
+/// `index_name` (by convention `group-<sessionId>`, see `ML Engine
+/// Design.md` §4.1) from only the folders explicitly shared to
+/// `session_id` (`file_access::list_text_files_in_session_grants`) — not
+/// any single member's private grants. `agent_id` is used purely for the
+/// Guardrails/allowlist gate (it must be authorized, directly or via a
+/// session-scope `ml_access_grant`), not for picking which files to read.
+#[tauri::command]
+pub fn build_semantic_index_for_session(
+    storage: State<Storage>,
+    runtime: State<MlEngineRuntimeState>,
+    session_id: String,
+    agent_id: String,
+    index_name: String,
+) -> Result<serde_json::Value, String> {
+    let documents = file_access::list_text_files_in_session_grants(&storage, &session_id);
+    if documents.is_empty() {
+        return Err(
+            "no indexable .md/.txt files shared with this meeting — grant a folder first".to_string(),
         );
     }
     let payload = serde_json::json!({
