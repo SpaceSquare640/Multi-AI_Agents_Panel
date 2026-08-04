@@ -93,6 +93,7 @@ pub fn run() {
             commands::list_provider_keys,
             commands::add_provider_key,
             commands::batch_add_provider_keys,
+            commands::import_provider_keys_from_files,
             commands::delete_provider_key,
             commands::get_usage_summary,
             commands::list_curated_models,

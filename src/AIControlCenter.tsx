@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { open } from "@tauri-apps/plugin-dialog";
 import {
   CLOUD_PROVIDERS,
   type CuratedModel,
@@ -53,6 +54,10 @@ export default function AIControlCenter() {
 
   // Batch-add form state.
   const [batchText, setBatchText] = useState("");
+
+  // Import-from-files form state.
+  const [fileImportProvider, setFileImportProvider] = useState<string>("openrouter");
+  const [fileImportBusy, setFileImportBusy] = useState(false);
 
   async function refreshKeys() {
     setKeys(await invoke<ProviderKeyView[]>("list_provider_keys"));
@@ -123,6 +128,23 @@ export default function AIControlCenter() {
       await refreshKeys();
     } catch (err) {
       setError(String(err));
+    }
+  }
+
+  async function handleImportFromFiles() {
+    setError(null);
+    const paths = await open({ multiple: true, title: "Select API key files" });
+    if (!paths) return;
+    const list = Array.isArray(paths) ? paths : [paths];
+    if (list.length === 0) return;
+    setFileImportBusy(true);
+    try {
+      await invoke("import_provider_keys_from_files", { provider: fileImportProvider, paths: list });
+      await refreshKeys();
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setFileImportBusy(false);
     }
   }
 
@@ -223,6 +245,26 @@ export default function AIControlCenter() {
           />
           <button type="submit">Import all</button>
         </form>
+
+        <div className="acc-form">
+          <h3>Import from files</h3>
+          <p className="acc-hint">
+            Pick multiple files: each file's name becomes the label, its full content (trimmed)
+            becomes the key. All files use the same provider.
+          </p>
+          <div className="acc-form-row">
+            <select value={fileImportProvider} onChange={(e) => setFileImportProvider(e.target.value)}>
+              {CLOUD_PROVIDERS.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+            <button type="button" disabled={fileImportBusy} onClick={() => handleImportFromFiles()}>
+              {fileImportBusy ? "Importing…" : "Choose files…"}
+            </button>
+          </div>
+        </div>
 
         <table className="acc-table">
           <thead>

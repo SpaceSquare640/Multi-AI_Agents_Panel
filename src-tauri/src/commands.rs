@@ -94,6 +94,38 @@ pub fn batch_add_provider_keys(
         .collect()
 }
 
+/// Batch-import keys from files picked via the OS file picker: filename
+/// (without extension) becomes the label, file content (trimmed) becomes
+/// the secret. Same `provider` is applied to every file in the batch.
+#[tauri::command]
+pub fn import_provider_keys_from_files(
+    storage: State<Storage>,
+    provider: String,
+    paths: Vec<String>,
+) -> Result<Vec<ProviderKeyView>, String> {
+    paths
+        .into_iter()
+        .map(|path| {
+            let secret = std::fs::read_to_string(&path)
+                .map_err(|e| format!("failed to read {path}: {e}"))?
+                .trim()
+                .to_string();
+            if secret.is_empty() {
+                return Err(format!("{path} is empty"));
+            }
+            let label = std::path::Path::new(&path)
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .map(|s| s.to_string());
+            let meta = storage
+                .create_provider_key(&provider, label.as_deref(), None)
+                .map_err(|e| e.to_string())?;
+            key_vault::set_secret(&meta.id, &secret).map_err(|e| e.to_string())?;
+            Ok(to_view(meta))
+        })
+        .collect()
+}
+
 #[tauri::command]
 pub fn delete_provider_key(storage: State<Storage>, id: String) -> Result<(), String> {
     storage.delete_provider_key(&id).map_err(|e| e.to_string())?;
