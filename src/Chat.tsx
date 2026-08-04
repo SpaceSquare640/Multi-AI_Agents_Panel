@@ -240,12 +240,13 @@ export default function Chat() {
 
     try {
       if (kind === "group") {
-        const [messages, members, fileGrants] = await Promise.all([
+        const [messages, members, fileGrants, mlGrants] = await Promise.all([
           invoke<Message[]>("list_messages", { sessionId }),
           invoke<Agent[]>("list_session_members", { sessionId }),
           invoke<FileAccessGrant[]>("list_session_shared_file_grants", { sessionId }),
+          invoke<MlAccessGrant[]>("list_ml_access_grants_for_session", { sessionId }),
         ]);
-        patchTab(sessionId, { kind, messages, members, agent: null, fileGrants });
+        patchTab(sessionId, { kind, messages, members, agent: null, fileGrants, mlGrants });
       } else {
         const [messages, agentId] = await Promise.all([
           invoke<Message[]>("list_messages", { sessionId }),
@@ -450,14 +451,41 @@ export default function Chat() {
     }
   }
 
+  /// Semantic search treats Group Chat as a whole differently from an
+  /// Independent Session's single agent: grants and the index itself are
+  /// scoped to the *session* (shared by every current member — the same
+  /// "同場會議共用" rule File Access just got, see `ML Engine Design.md`
+  /// §4.1), not to whichever agent happens to be acting. `actingAgentId`
+  /// is only needed because the Tauri commands still take an agent id to
+  /// resolve File Access grants through (`effective_granted_folders`
+  /// already includes the session's shared folders for any member) —
+  /// it doesn't change *whose* access is being granted or *which* index
+  /// is being built/queried.
+  function mlScopeFor(sessionId: string): { actingAgentId: string; indexName: string } | null {
+    const tab = tabs[sessionId];
+    if (!tab) return null;
+    if (tab.kind === "group") {
+      const actingAgentId = tab.members[0]?.id;
+      return actingAgentId ? { actingAgentId, indexName: `group-${sessionId}` } : null;
+    }
+    return tab.agent ? { actingAgentId: tab.agent.id, indexName: tab.agent.id } : null;
+  }
+
   async function handleGrantMlCapability(sessionId: string) {
-    const agent = tabs[sessionId]?.agent;
-    if (!agent || !mlCapabilityToGrant) return;
+    const tab = tabs[sessionId];
+    const scope = mlScopeFor(sessionId);
+    if (!tab || !scope || !mlCapabilityToGrant) return;
     setError(null);
     try {
-      await invoke("grant_ml_capability_to_agent", { agentId: agent.id, capabilityName: mlCapabilityToGrant });
-      const mlGrants = await invoke<MlAccessGrant[]>("list_ml_access_grants_for_agent", { agentId: agent.id });
-      patchTab(sessionId, { mlGrants });
+      if (tab.kind === "group") {
+        await invoke("grant_ml_capability_to_session", { sessionId, capabilityName: mlCapabilityToGrant });
+        const mlGrants = await invoke<MlAccessGrant[]>("list_ml_access_grants_for_session", { sessionId });
+        patchTab(sessionId, { mlGrants });
+      } else {
+        await invoke("grant_ml_capability_to_agent", { agentId: scope.actingAgentId, capabilityName: mlCapabilityToGrant });
+        const mlGrants = await invoke<MlAccessGrant[]>("list_ml_access_grants_for_agent", { agentId: scope.actingAgentId });
+        patchTab(sessionId, { mlGrants });
+      }
       setMlCapabilityToGrant("");
     } catch (err) {
       setError(String(err));
@@ -465,28 +493,34 @@ export default function Chat() {
   }
 
   async function handleRevokeMlCapability(sessionId: string, id: string) {
-    const agent = tabs[sessionId]?.agent;
-    if (!agent) return;
+    const tab = tabs[sessionId];
+    const scope = mlScopeFor(sessionId);
+    if (!tab || !scope) return;
     setError(null);
     try {
       await invoke("revoke_ml_access_grant", { id });
-      const mlGrants = await invoke<MlAccessGrant[]>("list_ml_access_grants_for_agent", { agentId: agent.id });
-      patchTab(sessionId, { mlGrants });
+      if (tab.kind === "group") {
+        const mlGrants = await invoke<MlAccessGrant[]>("list_ml_access_grants_for_session", { sessionId });
+        patchTab(sessionId, { mlGrants });
+      } else {
+        const mlGrants = await invoke<MlAccessGrant[]>("list_ml_access_grants_for_agent", { agentId: scope.actingAgentId });
+        patchTab(sessionId, { mlGrants });
+      }
     } catch (err) {
       setError(String(err));
     }
   }
 
-  /// Rebuilds the agent's semantic search index from every file in its
-  /// granted folders. Index name is always the agent's own id for now
-  /// (see the `mlGrants` field's comment on `TabState`).
+  /// Rebuilds the search index — the agent's own granted folders for an
+  /// Independent Session, or the whole meeting's shared folders for a
+  /// Group Chat (`group-<sessionId>`, per `ML Engine Design.md` §4.1).
   async function handleBuildIndex(sessionId: string) {
-    const agent = tabs[sessionId]?.agent;
-    if (!agent) return;
+    const scope = mlScopeFor(sessionId);
+    if (!scope) return;
     setError(null);
     setIndexing(true);
     try {
-      await invoke("build_semantic_index", { agentId: agent.id, indexName: agent.id });
+      await invoke("build_semantic_index", { agentId: scope.actingAgentId, indexName: scope.indexName });
     } catch (err) {
       setError(String(err));
     } finally {
@@ -495,14 +529,14 @@ export default function Chat() {
   }
 
   async function handleSemanticSearch(sessionId: string) {
-    const agent = tabs[sessionId]?.agent;
-    if (!agent || !searchQuery.trim()) return;
+    const scope = mlScopeFor(sessionId);
+    if (!scope || !searchQuery.trim()) return;
     setError(null);
     setSearching(true);
     try {
       const result = await invoke<{ results: SemanticSearchResult[] }>("semantic_search_query", {
-        agentId: agent.id,
-        indexName: agent.id,
+        agentId: scope.actingAgentId,
+        indexName: scope.indexName,
         query: searchQuery,
         topK: 5,
       });
@@ -579,6 +613,81 @@ export default function Chat() {
       setError(String(err));
       patchTab(sessionId, { sending: false });
     }
+  }
+
+  /// Shared by both Independent Session and Group Chat headers — the
+  /// grant/revoke chips, rebuild-index + query form, and results list
+  /// are identical either way; only what `mlScopeFor` resolves them to
+  /// (one agent vs. the whole session) differs.
+  function renderSemanticSearchSection(sessionId: string, tab: TabState) {
+    return (
+      <>
+        <div className="chat-file-access">
+          <span>Semantic search:</span>
+          {tab.mlGrants.length === 0 && <span className="chat-empty">not granted</span>}
+          {tab.mlGrants.map((g) => (
+            <span key={g.id} className="chat-file-chip">
+              {g.capabilityName}
+              <button onClick={() => handleRevokeMlCapability(sessionId, g.id)} title="Revoke access">
+                ×
+              </button>
+            </span>
+          ))}
+          <select value={mlCapabilityToGrant} onChange={(e) => setMlCapabilityToGrant(e.target.value)}>
+            <option value="">Grant an ML capability…</option>
+            {availableMlCapabilities
+              .filter((c) => !tab.mlGrants.some((g) => g.capabilityName === c.name))
+              .map((c) => (
+                <option key={c.name} value={c.name}>
+                  {c.name}
+                </option>
+              ))}
+          </select>
+          <button className="chat-link-button" disabled={!mlCapabilityToGrant} onClick={() => handleGrantMlCapability(sessionId)}>
+            + Grant
+          </button>
+        </div>
+        {tab.mlGrants.some((g) => g.capabilityName === "semantic_search") && (
+          <div className="chat-run-skill">
+            <button
+              className="chat-link-button"
+              disabled={indexing}
+              onClick={() => handleBuildIndex(sessionId)}
+              title="Re-scan the granted folders and rebuild the search index"
+            >
+              {indexing ? "Indexing…" : "Rebuild index"}
+            </button>
+            <input
+              type="text"
+              placeholder="Search granted files by meaning…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <button
+              className="chat-link-button"
+              disabled={!searchQuery.trim() || searching}
+              onClick={() => handleSemanticSearch(sessionId)}
+            >
+              {searching ? "Searching…" : "Search"}
+            </button>
+          </div>
+        )}
+        {tab.searchResults && (
+          <ul className="chat-search-results">
+            {tab.searchResults.length === 0 && <li className="chat-empty">No results.</li>}
+            {tab.searchResults.map((r) => (
+              <li key={r.path}>
+                <div className="chat-search-result-head">
+                  <span className="chat-search-result-path">{r.path}</span>
+                  <span className="chat-search-result-score">{r.score.toFixed(3)}</span>
+                </div>
+                <div className="chat-search-result-excerpt">{r.excerpt}</div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </>
+    );
   }
 
   return (
@@ -859,78 +968,7 @@ export default function Chat() {
                     </button>
                   </div>
                 )}
-                <div className="chat-file-access">
-                  <span>Semantic search:</span>
-                  {activeTab.mlGrants.length === 0 && (
-                    <span className="chat-empty">not granted</span>
-                  )}
-                  {activeTab.mlGrants.map((g) => (
-                    <span key={g.id} className="chat-file-chip">
-                      {g.capabilityName}
-                      <button onClick={() => handleRevokeMlCapability(activeSessionId, g.id)} title="Revoke access">
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                  <select value={mlCapabilityToGrant} onChange={(e) => setMlCapabilityToGrant(e.target.value)}>
-                    <option value="">Grant an ML capability…</option>
-                    {availableMlCapabilities
-                      .filter((c) => !activeTab.mlGrants.some((g) => g.capabilityName === c.name))
-                      .map((c) => (
-                        <option key={c.name} value={c.name}>
-                          {c.name}
-                        </option>
-                      ))}
-                  </select>
-                  <button
-                    className="chat-link-button"
-                    disabled={!mlCapabilityToGrant}
-                    onClick={() => handleGrantMlCapability(activeSessionId)}
-                  >
-                    + Grant
-                  </button>
-                </div>
-                {activeTab.mlGrants.some((g) => g.capabilityName === "semantic_search") && (
-                  <div className="chat-run-skill">
-                    <button
-                      className="chat-link-button"
-                      disabled={indexing}
-                      onClick={() => handleBuildIndex(activeSessionId)}
-                      title="Re-scan this agent's granted folders and rebuild the search index"
-                    >
-                      {indexing ? "Indexing…" : "Rebuild index"}
-                    </button>
-                    <input
-                      type="text"
-                      placeholder="Search granted files by meaning…"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                    <button
-                      className="chat-link-button"
-                      disabled={!searchQuery.trim() || searching}
-                      onClick={() => handleSemanticSearch(activeSessionId)}
-                    >
-                      {searching ? "Searching…" : "Search"}
-                    </button>
-                  </div>
-                )}
-                {activeTab.searchResults && (
-                  <ul className="chat-search-results">
-                    {activeTab.searchResults.length === 0 && (
-                      <li className="chat-empty">No results.</li>
-                    )}
-                    {activeTab.searchResults.map((r) => (
-                      <li key={r.path}>
-                        <div className="chat-search-result-head">
-                          <span className="chat-search-result-path">{r.path}</span>
-                          <span className="chat-search-result-score">{r.score.toFixed(3)}</span>
-                        </div>
-                        <div className="chat-search-result-excerpt">{r.excerpt}</div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                {renderSemanticSearchSection(activeSessionId, activeTab)}
               </div>
             )}
             {activeTab.kind === "group" && (
@@ -975,6 +1013,7 @@ export default function Chat() {
                     + Grant folder…
                   </button>
                 </div>
+                {renderSemanticSearchSection(activeSessionId, activeTab)}
               </div>
             )}
             <div className="chat-thread">
