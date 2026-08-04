@@ -289,3 +289,42 @@
   opacity: 0.6;
   font-style: italic;
 }
+
+.chat-search-results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.chat-search-results li {
+  background: rgba(128, 128, 128, 0.08);
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+}
+
+.chat-search-result-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.chat-search-result-path {
+  font-family: monospace;
+  opacity: 0.85;
+}
+
+.chat-search-result-score {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.6;
+}
+
+.chat-search-result-excerpt {
+  font-size: 0.82rem;
+  opacity: 0.75;
+  margin-top: 0.2rem;
+  white-space: pre-wrap;
+}

@@ -89,6 +89,28 @@ export interface SkillAccessGrant {
   grantedAt: string;
 }
 
+export interface MlCapabilityManifest {
+  name: string;
+  description: string;
+  entrypoint: string;
+  version: string;
+}
+
+export interface MlAccessGrant {
+  id: string;
+  /** "agent" | "session" */
+  scopeKind: string;
+  scopeId: string;
+  capabilityName: string;
+  grantedAt: string;
+}
+
+export interface SemanticSearchResult {
+  path: string;
+  score: number;
+  excerpt: string;
+}
+
 export interface RoleTemplate {
   id: string;
   name: string;
