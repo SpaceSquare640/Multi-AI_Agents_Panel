@@ -1056,6 +1056,49 @@ impl Storage {
         rows.collect()
     }
 
+    /// Edits an existing custom template in place — same row, same `id`
+    /// and `created_at`, only the content changes. Agents created from
+    /// this template *before* the edit are unaffected (their
+    /// `system_prompt` was copied at creation time, see `Agent` docs);
+    /// this only changes what a *future* "apply this template" picks up.
+    #[allow(clippy::too_many_arguments)]
+    pub fn update_custom_role_template(
+        &self,
+        id: &str,
+        name: &str,
+        description: &str,
+        system_prompt: &str,
+        suggested_provider_kind: Option<&str>,
+        suggested_provider_name: Option<&str>,
+        suggested_model: Option<&str>,
+    ) -> rusqlite::Result<CustomRoleTemplate> {
+        self.conn.lock().unwrap().execute(
+            "UPDATE role_templates_custom
+             SET name = ?2, description = ?3, system_prompt = ?4,
+                 suggested_provider_kind = ?5, suggested_provider_name = ?6, suggested_model = ?7
+             WHERE id = ?1",
+            params![id, name, description, system_prompt, suggested_provider_kind, suggested_provider_name, suggested_model],
+        )?;
+        let conn = self.conn.lock().unwrap();
+        conn.query_row(
+            "SELECT id, name, description, system_prompt, suggested_provider_kind, suggested_provider_name, suggested_model, created_at
+             FROM role_templates_custom WHERE id = ?1",
+            params![id],
+            |row| {
+                Ok(CustomRoleTemplate {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    description: row.get(2)?,
+                    system_prompt: row.get(3)?,
+                    suggested_provider_kind: row.get(4)?,
+                    suggested_provider_name: row.get(5)?,
+                    suggested_model: row.get(6)?,
+                    created_at: row.get(7)?,
+                })
+            },
+        )
+    }
+
     pub fn delete_custom_role_template(&self, id: &str) -> rusqlite::Result<()> {
         self.conn
             .lock()
@@ -1343,6 +1386,41 @@ mod tests {
 
         storage.delete_custom_role_template(&template.id).unwrap();
         assert!(storage.list_custom_role_templates().unwrap().is_empty());
+    }
+
+    #[test]
+    fn update_custom_role_template_edits_in_place_keeping_the_same_id() {
+        let storage = Storage::open_in_memory().unwrap();
+        let template = storage
+            .create_custom_role_template(
+                "Draft Name",
+                "Draft description",
+                "Draft prompt",
+                None,
+                None,
+                None,
+            )
+            .unwrap();
+
+        storage
+            .update_custom_role_template(
+                &template.id,
+                "Final Name",
+                "Final description",
+                "Final prompt",
+                Some("cloud"),
+                Some("anthropic"),
+                Some("claude-sonnet-4-5"),
+            )
+            .unwrap();
+
+        let templates = storage.list_custom_role_templates().unwrap();
+        assert_eq!(templates.len(), 1, "editing must not create a second row");
+        assert_eq!(templates[0].id, template.id, "editing must keep the same id");
+        assert_eq!(templates[0].name, "Final Name");
+        assert_eq!(templates[0].description, "Final description");
+        assert_eq!(templates[0].system_prompt, "Final prompt");
+        assert_eq!(templates[0].suggested_model.as_deref(), Some("claude-sonnet-4-5"));
     }
 
     #[test]

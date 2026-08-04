@@ -46,6 +46,24 @@
   font-weight: 600;
 }
 
+.chat-template-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+}
+
+.chat-template-row-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.chat-template-row-actions .chat-link-button {
+  font-size: 0.78rem;
+}
+
 .chat-form {
   display: flex;
   flex-direction: column;

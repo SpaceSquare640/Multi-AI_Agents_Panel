@@ -111,8 +111,12 @@ export default function Chat() {
   const [newAgentPinnedKeyId, setNewAgentPinnedKeyId] = useState("");
 
   // Role templates ("1 人公司"): default (built-in) + custom (user-authored).
+  // The same form handles both creating a new template and editing an
+  // existing one — `editingTemplateId` set means "editing", null means
+  // "creating a new one".
   const [roleTemplates, setRoleTemplates] = useState<RoleTemplate[]>([]);
   const [showNewTemplate, setShowNewTemplate] = useState(false);
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
   const [templateName, setTemplateName] = useState("");
   const [templateDescription, setTemplateDescription] = useState("");
   const [templatePrompt, setTemplatePrompt] = useState("");
@@ -332,22 +336,64 @@ export default function Chat() {
     }
   }
 
-  async function handleCreateTemplate(e: FormEvent) {
+  /// Creates a new custom template, or — when `editingTemplateId` is set
+  /// — saves changes to that existing one in place instead. Same form,
+  /// same handler; only which command gets called differs.
+  async function handleSaveTemplate(e: FormEvent) {
     e.preventDefault();
     setError(null);
     try {
-      await invoke("create_custom_role_template", {
-        name: templateName,
-        description: templateDescription,
-        systemPrompt: templatePrompt,
-        suggestedProviderKind: null,
-        suggestedProviderName: null,
-        suggestedModel: null,
-      });
+      if (editingTemplateId) {
+        await invoke("update_custom_role_template", {
+          id: editingTemplateId,
+          name: templateName,
+          description: templateDescription,
+          systemPrompt: templatePrompt,
+          suggestedProviderKind: null,
+          suggestedProviderName: null,
+          suggestedModel: null,
+        });
+      } else {
+        await invoke("create_custom_role_template", {
+          name: templateName,
+          description: templateDescription,
+          systemPrompt: templatePrompt,
+          suggestedProviderKind: null,
+          suggestedProviderName: null,
+          suggestedModel: null,
+        });
+      }
       setTemplateName("");
       setTemplateDescription("");
       setTemplatePrompt("");
+      setEditingTemplateId(null);
       setShowNewTemplate(false);
+      await refreshRoleTemplates();
+    } catch (err) {
+      setError(String(err));
+    }
+  }
+
+  function handleStartEditTemplate(template: RoleTemplate) {
+    setEditingTemplateId(template.id);
+    setTemplateName(template.name);
+    setTemplateDescription(template.description);
+    setTemplatePrompt(template.systemPrompt);
+    setShowNewTemplate(true);
+  }
+
+  function handleCancelTemplateForm() {
+    setEditingTemplateId(null);
+    setTemplateName("");
+    setTemplateDescription("");
+    setTemplatePrompt("");
+    setShowNewTemplate(false);
+  }
+
+  async function handleDeleteTemplate(id: string) {
+    setError(null);
+    try {
+      await invoke("delete_custom_role_template", { id });
       await refreshRoleTemplates();
     } catch (err) {
       setError(String(err));
@@ -866,11 +912,36 @@ export default function Chat() {
           </form>
         )}
 
-        <button className="chat-link-button" onClick={() => setShowNewTemplate((v) => !v)}>
+        <h3>Custom role templates</h3>
+        <ul className="chat-session-list">
+          {roleTemplates
+            .filter((t) => t.source === "custom")
+            .map((t) => (
+              <li key={t.id} className="chat-template-row">
+                <span title={t.description}>{t.name}</span>
+                <span className="chat-template-row-actions">
+                  <button className="chat-link-button" onClick={() => handleStartEditTemplate(t)}>
+                    Edit
+                  </button>
+                  <button className="chat-link-button" onClick={() => handleDeleteTemplate(t.id)}>
+                    Delete
+                  </button>
+                </span>
+              </li>
+            ))}
+          {roleTemplates.filter((t) => t.source === "custom").length === 0 && (
+            <li className="chat-empty">No custom templates yet.</li>
+          )}
+        </ul>
+
+        <button
+          className="chat-link-button"
+          onClick={() => (showNewTemplate ? handleCancelTemplateForm() : setShowNewTemplate(true))}
+        >
           {showNewTemplate ? "Cancel" : "+ New role template"}
         </button>
         {showNewTemplate && (
-          <form className="chat-form" onSubmit={handleCreateTemplate}>
+          <form className="chat-form" onSubmit={handleSaveTemplate}>
             <input
               type="text"
               placeholder="Template name"
@@ -892,7 +963,7 @@ export default function Chat() {
               onChange={(e) => setTemplatePrompt(e.target.value)}
               required
             />
-            <button type="submit">Save template</button>
+            <button type="submit">{editingTemplateId ? "Save changes" : "Save template"}</button>
           </form>
         )}
       </aside>

@@ -571,6 +571,36 @@ pub fn create_custom_role_template(
         .map_err(|e| e.to_string())
 }
 
+/// Edits an existing custom template in place. Does not touch any Agent
+/// created from this template before the edit — `Agent::system_prompt`
+/// was copied at creation time, so this only changes what a *future*
+/// "apply this template" picks up (see `storage::update_custom_role_template`).
+#[tauri::command]
+#[allow(clippy::too_many_arguments)]
+pub fn update_custom_role_template(
+    storage: State<Storage>,
+    id: String,
+    name: String,
+    description: String,
+    system_prompt: String,
+    suggested_provider_kind: Option<String>,
+    suggested_provider_name: Option<String>,
+    suggested_model: Option<String>,
+) -> Result<RoleTemplate, String> {
+    storage
+        .update_custom_role_template(
+            &id,
+            &name,
+            &description,
+            &system_prompt,
+            suggested_provider_kind.as_deref(),
+            suggested_provider_name.as_deref(),
+            suggested_model.as_deref(),
+        )
+        .map(RoleTemplate::from)
+        .map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 pub fn delete_custom_role_template(storage: State<Storage>, id: String) -> Result<(), String> {
     storage.delete_custom_role_template(&id).map_err(|e| e.to_string())
