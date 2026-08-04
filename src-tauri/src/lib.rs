@@ -4,6 +4,7 @@ mod fallback;
 mod file_access;
 mod guardrails;
 mod key_vault;
+mod ml_engine;
 mod orchestrator;
 mod session_manager;
 mod skill_manager;
@@ -12,6 +13,7 @@ mod usage_tracker;
 
 use std::sync::Mutex;
 
+use ml_engine::MlEngineRuntime;
 use skill_manager::SkillRuntime;
 use storage::Storage;
 use tauri::Manager;
@@ -25,6 +27,18 @@ pub(crate) struct SkillRuntimeState(pub(crate) Mutex<Option<SkillRuntime>>);
 /// The resolved `skills/` directory, stashed as managed state so commands
 /// can re-scan it (`list_skills`) without re-deriving the path each time.
 pub(crate) struct SkillsDir(pub(crate) std::path::PathBuf);
+
+/// Tauri managed state wrapping the optional Python `ml_engine` bridge —
+/// a separate process from `SkillRuntimeState`, see `ml_engine` module
+/// docs for why. `None` when no working Python interpreter was found or
+/// the bridge failed to start (ML capabilities are then unavailable, but
+/// the rest of the app still works).
+pub(crate) struct MlEngineRuntimeState(pub(crate) Mutex<Option<MlEngineRuntime>>);
+
+/// The resolved `ml/` directory, stashed as managed state so commands can
+/// re-scan it (`list_ml_capabilities`) without re-deriving the path each
+/// time.
+pub(crate) struct MlDir(pub(crate) std::path::PathBuf);
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -58,6 +72,20 @@ pub fn run() {
             };
             app.manage(SkillRuntimeState(Mutex::new(runtime)));
             app.manage(SkillsDir(skills_dir));
+
+            let ml_dir = ml_engine::resolve_ml_dir(app.path().resource_dir().ok());
+            // Same best-effort policy as the Skills bridge: a missing
+            // Python/sentence-transformers install shouldn't stop the
+            // rest of the app from working, only ML capabilities.
+            let ml_runtime = match MlEngineRuntime::start(&ml_dir) {
+                Ok(runtime) => Some(runtime),
+                Err(e) => {
+                    eprintln!("ML engine bridge unavailable: {e}");
+                    None
+                }
+            };
+            app.manage(MlEngineRuntimeState(Mutex::new(ml_runtime)));
+            app.manage(MlDir(ml_dir));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -99,6 +127,14 @@ pub fn run() {
             commands::advance_group_turn,
             commands::end_group_chat_meeting,
             commands::pull_out_to_independent_session,
+            commands::list_ml_capabilities,
+            commands::grant_ml_capability_to_agent,
+            commands::grant_ml_capability_to_session,
+            commands::revoke_ml_access_grant,
+            commands::list_ml_access_grants_for_agent,
+            commands::list_ml_access_grants_for_session,
+            commands::build_semantic_index,
+            commands::semantic_search_query,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

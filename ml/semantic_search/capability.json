@@ -1,0 +1,6 @@
+{
+  "name": "semantic_search",
+  "description": "Builds an in-memory sentence-embedding index over documents and answers similarity queries against it.",
+  "entrypoint": "capability.py",
+  "version": "0.1.0"
+}

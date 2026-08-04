@@ -116,6 +116,24 @@ pub struct SkillAccessGrant {
     pub granted_at: String,
 }
 
+/// Grants access to one `ml_engine` capability (e.g. `semantic_search`).
+/// Unlike `SkillAccessGrant`, this has a scope rather than always being
+/// tied to one agent — see `ML Engine Design.md` in the vault ("同場會議
+/// 共用"): a `session` grant is shared by every agent currently in that
+/// Group Chat, not just whoever the grant command was called for.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MlAccessGrant {
+    pub id: String,
+    /// "agent" | "session"
+    pub scope_kind: String,
+    /// An agent id when `scope_kind == "agent"`, a session id when
+    /// `scope_kind == "session"`.
+    pub scope_id: String,
+    pub capability_name: String,
+    pub granted_at: String,
+}
+
 /// A user-authored role template ("User Custom" in
 /// `Role Templates Index.md` — as opposed to the 10 built-in "Default"
 /// ones, which live in `agent_manager::role_templates` as Rust constants
@@ -260,6 +278,14 @@ impl Storage {
                 agent_id      TEXT NOT NULL REFERENCES agents(id),
                 skill_name    TEXT NOT NULL,
                 granted_at    TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS ml_access_grants (
+                id                TEXT PRIMARY KEY,
+                scope_kind        TEXT NOT NULL,
+                scope_id          TEXT NOT NULL,
+                capability_name   TEXT NOT NULL,
+                granted_at        TEXT NOT NULL
             );
             ",
         )?;
@@ -779,6 +805,114 @@ impl Storage {
         Ok(())
     }
 
+    /// `scope_kind` must be `"agent"` or `"session"` — see `MlAccessGrant`
+    /// docs. Callers (`commands::grant_ml_capability_to_agent` /
+    /// `..._to_session`) are responsible for picking the right one; this
+    /// method doesn't validate the value itself, same as how
+    /// `create_agent`'s `provider_kind` string isn't validated here.
+    pub fn grant_ml_capability(
+        &self,
+        scope_kind: &str,
+        scope_id: &str,
+        capability_name: &str,
+    ) -> rusqlite::Result<MlAccessGrant> {
+        let grant = MlAccessGrant {
+            id: uuid::Uuid::new_v4().to_string(),
+            scope_kind: scope_kind.to_string(),
+            scope_id: scope_id.to_string(),
+            capability_name: capability_name.to_string(),
+            granted_at: chrono::Utc::now().to_rfc3339(),
+        };
+        self.conn.lock().unwrap().execute(
+            "INSERT INTO ml_access_grants (id, scope_kind, scope_id, capability_name, granted_at) VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![grant.id, grant.scope_kind, grant.scope_id, grant.capability_name, grant.granted_at],
+        )?;
+        Ok(grant)
+    }
+
+    pub fn revoke_ml_access_grant(&self, id: &str) -> rusqlite::Result<()> {
+        self.conn
+            .lock()
+            .unwrap()
+            .execute("DELETE FROM ml_access_grants WHERE id = ?1", params![id])?;
+        Ok(())
+    }
+
+    /// All grants directly on `agent_id` (`scope_kind = "agent"`) — does
+    /// **not** include session-shared grants; use
+    /// `has_ml_capability_access` to check actual effective access
+    /// (which does include those).
+    pub fn list_ml_access_grants_for_agent(&self, agent_id: &str) -> rusqlite::Result<Vec<MlAccessGrant>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, scope_kind, scope_id, capability_name, granted_at
+             FROM ml_access_grants WHERE scope_kind = 'agent' AND scope_id = ?1 ORDER BY granted_at ASC",
+        )?;
+        let rows = stmt.query_map(params![agent_id], |row| {
+            Ok(MlAccessGrant {
+                id: row.get(0)?,
+                scope_kind: row.get(1)?,
+                scope_id: row.get(2)?,
+                capability_name: row.get(3)?,
+                granted_at: row.get(4)?,
+            })
+        })?;
+        rows.collect()
+    }
+
+    pub fn list_ml_access_grants_for_session(&self, session_id: &str) -> rusqlite::Result<Vec<MlAccessGrant>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, scope_kind, scope_id, capability_name, granted_at
+             FROM ml_access_grants WHERE scope_kind = 'session' AND scope_id = ?1 ORDER BY granted_at ASC",
+        )?;
+        let rows = stmt.query_map(params![session_id], |row| {
+            Ok(MlAccessGrant {
+                id: row.get(0)?,
+                scope_kind: row.get(1)?,
+                scope_id: row.get(2)?,
+                capability_name: row.get(3)?,
+                granted_at: row.get(4)?,
+            })
+        })?;
+        rows.collect()
+    }
+
+    /// Whether `agent_id` may call `capability_name` — true if the agent
+    /// has a direct `"agent"`-scope grant, **or** if any Group Chat
+    /// session it's currently a member of has a `"session"`-scope grant
+    /// for that capability (the "同場會議共用" rule from `ML Engine
+    /// Design.md`). Every session-scope grant is checked against the
+    /// agent's *current* membership, not membership at grant time, so
+    /// leaving a Group Chat also revokes the shared access.
+    pub fn has_ml_capability_access(&self, agent_id: &str, capability_name: &str) -> rusqlite::Result<bool> {
+        let conn = self.conn.lock().unwrap();
+        let direct: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM ml_access_grants WHERE scope_kind = 'agent' AND scope_id = ?1 AND capability_name = ?2",
+            params![agent_id, capability_name],
+            |row| row.get(0),
+        )?;
+        if direct > 0 {
+            return Ok(true);
+        }
+
+        let mut stmt = conn.prepare(
+            "SELECT DISTINCT scope_id FROM ml_access_grants WHERE scope_kind = 'session' AND capability_name = ?1",
+        )?;
+        let session_ids: Vec<String> = stmt.query_map(params![capability_name], |row| row.get(0))?.collect::<rusqlite::Result<_>>()?;
+        for session_id in session_ids {
+            let is_member: i64 = conn.query_row(
+                "SELECT COUNT(*) FROM session_agents WHERE session_id = ?1 AND agent_id = ?2",
+                params![session_id, agent_id],
+                |row| row.get(0),
+            )?;
+            if is_member > 0 {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn create_custom_role_template(
         &self,
@@ -992,6 +1126,65 @@ mod tests {
 
         storage.revoke_skill_access_grant(&grant.id).unwrap();
         assert!(storage.list_skill_access_grants(&agent.id).unwrap().is_empty());
+    }
+
+    #[test]
+    fn agent_scoped_ml_grant_only_authorizes_that_agent() {
+        let storage = Storage::open_in_memory().unwrap();
+        let granted = storage.create_agent("Granted", None, None, "cloud", "anthropic", "claude").unwrap();
+        let other = storage.create_agent("Other", None, None, "cloud", "anthropic", "claude").unwrap();
+
+        assert!(!storage.has_ml_capability_access(&granted.id, "semantic_search").unwrap());
+
+        let grant = storage.grant_ml_capability("agent", &granted.id, "semantic_search").unwrap();
+        assert!(storage.has_ml_capability_access(&granted.id, "semantic_search").unwrap());
+        assert!(!storage.has_ml_capability_access(&other.id, "semantic_search").unwrap());
+
+        let grants = storage.list_ml_access_grants_for_agent(&granted.id).unwrap();
+        assert_eq!(grants.len(), 1);
+        assert_eq!(grants[0].id, grant.id);
+
+        storage.revoke_ml_access_grant(&grant.id).unwrap();
+        assert!(!storage.has_ml_capability_access(&granted.id, "semantic_search").unwrap());
+    }
+
+    #[test]
+    fn session_scoped_ml_grant_is_shared_by_every_current_member() {
+        let storage = Storage::open_in_memory().unwrap();
+        let a = storage.create_agent("A", None, None, "cloud", "anthropic", "claude").unwrap();
+        let b = storage.create_agent("B", None, None, "cloud", "anthropic", "claude").unwrap();
+        let outsider = storage.create_agent("Outsider", None, None, "cloud", "anthropic", "claude").unwrap();
+        let session = storage.create_session("group", "Standup").unwrap();
+        storage.add_agent_to_session(&session.id, &a.id).unwrap();
+        storage.add_agent_to_session(&session.id, &b.id).unwrap();
+
+        storage.grant_ml_capability("session", &session.id, "semantic_search").unwrap();
+
+        assert!(storage.has_ml_capability_access(&a.id, "semantic_search").unwrap());
+        assert!(storage.has_ml_capability_access(&b.id, "semantic_search").unwrap());
+        assert!(!storage.has_ml_capability_access(&outsider.id, "semantic_search").unwrap());
+
+        let grants = storage.list_ml_access_grants_for_session(&session.id).unwrap();
+        assert_eq!(grants.len(), 1);
+        assert_eq!(grants[0].scope_kind, "session");
+    }
+
+    #[test]
+    fn leaving_has_no_way_to_happen_but_grant_checks_membership_live_not_at_grant_time() {
+        // Regression guard for the design's stated invariant: session
+        // grants are checked against *current* membership, not a
+        // snapshot taken when the grant was created. There's no "leave
+        // session" API yet, so this proves the query itself is
+        // membership-driven by adding the grant before the agent joins.
+        let storage = Storage::open_in_memory().unwrap();
+        let agent = storage.create_agent("A", None, None, "cloud", "anthropic", "claude").unwrap();
+        let session = storage.create_session("group", "Standup").unwrap();
+
+        storage.grant_ml_capability("session", &session.id, "semantic_search").unwrap();
+        assert!(!storage.has_ml_capability_access(&agent.id, "semantic_search").unwrap());
+
+        storage.add_agent_to_session(&session.id, &agent.id).unwrap();
+        assert!(storage.has_ml_capability_access(&agent.id, "semantic_search").unwrap());
     }
 
     #[test]

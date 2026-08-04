@@ -32,6 +32,8 @@ cargo test -- --ignored
 
 Never commit real API keys, even in test code — set them via environment variables (e.g. `OPENROUTER_TEST_KEY`) when running ignored tests locally.
 
+The `ml_engine::live` tests additionally need `sentence-transformers` installed for whichever Python interpreter is on `PATH`: `pip install -r ml/requirements.txt`.
+
 ## Guidelines
 
 - **Tests are not optional.** New logic should ship with unit tests; anything hitting a real network call or subprocess should get a `#[ignore]`d live test in addition, not instead of, fast unit tests on the pure logic underneath it.

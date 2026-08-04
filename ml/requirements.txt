@@ -1,0 +1,13 @@
+# Dependencies for the ml_engine bridge (ml/_engine.py and its
+# capabilities, e.g. ml/semantic_search/). Separate from skills/, which
+# is deliberately stdlib-only — see ADR 0003 and
+# "Multi-AI Agent Panel Document/04 Agents & Orchestration/ML Engine Design.md"
+# for why these are a required, bundled dependency of this app rather
+# than optional like a plain Skill's would be.
+#
+# For local development: `pip install -r ml/requirements.txt` into
+# whichever Python interpreter is on PATH when running `cargo tauri dev`
+# or the live ml_engine tests (`cargo test ml_engine::live -- --ignored`).
+# Packaging this into the three-platform installers is deliberately not
+# done yet (ML Engine Design.md §6 — verify locally first).
+sentence-transformers>=5.0

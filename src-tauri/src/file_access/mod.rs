@@ -9,9 +9,20 @@
 //! own; it only checks and reads.
 
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::storage::Storage;
+
+/// Caps for `list_text_files_in_grants` — this walks a whole granted
+/// folder rather than reading one file the agent asked for by name, so
+/// unlike `read_file` it needs its own defensive bounds: a folder
+/// someone granted access to could contain thousands of files, or (as
+/// happened once in this project's own vault — a `.docx` mistakenly
+/// saved with a `.md` extension) a multi-megabyte binary blob wearing a
+/// text extension.
+const MAX_INDEXABLE_FILES: usize = 200;
+const MAX_INDEXABLE_FILE_BYTES: u64 = 200 * 1024;
+const INDEXABLE_EXTENSIONS: &[&str] = &["md", "txt"];
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum FileAccessError {
@@ -86,6 +97,61 @@ pub fn read_file(storage: &Storage, agent_id: &str, path: &Path) -> Result<Strin
     }
 
     fs::read_to_string(path).map_err(|e| FileAccessError::PermissionDenied(e.to_string()))
+}
+
+/// Collects `(path, content)` pairs for every `.md`/`.txt` file inside
+/// `agent_id`'s granted folders (recursively), for feeding into the
+/// `ml_engine`'s `semantic_search` capability (see `ML Engine Design.md`
+/// in the vault). Every file returned lives under a path the user
+/// explicitly granted — this walks `grant.folder_path` itself rather
+/// than accepting a path from the caller, so there's no `..` escape to
+/// defend against the way `read_file` has to. Unreadable, oversized, or
+/// non-UTF8 files are silently skipped rather than failing the whole
+/// scan, same policy as `skill_manager::discover_skills`.
+pub fn list_text_files_in_grants(storage: &Storage, agent_id: &str) -> Vec<(String, String)> {
+    let grants = storage.list_file_access_grants(agent_id).unwrap_or_default();
+    let mut results = Vec::new();
+    for grant in grants {
+        if results.len() >= MAX_INDEXABLE_FILES {
+            break;
+        }
+        collect_text_files(&PathBuf::from(&grant.folder_path), &mut results);
+    }
+    results.truncate(MAX_INDEXABLE_FILES);
+    results
+}
+
+fn collect_text_files(dir: &Path, out: &mut Vec<(String, String)>) {
+    let Ok(entries) = fs::read_dir(dir) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        if out.len() >= MAX_INDEXABLE_FILES {
+            return;
+        }
+        let path = entry.path();
+        if path.is_dir() {
+            collect_text_files(&path, out);
+            continue;
+        }
+        let is_indexable_extension = path
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .map(|ext| INDEXABLE_EXTENSIONS.contains(&ext.to_lowercase().as_str()))
+            .unwrap_or(false);
+        if !is_indexable_extension {
+            continue;
+        }
+        let Ok(metadata) = fs::metadata(&path) else {
+            continue;
+        };
+        if metadata.len() > MAX_INDEXABLE_FILE_BYTES {
+            continue;
+        }
+        if let Ok(text) = fs::read_to_string(&path) {
+            out.push((path.to_string_lossy().to_string(), text));
+        }
+    }
 }
 
 #[cfg(test)]
@@ -172,5 +238,60 @@ mod tests {
             read_file(&storage, &other_agent.id, &file_path).unwrap_err(),
             FileAccessError::NotAuthorized
         );
+    }
+
+    #[test]
+    fn list_text_files_in_grants_only_returns_indexable_extensions() {
+        let storage = Storage::open_in_memory().unwrap();
+        let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude").unwrap();
+        let dir = temp_dir("indexable-ext");
+        storage.grant_folder_access(&agent.id, dir.to_str().unwrap()).unwrap();
+
+        fs::write(dir.join("notes.md"), "# hello").unwrap();
+        fs::write(dir.join("readme.txt"), "plain text").unwrap();
+        fs::write(dir.join("data.bin"), [0u8, 159, 146, 150]).unwrap();
+
+        let mut files = list_text_files_in_grants(&storage, &agent.id);
+        files.sort();
+        assert_eq!(files.len(), 2);
+        assert!(files.iter().any(|(path, _)| path.ends_with("notes.md")));
+        assert!(files.iter().any(|(path, _)| path.ends_with("readme.txt")));
+    }
+
+    #[test]
+    fn list_text_files_in_grants_walks_subdirectories() {
+        let storage = Storage::open_in_memory().unwrap();
+        let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude").unwrap();
+        let dir = temp_dir("nested");
+        storage.grant_folder_access(&agent.id, dir.to_str().unwrap()).unwrap();
+
+        fs::create_dir_all(dir.join("sub")).unwrap();
+        fs::write(dir.join("sub/deep.md"), "deep note").unwrap();
+
+        let files = list_text_files_in_grants(&storage, &agent.id);
+        assert_eq!(files.len(), 1);
+        assert_eq!(files[0].1, "deep note");
+    }
+
+    #[test]
+    fn list_text_files_in_grants_skips_oversized_files() {
+        let storage = Storage::open_in_memory().unwrap();
+        let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude").unwrap();
+        let dir = temp_dir("oversized");
+        storage.grant_folder_access(&agent.id, dir.to_str().unwrap()).unwrap();
+
+        fs::write(dir.join("huge.md"), "x".repeat(300 * 1024)).unwrap();
+        fs::write(dir.join("normal.md"), "fine").unwrap();
+
+        let files = list_text_files_in_grants(&storage, &agent.id);
+        assert_eq!(files.len(), 1);
+        assert_eq!(files[0].1, "fine");
+    }
+
+    #[test]
+    fn list_text_files_in_grants_is_empty_with_no_grants() {
+        let storage = Storage::open_in_memory().unwrap();
+        let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude").unwrap();
+        assert!(list_text_files_in_grants(&storage, &agent.id).is_empty());
     }
 }

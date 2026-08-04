@@ -10,11 +10,14 @@ use crate::agent_manager::role_templates::{self, RoleTemplate};
 use crate::agent_manager::{self};
 use crate::file_access;
 use crate::key_vault;
+use crate::ml_engine::{self, MlCapabilityManifest};
 use crate::orchestrator::{self, GroupChatError};
 use crate::session_manager;
 use crate::skill_manager::{self, SkillManifest};
-use crate::storage::{Agent, FileAccessGrant, Message, ProviderKey, Session, SkillAccessGrant, Storage, UsageSummary};
-use crate::{SkillRuntimeState, SkillsDir};
+use crate::storage::{
+    Agent, FileAccessGrant, MlAccessGrant, Message, ProviderKey, Session, SkillAccessGrant, Storage, UsageSummary,
+};
+use crate::{MlDir, MlEngineRuntimeState, SkillRuntimeState, SkillsDir};
 
 /// A `ProviderKey` plus a masked preview of the secret (never the real
 /// value) — this is what the frontend actually renders.
@@ -608,6 +611,110 @@ pub fn run_skill_in_session(
         serde_json::to_string_pretty(&result).unwrap_or_else(|_| result.to_string())
     );
     storage.add_message(&session_id, Some(&agent_id), "system", &content).map_err(|e| e.to_string())
+}
+
+// --- ML Engine (semantic search / RAG) ---
+//
+// See `ml_engine` module docs and the vault's `ML Engine Design.md` — a
+// separate Python subprocess from the Skills bridge, gated by the same
+// Guardrails-then-allowlist pattern, but with its own grant scoping
+// (`ml_access_grants`) that supports Group-Chat-session-shared access.
+
+#[tauri::command]
+pub fn list_ml_capabilities(ml_dir: State<MlDir>) -> Vec<MlCapabilityManifest> {
+    ml_engine::discover_capabilities(&ml_dir.0)
+}
+
+#[tauri::command]
+pub fn grant_ml_capability_to_agent(
+    storage: State<Storage>,
+    agent_id: String,
+    capability_name: String,
+) -> Result<MlAccessGrant, String> {
+    storage.grant_ml_capability("agent", &agent_id, &capability_name).map_err(|e| e.to_string())
+}
+
+/// Grants a capability to an entire Group Chat session — every agent
+/// currently in that session gets access, and it's checked live against
+/// current membership (`storage::has_ml_capability_access`), not a
+/// snapshot taken now.
+#[tauri::command]
+pub fn grant_ml_capability_to_session(
+    storage: State<Storage>,
+    session_id: String,
+    capability_name: String,
+) -> Result<MlAccessGrant, String> {
+    storage.grant_ml_capability("session", &session_id, &capability_name).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn revoke_ml_access_grant(storage: State<Storage>, id: String) -> Result<(), String> {
+    storage.revoke_ml_access_grant(&id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn list_ml_access_grants_for_agent(storage: State<Storage>, agent_id: String) -> Result<Vec<MlAccessGrant>, String> {
+    storage.list_ml_access_grants_for_agent(&agent_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn list_ml_access_grants_for_session(
+    storage: State<Storage>,
+    session_id: String,
+) -> Result<Vec<MlAccessGrant>, String> {
+    storage.list_ml_access_grants_for_session(&session_id).map_err(|e| e.to_string())
+}
+
+/// Rebuilds `index_name` from every `.md`/`.txt` file across `agent_id`'s
+/// granted folders. The Rust side reads the files (respecting File
+/// Access grants — the capability itself never receives a folder path to
+/// read on its own), then hands the text to `semantic_search`'s `index`
+/// action through the normal Guardrails + allowlist gate. Callers choose
+/// `index_name` — pass `agent_id` for an Independent Session's private
+/// index, or `group-<sessionId>` for a Group Chat's shared index (see
+/// `ML Engine Design.md` §4.1).
+#[tauri::command]
+pub fn build_semantic_index(
+    storage: State<Storage>,
+    runtime: State<MlEngineRuntimeState>,
+    agent_id: String,
+    index_name: String,
+) -> Result<serde_json::Value, String> {
+    let documents = file_access::list_text_files_in_grants(&storage, &agent_id);
+    if documents.is_empty() {
+        return Err(
+            "no indexable .md/.txt files found in this agent's granted folders — grant a folder first".to_string(),
+        );
+    }
+    let payload = serde_json::json!({
+        "action": "index",
+        "indexName": index_name,
+        "documents": documents
+            .into_iter()
+            .map(|(path, text)| serde_json::json!({"path": path, "text": text}))
+            .collect::<Vec<_>>(),
+    });
+    let guard = runtime.0.lock().unwrap();
+    ml_engine::invoke(&storage, guard.as_ref(), &agent_id, "semantic_search", payload).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn semantic_search_query(
+    storage: State<Storage>,
+    runtime: State<MlEngineRuntimeState>,
+    agent_id: String,
+    index_name: String,
+    query: String,
+    top_k: Option<u32>,
+) -> Result<serde_json::Value, String> {
+    let payload = serde_json::json!({
+        "action": "search",
+        "indexName": index_name,
+        "query": query,
+        "topK": top_k.unwrap_or(5),
+    });
+    let guard = runtime.0.lock().unwrap();
+    ml_engine::invoke(&storage, guard.as_ref(), &agent_id, "semantic_search", payload).map_err(|e| e.to_string())
 }
 
 /// Live end-to-end tests exercising the internal (`&Storage`-only, no
