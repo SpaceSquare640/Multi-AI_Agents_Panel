@@ -495,9 +495,37 @@ pub fn grant_folder_access(
     storage.grant_folder_access(&agent_id, &folder_path).map_err(|e| e.to_string())
 }
 
+/// Same picker-only-creation rule as `grant_folder_access` — the folder
+/// still comes from a real OS dialog the user just drove. The only
+/// difference is the grant is shared with every agent currently in
+/// `session_id` (a Group Chat), not just `agent_id` — see
+/// `storage::grant_folder_access_for_session`.
+#[tauri::command]
+pub fn grant_folder_access_for_session(
+    storage: State<Storage>,
+    session_id: String,
+    agent_id: String,
+    folder_path: String,
+) -> Result<FileAccessGrant, String> {
+    storage
+        .grant_folder_access_for_session(&session_id, &agent_id, &folder_path)
+        .map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 pub fn list_file_access_grants(storage: State<Storage>, agent_id: String) -> Result<Vec<FileAccessGrant>, String> {
     storage.list_file_access_grants(&agent_id).map_err(|e| e.to_string())
+}
+
+/// The whole Group Chat's shared folders, for that session's "Files" UI
+/// — as opposed to `list_file_access_grants`, which only shows one
+/// agent's own (private or session-granted-by-them) rows.
+#[tauri::command]
+pub fn list_session_shared_file_grants(
+    storage: State<Storage>,
+    session_id: String,
+) -> Result<Vec<FileAccessGrant>, String> {
+    storage.list_session_shared_file_grants(&session_id).map_err(|e| e.to_string())
 }
 
 #[tauri::command]

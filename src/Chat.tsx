@@ -240,11 +240,12 @@ export default function Chat() {
 
     try {
       if (kind === "group") {
-        const [messages, members] = await Promise.all([
+        const [messages, members, fileGrants] = await Promise.all([
           invoke<Message[]>("list_messages", { sessionId }),
           invoke<Agent[]>("list_session_members", { sessionId }),
+          invoke<FileAccessGrant[]>("list_session_shared_file_grants", { sessionId }),
         ]);
-        patchTab(sessionId, { kind, messages, members, agent: null, fileGrants: [] });
+        patchTab(sessionId, { kind, messages, members, agent: null, fileGrants });
       } else {
         const [messages, agentId] = await Promise.all([
           invoke<Message[]>("list_messages", { sessionId }),
@@ -349,29 +350,46 @@ export default function Chat() {
     }
   }
 
+  /// Independent Session tabs grant a private folder to their one agent;
+  /// Group Chat tabs grant a folder shared by every member currently in
+  /// the meeting (`grant_folder_access_for_session`) — same real OS
+  /// folder picker either way, only the resulting scope differs.
   async function handleGrantFolder(sessionId: string) {
-    const agent = tabs[sessionId]?.agent;
-    if (!agent) return;
+    const tab = tabs[sessionId];
+    if (!tab) return;
+    const grantingAgentId = tab.kind === "group" ? tab.members[0]?.id : tab.agent?.id;
+    if (!grantingAgentId) return;
     setError(null);
     try {
       const folder = await openFolderPicker({ directory: true, multiple: false });
       if (!folder) return; // user cancelled the picker
-      await invoke("grant_folder_access", { agentId: agent.id, folderPath: folder });
-      const fileGrants = await invoke<FileAccessGrant[]>("list_file_access_grants", { agentId: agent.id });
-      patchTab(sessionId, { fileGrants });
+      if (tab.kind === "group") {
+        await invoke("grant_folder_access_for_session", { sessionId, agentId: grantingAgentId, folderPath: folder });
+        const fileGrants = await invoke<FileAccessGrant[]>("list_session_shared_file_grants", { sessionId });
+        patchTab(sessionId, { fileGrants });
+      } else {
+        await invoke("grant_folder_access", { agentId: grantingAgentId, folderPath: folder });
+        const fileGrants = await invoke<FileAccessGrant[]>("list_file_access_grants", { agentId: grantingAgentId });
+        patchTab(sessionId, { fileGrants });
+      }
     } catch (err) {
       setError(String(err));
     }
   }
 
   async function handleRevokeGrant(sessionId: string, id: string) {
-    const agent = tabs[sessionId]?.agent;
-    if (!agent) return;
+    const tab = tabs[sessionId];
+    if (!tab) return;
     setError(null);
     try {
       await invoke("revoke_file_access_grant", { id });
-      const fileGrants = await invoke<FileAccessGrant[]>("list_file_access_grants", { agentId: agent.id });
-      patchTab(sessionId, { fileGrants });
+      if (tab.kind === "group") {
+        const fileGrants = await invoke<FileAccessGrant[]>("list_session_shared_file_grants", { sessionId });
+        patchTab(sessionId, { fileGrants });
+      } else if (tab.agent) {
+        const fileGrants = await invoke<FileAccessGrant[]>("list_file_access_grants", { agentId: tab.agent.id });
+        patchTab(sessionId, { fileGrants });
+      }
     } catch (err) {
       setError(String(err));
     }
@@ -934,6 +952,27 @@ export default function Chat() {
                     onClick={() => handleEndMeeting(activeSessionId)}
                   >
                     End meeting (summarize)
+                  </button>
+                </div>
+                <div className="chat-file-access">
+                  <span>Files (shared with this meeting):</span>
+                  {activeTab.fileGrants.length === 0 && (
+                    <span className="chat-empty">no folders granted</span>
+                  )}
+                  {activeTab.fileGrants.map((g) => (
+                    <span key={g.id} className="chat-file-chip">
+                      {g.folderPath}
+                      <button onClick={() => handleRevokeGrant(activeSessionId, g.id)} title="Revoke access">
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                  <button
+                    className="chat-link-button"
+                    disabled={activeTab.members.length === 0}
+                    onClick={() => handleGrantFolder(activeSessionId)}
+                  >
+                    + Grant folder…
                   </button>
                 </div>
               </div>

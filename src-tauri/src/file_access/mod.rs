@@ -77,13 +77,14 @@ fn is_within_granted_folders(granted_folders: &[String], path: &Path) -> Result<
 }
 
 /// Reads a file on the agent's behalf, enforcing that it falls under one
-/// of the agent's granted folders. This is the only read path — there is
-/// no bypass that skips the authorization check.
+/// of the agent's *effective* granted folders — its own private grants,
+/// plus anything shared to a Group Chat session it's currently in (see
+/// `storage::effective_granted_folders`). This is the only read path —
+/// there is no bypass that skips the authorization check.
 pub fn read_file(storage: &Storage, agent_id: &str, path: &Path) -> Result<String, FileAccessError> {
-    let grants = storage
-        .list_file_access_grants(agent_id)
+    let folders = storage
+        .effective_granted_folders(agent_id)
         .map_err(|_| FileAccessError::NotAuthorized)?;
-    let folders: Vec<String> = grants.into_iter().map(|g| g.folder_path).collect();
 
     if folders.is_empty() {
         return Err(FileAccessError::NotAuthorized);
@@ -109,13 +110,13 @@ pub fn read_file(storage: &Storage, agent_id: &str, path: &Path) -> Result<Strin
 /// non-UTF8 files are silently skipped rather than failing the whole
 /// scan, same policy as `skill_manager::discover_skills`.
 pub fn list_text_files_in_grants(storage: &Storage, agent_id: &str) -> Vec<(String, String)> {
-    let grants = storage.list_file_access_grants(agent_id).unwrap_or_default();
+    let folders = storage.effective_granted_folders(agent_id).unwrap_or_default();
     let mut results = Vec::new();
-    for grant in grants {
+    for folder in folders {
         if results.len() >= MAX_INDEXABLE_FILES {
             break;
         }
-        collect_text_files(&PathBuf::from(&grant.folder_path), &mut results);
+        collect_text_files(&PathBuf::from(&folder), &mut results);
     }
     results.truncate(MAX_INDEXABLE_FILES);
     results
@@ -238,6 +239,27 @@ mod tests {
             read_file(&storage, &other_agent.id, &file_path).unwrap_err(),
             FileAccessError::NotAuthorized
         );
+    }
+
+    #[test]
+    fn a_group_chat_shared_grant_lets_a_fellow_member_read_the_file() {
+        let storage = Storage::open_in_memory().unwrap();
+        let picker = storage.create_agent("Picker", None, None, "cloud", "anthropic", "claude").unwrap();
+        let teammate = storage.create_agent("Teammate", None, None, "cloud", "anthropic", "claude").unwrap();
+        let outsider = storage.create_agent("Outsider", None, None, "cloud", "anthropic", "claude").unwrap();
+        let session = storage.create_session("group", "Standup").unwrap();
+        storage.add_agent_to_session(&session.id, &picker.id).unwrap();
+        storage.add_agent_to_session(&session.id, &teammate.id).unwrap();
+
+        let dir = temp_dir("group-shared");
+        storage.grant_folder_access_for_session(&session.id, &picker.id, dir.to_str().unwrap()).unwrap();
+
+        let file_path = dir.join("note.txt");
+        fs::write(&file_path, "shared with the whole meeting").unwrap();
+
+        assert_eq!(read_file(&storage, &picker.id, &file_path).unwrap(), "shared with the whole meeting");
+        assert_eq!(read_file(&storage, &teammate.id, &file_path).unwrap(), "shared with the whole meeting");
+        assert_eq!(read_file(&storage, &outsider.id, &file_path).unwrap_err(), FileAccessError::NotAuthorized);
     }
 
     #[test]

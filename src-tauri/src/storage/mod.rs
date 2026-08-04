@@ -95,6 +95,14 @@ pub struct UsageSummary {
 /// One folder an agent has been explicitly granted read access to.
 /// Created only after the user picks the folder via the OS's native
 /// folder picker — see `file_access` module docs.
+///
+/// `session_id` implements `Orchestration Design.md`'s decided "同場會議
+/// 共用" rule: `None` means a private grant (only `agent_id` can use it,
+/// in any session); `Some(session_id)` means every agent *currently* in
+/// that Group Chat session can use it, not just `agent_id` — see
+/// `storage::effective_granted_folders`, which is what authorization
+/// checks (`file_access::read_file`, `list_text_files_in_grants`) query
+/// against, not this raw per-row list.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FileAccessGrant {
@@ -102,6 +110,7 @@ pub struct FileAccessGrant {
     pub agent_id: String,
     pub folder_path: String,
     pub granted_at: String,
+    pub session_id: Option<String>,
 }
 
 /// One Skill an agent has been explicitly granted permission to call.
@@ -294,7 +303,9 @@ impl Storage {
         // pre-existing local databases rather than requiring a fresh one.
         Self::ensure_column(&conn, "session_agents", "joined_at", "joined_at TEXT")?;
         // `agents` predates key pinning; same soft-migration approach.
-        Self::ensure_column(&conn, "agents", "pinned_provider_key_id", "pinned_provider_key_id TEXT")
+        Self::ensure_column(&conn, "agents", "pinned_provider_key_id", "pinned_provider_key_id TEXT")?;
+        // `file_access_grants` predates Group Chat's "同場會議共用" rule.
+        Self::ensure_column(&conn, "file_access_grants", "session_id", "session_id TEXT")
     }
 
     fn ensure_column(conn: &Connection, table: &str, column: &str, ddl: &str) -> rusqlite::Result<()> {
@@ -727,24 +738,56 @@ impl Storage {
         rows.collect()
     }
 
+    /// Grants a private folder to `agent_id` alone. Use
+    /// `grant_folder_access_for_session` instead for Group Chat's shared
+    /// grants.
     pub fn grant_folder_access(&self, agent_id: &str, folder_path: &str) -> rusqlite::Result<FileAccessGrant> {
+        self.insert_file_access_grant(agent_id, folder_path, None)
+    }
+
+    /// Grants a folder shared by every agent *currently* in `session_id`
+    /// (a Group Chat), per `Orchestration Design.md`'s "同場會議共用"
+    /// rule. `agent_id` records who picked the folder (shown in the UI)
+    /// but is not itself special — `effective_granted_folders` checks
+    /// live session membership, not this row's `agent_id`.
+    pub fn grant_folder_access_for_session(
+        &self,
+        session_id: &str,
+        agent_id: &str,
+        folder_path: &str,
+    ) -> rusqlite::Result<FileAccessGrant> {
+        self.insert_file_access_grant(agent_id, folder_path, Some(session_id))
+    }
+
+    fn insert_file_access_grant(
+        &self,
+        agent_id: &str,
+        folder_path: &str,
+        session_id: Option<&str>,
+    ) -> rusqlite::Result<FileAccessGrant> {
         let grant = FileAccessGrant {
             id: uuid::Uuid::new_v4().to_string(),
             agent_id: agent_id.to_string(),
             folder_path: folder_path.to_string(),
             granted_at: chrono::Utc::now().to_rfc3339(),
+            session_id: session_id.map(str::to_string),
         };
         self.conn.lock().unwrap().execute(
-            "INSERT INTO file_access_grants (id, agent_id, folder_path, granted_at) VALUES (?1, ?2, ?3, ?4)",
-            params![grant.id, grant.agent_id, grant.folder_path, grant.granted_at],
+            "INSERT INTO file_access_grants (id, agent_id, folder_path, granted_at, session_id) VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![grant.id, grant.agent_id, grant.folder_path, grant.granted_at, grant.session_id],
         )?;
         Ok(grant)
     }
 
+    /// Every grant recorded under `agent_id` — private ones and ones this
+    /// agent shared to a session it granted from. This is what the UI
+    /// displays/revokes; for authorization decisions use
+    /// `effective_granted_folders` instead, which also includes grants
+    /// *other* agents shared to a session `agent_id` is currently in.
     pub fn list_file_access_grants(&self, agent_id: &str) -> rusqlite::Result<Vec<FileAccessGrant>> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT id, agent_id, folder_path, granted_at
+            "SELECT id, agent_id, folder_path, granted_at, session_id
              FROM file_access_grants WHERE agent_id = ?1 ORDER BY granted_at ASC",
         )?;
         let rows = stmt.query_map(params![agent_id], |row| {
@@ -753,8 +796,49 @@ impl Storage {
                 agent_id: row.get(1)?,
                 folder_path: row.get(2)?,
                 granted_at: row.get(3)?,
+                session_id: row.get(4)?,
             })
         })?;
+        rows.collect()
+    }
+
+    /// Every grant shared to `session_id` (by any of its members) — for
+    /// a Group Chat tab's "Files" display, which shows the whole
+    /// meeting's shared folders rather than one agent's private list.
+    pub fn list_session_shared_file_grants(&self, session_id: &str) -> rusqlite::Result<Vec<FileAccessGrant>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, agent_id, folder_path, granted_at, session_id
+             FROM file_access_grants WHERE session_id = ?1 ORDER BY granted_at ASC",
+        )?;
+        let rows = stmt.query_map(params![session_id], |row| {
+            Ok(FileAccessGrant {
+                id: row.get(0)?,
+                agent_id: row.get(1)?,
+                folder_path: row.get(2)?,
+                granted_at: row.get(3)?,
+                session_id: row.get(4)?,
+            })
+        })?;
+        rows.collect()
+    }
+
+    /// The actual set of folders `agent_id` may read from right now:
+    /// its own private grants, plus every folder shared to a Group Chat
+    /// session it is *currently* a member of (regardless of which agent
+    /// originally granted it). This — not `list_file_access_grants` — is
+    /// what `file_access::read_file` and `list_text_files_in_grants`
+    /// check against.
+    pub fn effective_granted_folders(&self, agent_id: &str) -> rusqlite::Result<Vec<String>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT folder_path FROM file_access_grants WHERE agent_id = ?1 AND session_id IS NULL
+             UNION
+             SELECT g.folder_path FROM file_access_grants g
+             JOIN session_agents sa ON sa.session_id = g.session_id
+             WHERE g.session_id IS NOT NULL AND sa.agent_id = ?1",
+        )?;
+        let rows = stmt.query_map(params![agent_id], |row| row.get::<_, String>(0))?;
         rows.collect()
     }
 
@@ -1055,6 +1139,55 @@ mod tests {
 
         storage.revoke_file_access_grant(&grant.id).unwrap();
         assert!(storage.list_file_access_grants(&agent.id).unwrap().is_empty());
+    }
+
+    #[test]
+    fn private_grant_is_only_effective_for_its_own_agent() {
+        let storage = Storage::open_in_memory().unwrap();
+        let owner = storage.create_agent("Owner", None, None, "cloud", "anthropic", "claude").unwrap();
+        let other = storage.create_agent("Other", None, None, "cloud", "anthropic", "claude").unwrap();
+        storage.grant_folder_access(&owner.id, "/tmp/notes").unwrap();
+
+        assert_eq!(storage.effective_granted_folders(&owner.id).unwrap(), vec!["/tmp/notes".to_string()]);
+        assert!(storage.effective_granted_folders(&other.id).unwrap().is_empty());
+    }
+
+    #[test]
+    fn session_shared_grant_is_effective_for_every_current_member() {
+        let storage = Storage::open_in_memory().unwrap();
+        let a = storage.create_agent("A", None, None, "cloud", "anthropic", "claude").unwrap();
+        let b = storage.create_agent("B", None, None, "cloud", "anthropic", "claude").unwrap();
+        let outsider = storage.create_agent("Outsider", None, None, "cloud", "anthropic", "claude").unwrap();
+        let session = storage.create_session("group", "Standup").unwrap();
+        storage.add_agent_to_session(&session.id, &a.id).unwrap();
+        storage.add_agent_to_session(&session.id, &b.id).unwrap();
+
+        // A picks the folder, but it should be usable by every member —
+        // not just A.
+        storage.grant_folder_access_for_session(&session.id, &a.id, "/tmp/shared").unwrap();
+
+        assert_eq!(storage.effective_granted_folders(&a.id).unwrap(), vec!["/tmp/shared".to_string()]);
+        assert_eq!(storage.effective_granted_folders(&b.id).unwrap(), vec!["/tmp/shared".to_string()]);
+        assert!(storage.effective_granted_folders(&outsider.id).unwrap().is_empty());
+
+        let shared = storage.list_session_shared_file_grants(&session.id).unwrap();
+        assert_eq!(shared.len(), 1);
+        assert_eq!(shared[0].folder_path, "/tmp/shared");
+    }
+
+    #[test]
+    fn session_shared_grant_checks_current_membership_not_a_snapshot() {
+        let storage = Storage::open_in_memory().unwrap();
+        let agent = storage.create_agent("A", None, None, "cloud", "anthropic", "claude").unwrap();
+        let session = storage.create_session("group", "Standup").unwrap();
+
+        storage.grant_folder_access_for_session(&session.id, &agent.id, "/tmp/shared").unwrap();
+        // Not a member yet (grant_folder_access_for_session doesn't add
+        // membership on its own) — should not be effective.
+        assert!(storage.effective_granted_folders(&agent.id).unwrap().is_empty());
+
+        storage.add_agent_to_session(&session.id, &agent.id).unwrap();
+        assert_eq!(storage.effective_granted_folders(&agent.id).unwrap(), vec!["/tmp/shared".to_string()]);
     }
 
     #[test]
