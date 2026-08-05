@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
 import {
   CLOUD_PROVIDERS,
@@ -45,6 +46,7 @@ export default function AIControlCenter() {
   const [ollamaInstalled, setOllamaInstalled] = useState<OllamaModel[]>([]);
   const [ollamaCurated, setOllamaCurated] = useState<CuratedModel[]>([]);
   const [pullingModel, setPullingModel] = useState<string | null>(null);
+  const [pullProgress, setPullProgress] = useState<{ status: string; percent: number | null } | null>(null);
   const [ollamaModelsEnvHint, setOllamaModelsEnvHint] = useState<string | null | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
 
@@ -192,13 +194,27 @@ export default function AIControlCenter() {
   async function handlePullModel(name: string) {
     setError(null);
     setPullingModel(name);
+    setPullProgress(null);
+    // Real streaming progress from the Rust side (see
+    // ollama::pull_model_with_progress) — one event per NDJSON line
+    // Ollama reports, not a static "loading" indicator.
+    const unlisten = await listen<{ name: string; status: string; percent: number | null }>(
+      "ollama-pull-progress",
+      (event) => {
+        if (event.payload.name === name) {
+          setPullProgress({ status: event.payload.status, percent: event.payload.percent });
+        }
+      },
+    );
     try {
       await invoke("pull_ollama_model", { name });
       await refreshOllama();
     } catch (err) {
       setError(String(err));
     } finally {
+      unlisten();
       setPullingModel(null);
+      setPullProgress(null);
     }
   }
 
@@ -467,7 +483,11 @@ export default function AIControlCenter() {
                 <li key={m.id}>
                   <span className="acc-mono">{m.id}</span> — {m.label}{" "}
                   <button disabled={pullingModel !== null} onClick={() => handlePullModel(m.id)}>
-                    {pullingModel === m.id ? "Installing…" : "Install"}
+                    {pullingModel === m.id
+                      ? pullProgress?.percent !== null && pullProgress?.percent !== undefined
+                        ? `${pullProgress.percent.toFixed(0)}%`
+                        : pullProgress?.status ?? "Installing…"
+                      : "Install"}
                   </button>
                 </li>
               ))}

@@ -106,13 +106,55 @@ pub fn list_installed() -> Result<Vec<OllamaModel>, ProviderError> {
     Ok(parse_tags_response(&body))
 }
 
-/// Pulls (installs) a model. This blocks until the download finishes —
-/// there's no progress percentage surfaced yet (see Backlog: streaming
-/// pull progress is a follow-up, not this pass).
-pub fn pull_model(name: &str) -> Result<(), ProviderError> {
+/// One line of Ollama's `/api/pull` streaming NDJSON response — see
+/// `parse_pull_progress_line`.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct PullProgress {
+    /// Ollama's own status text, e.g. "pulling manifest",
+    /// "downloading sha256:...", "verifying sha256 digest", "success".
+    pub status: String,
+    pub completed: Option<u64>,
+    pub total: Option<u64>,
+    /// 0–100, only present when this line reported both `completed` and
+    /// a non-zero `total` — most status lines (e.g. "pulling manifest")
+    /// report neither, so this is `None` far more often than not.
+    pub percent: Option<f64>,
+}
+
+/// Parses one line of Ollama's `/api/pull?stream=true` NDJSON body.
+/// Returns `None` for blank lines or lines that don't parse as the
+/// expected shape, rather than failing the whole stream over one odd
+/// line — pure logic, testable without a real download.
+pub fn parse_pull_progress_line(line: &str) -> Option<PullProgress> {
+    let trimmed = line.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    let value: Value = serde_json::from_str(trimmed).ok()?;
+    let status = value.get("status")?.as_str()?.to_string();
+    let completed = value.get("completed").and_then(Value::as_u64);
+    let total = value.get("total").and_then(Value::as_u64);
+    let percent = match (completed, total) {
+        (Some(c), Some(t)) if t > 0 => Some((c as f64 / t as f64) * 100.0),
+        _ => None,
+    };
+    Some(PullProgress { status, completed, total, percent })
+}
+
+/// Pulls (installs) a model, calling `on_progress` once per NDJSON line
+/// Ollama streams back — real download progress, not a blocking call
+/// with no feedback until it's done. Reads the response body
+/// incrementally line-by-line (`BufReader` over the still-open HTTP
+/// connection) rather than buffering the whole body first, so
+/// `on_progress` fires as bytes actually arrive.
+pub fn pull_model_with_progress(
+    name: &str,
+    mut on_progress: impl FnMut(PullProgress),
+) -> Result<(), ProviderError> {
     let response = client()
         .post(format!("{BASE_URL}/api/pull"))
-        .json(&json!({ "name": name, "stream": false }))
+        .json(&json!({ "name": name, "stream": true }))
         .send()
         .map_err(|e| ProviderError::Network(format!("could not reach Ollama: {e}")))?;
 
@@ -121,6 +163,19 @@ pub fn pull_model(name: &str) -> Result<(), ProviderError> {
             "pull failed with status {}",
             response.status()
         )));
+    }
+
+    let reader = std::io::BufReader::new(response);
+    let mut last_status = String::new();
+    for line in std::io::BufRead::lines(reader) {
+        let line = line.map_err(|e| ProviderError::Network(e.to_string()))?;
+        if let Some(progress) = parse_pull_progress_line(&line) {
+            last_status = progress.status.clone();
+            on_progress(progress);
+        }
+    }
+    if last_status.to_lowercase().contains("error") {
+        return Err(ProviderError::Api(format!("pull failed: {last_status}")));
     }
     Ok(())
 }
@@ -188,6 +243,42 @@ mod tests {
     #[test]
     fn parse_tags_response_handles_empty_body() {
         assert!(parse_tags_response(&json!({})).is_empty());
+    }
+
+    #[test]
+    fn parse_pull_progress_line_computes_percent_when_both_fields_present() {
+        let line = r#"{"status":"downloading sha256:abc","total":1000,"completed":250}"#;
+        let progress = parse_pull_progress_line(line).unwrap();
+        assert_eq!(progress.status, "downloading sha256:abc");
+        assert_eq!(progress.completed, Some(250));
+        assert_eq!(progress.total, Some(1000));
+        assert_eq!(progress.percent, Some(25.0));
+    }
+
+    #[test]
+    fn parse_pull_progress_line_has_no_percent_when_total_or_completed_missing() {
+        let line = r#"{"status":"pulling manifest"}"#;
+        let progress = parse_pull_progress_line(line).unwrap();
+        assert_eq!(progress.status, "pulling manifest");
+        assert_eq!(progress.percent, None);
+    }
+
+    #[test]
+    fn parse_pull_progress_line_returns_none_for_a_blank_line() {
+        assert!(parse_pull_progress_line("").is_none());
+        assert!(parse_pull_progress_line("   ").is_none());
+    }
+
+    #[test]
+    fn parse_pull_progress_line_returns_none_for_malformed_json() {
+        assert!(parse_pull_progress_line("not json at all").is_none());
+    }
+
+    #[test]
+    fn parse_pull_progress_line_treats_a_zero_total_as_no_percent_to_avoid_dividing_by_zero() {
+        let line = r#"{"status":"downloading","total":0,"completed":0}"#;
+        let progress = parse_pull_progress_line(line).unwrap();
+        assert_eq!(progress.percent, None);
     }
 }
 

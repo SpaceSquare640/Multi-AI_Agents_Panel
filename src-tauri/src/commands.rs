@@ -172,9 +172,26 @@ pub fn list_ollama_installed_models() -> Result<Vec<ollama::OllamaModel>, String
     ollama::list_installed().map_err(|e| e.to_string())
 }
 
+/// Pulls (installs) an Ollama model, emitting an `ollama-pull-progress`
+/// event (`{ name, status, completed, total, percent }`) for every line
+/// Ollama streams back — real progress, not a blocking call with only a
+/// static "loading" indicator on the frontend.
 #[tauri::command]
-pub fn pull_ollama_model(name: String) -> Result<(), String> {
-    ollama::pull_model(&name).map_err(|e| e.to_string())
+pub fn pull_ollama_model(app: tauri::AppHandle, name: String) -> Result<(), String> {
+    use tauri::Emitter;
+    ollama::pull_model_with_progress(&name, |progress| {
+        let _ = app.emit(
+            "ollama-pull-progress",
+            serde_json::json!({
+                "name": name,
+                "status": progress.status,
+                "completed": progress.completed,
+                "total": progress.total,
+                "percent": progress.percent,
+            }),
+        );
+    })
+    .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
