@@ -653,6 +653,44 @@ pub fn delete_custom_role_template(storage: State<Storage>, id: String) -> Resul
     storage.delete_custom_role_template(&id).map_err(|e| e.to_string())
 }
 
+/// Writes one custom role template to `dest_path` as pretty-printed JSON,
+/// stripped of its database `id` (see `RoleTemplateExport`) so the file is
+/// meaningful when imported into a different install/database.
+#[tauri::command]
+pub fn export_custom_role_template(storage: State<Storage>, id: String, dest_path: String) -> Result<(), String> {
+    let template = storage
+        .list_custom_role_templates()
+        .map_err(|e| e.to_string())?
+        .into_iter()
+        .map(RoleTemplate::from)
+        .find(|t| t.id == id)
+        .ok_or_else(|| format!("no custom role template with id {id}"))?;
+    let export = role_templates::RoleTemplateExport::from(&template);
+    let json = serde_json::to_string_pretty(&export).map_err(|e| e.to_string())?;
+    std::fs::write(&dest_path, json).map_err(|e| format!("failed to write {dest_path}: {e}"))
+}
+
+/// Reads a role template JSON file (as produced by `export_custom_role_template`)
+/// and creates it as a brand-new custom template — always a fresh id, even
+/// if the file was exported from this same install.
+#[tauri::command]
+pub fn import_custom_role_template(storage: State<Storage>, source_path: String) -> Result<RoleTemplate, String> {
+    let text = std::fs::read_to_string(&source_path).map_err(|e| format!("failed to read {source_path}: {e}"))?;
+    let import: role_templates::RoleTemplateExport =
+        serde_json::from_str(&text).map_err(|e| format!("invalid role template file: {e}"))?;
+    storage
+        .create_custom_role_template(
+            &import.name,
+            &import.description,
+            &import.system_prompt,
+            import.suggested_provider_kind.as_deref(),
+            import.suggested_provider_name.as_deref(),
+            import.suggested_model.as_deref(),
+        )
+        .map(RoleTemplate::from)
+        .map_err(|e| e.to_string())
+}
+
 // --- Skills (Python bridge) ---
 
 /// Merges the bundled (built-in) and user-writable (custom) skills

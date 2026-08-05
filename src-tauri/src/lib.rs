@@ -147,6 +147,8 @@ pub fn run() {
             commands::create_custom_role_template,
             commands::update_custom_role_template,
             commands::delete_custom_role_template,
+            commands::export_custom_role_template,
+            commands::import_custom_role_template,
             commands::list_skills,
             commands::import_custom_skill,
             commands::grant_skill_access,

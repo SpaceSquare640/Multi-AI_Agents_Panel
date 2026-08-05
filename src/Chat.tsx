@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { open as openFolderPicker } from "@tauri-apps/plugin-dialog";
+import { open as openFolderPicker, save as saveFilePicker } from "@tauri-apps/plugin-dialog";
 import type {
   Agent,
   CuratedModel,
@@ -413,6 +413,36 @@ export default function Chat() {
     setError(null);
     try {
       await invoke("delete_custom_role_template", { id });
+      await refreshRoleTemplates();
+    } catch (err) {
+      setError(String(err));
+    }
+  }
+
+  async function handleExportTemplate(template: RoleTemplate) {
+    setError(null);
+    try {
+      const destPath = await saveFilePicker({
+        defaultPath: `${template.name.replace(/[^a-zA-Z0-9 _-]/g, "_")}.json`,
+        filters: [{ name: "Role Template", extensions: ["json"] }],
+      });
+      if (!destPath) return; // user cancelled the picker
+      await invoke("export_custom_role_template", { id: template.id, destPath });
+    } catch (err) {
+      setError(String(err));
+    }
+  }
+
+  async function handleImportTemplate() {
+    setError(null);
+    try {
+      const sourcePath = await openFolderPicker({
+        directory: false,
+        multiple: false,
+        filters: [{ name: "Role Template", extensions: ["json"] }],
+      });
+      if (!sourcePath) return; // user cancelled the picker
+      await invoke("import_custom_role_template", { sourcePath });
       await refreshRoleTemplates();
     } catch (err) {
       setError(String(err));
@@ -983,6 +1013,9 @@ export default function Chat() {
                   <button className="chat-link-button" onClick={() => handleStartEditTemplate(t)}>
                     Edit
                   </button>
+                  <button className="chat-link-button" onClick={() => handleExportTemplate(t)}>
+                    Export
+                  </button>
                   <button className="chat-link-button" onClick={() => handleDeleteTemplate(t.id)}>
                     Delete
                   </button>
@@ -999,6 +1032,9 @@ export default function Chat() {
           onClick={() => (showNewTemplate ? handleCancelTemplateForm() : setShowNewTemplate(true))}
         >
           {showNewTemplate ? "Cancel" : "+ New role template"}
+        </button>
+        <button className="chat-link-button" onClick={() => handleImportTemplate()}>
+          + Import template…
         </button>
         {showNewTemplate && (
           <form className="chat-form" onSubmit={handleSaveTemplate}>

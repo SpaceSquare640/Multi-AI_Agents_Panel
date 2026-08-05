@@ -31,6 +31,35 @@ pub struct RoleTemplate {
     pub source: String,
 }
 
+/// The on-disk shape of an exported/shared custom role template — same
+/// fields as `RoleTemplate` minus `id`/`source` (both meaningless outside
+/// this app's own database: importing always creates a fresh id, and an
+/// imported template is by definition "custom" regardless of where the
+/// exporter's copy came from).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RoleTemplateExport {
+    pub name: String,
+    pub description: String,
+    pub system_prompt: String,
+    pub suggested_provider_kind: Option<String>,
+    pub suggested_provider_name: Option<String>,
+    pub suggested_model: Option<String>,
+}
+
+impl From<&RoleTemplate> for RoleTemplateExport {
+    fn from(t: &RoleTemplate) -> Self {
+        RoleTemplateExport {
+            name: t.name.clone(),
+            description: t.description.clone(),
+            system_prompt: t.system_prompt.clone(),
+            suggested_provider_kind: t.suggested_provider_kind.clone(),
+            suggested_provider_name: t.suggested_provider_name.clone(),
+            suggested_model: t.suggested_model.clone(),
+        }
+    }
+}
+
 impl From<CustomRoleTemplate> for RoleTemplate {
     fn from(t: CustomRoleTemplate) -> Self {
         RoleTemplate {
@@ -230,5 +259,27 @@ mod tests {
         let converted: RoleTemplate = custom.into();
         assert_eq!(converted.source, "custom");
         assert_eq!(converted.name, "My Role");
+    }
+
+    #[test]
+    fn export_drops_id_and_source_but_keeps_every_content_field() {
+        let template = RoleTemplate {
+            id: "some-id".to_string(),
+            name: "Analyst".to_string(),
+            description: "Looks at numbers".to_string(),
+            system_prompt: "You are an analyst.".to_string(),
+            suggested_provider_kind: Some("cloud".to_string()),
+            suggested_provider_name: Some("anthropic".to_string()),
+            suggested_model: Some("claude-sonnet".to_string()),
+            source: "custom".to_string(),
+        };
+        let export = RoleTemplateExport::from(&template);
+        let json = serde_json::to_string(&export).unwrap();
+        assert!(!json.contains("some-id"), "exported JSON must not leak the source database's id");
+        assert!(!json.contains("\"source\""), "exported JSON must not contain a source field");
+
+        let round_tripped: RoleTemplateExport = serde_json::from_str(&json).unwrap();
+        assert_eq!(round_tripped.name, "Analyst");
+        assert_eq!(round_tripped.suggested_model, Some("claude-sonnet".to_string()));
     }
 }
