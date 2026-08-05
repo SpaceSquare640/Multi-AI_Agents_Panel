@@ -227,11 +227,14 @@ mod tests {
     }
 }
 
-/// Live test: a real network round-trip to OpenRouter's public catalog,
-/// proving `fetch_live`/`parse_models_response` actually work against the
-/// real API response shape, not just the realistic-looking fixtures used
-/// in the unit tests above. Not run in CI (needs outbound network access)
-/// — run manually with `cargo test openrouter_catalog::live -- --ignored`.
+/// Live end-to-end tests that actually call the real OpenRouter API — not
+/// run in CI (needs outbound network access), run manually with
+/// `cargo test agent_manager::openrouter_catalog::live -- --ignored`.
+/// This closes the honest caveat left open in v0.1.31-alpha's release
+/// notes: the parsing logic was thoroughly unit-tested against
+/// hand-written response shapes, but `fetch_live` itself — the actual
+/// `reqwest` call against `https://openrouter.ai/api/v1/models` — had
+/// never been exercised.
 #[cfg(test)]
 mod live {
     use super::*;
@@ -252,5 +255,20 @@ mod live {
             models.iter().any(|m| m.id.starts_with("anthropic/")),
             "expected at least one anthropic/* model in OpenRouter's real catalog"
         );
+    }
+
+    #[test]
+    #[ignore]
+    fn list_models_marks_a_real_successful_fetch_as_live_and_populates_the_cache() {
+        let state = OpenRouterCatalogState(std::sync::Mutex::new(None));
+        let result = list_models(&state, true);
+        assert!(result.live, "a successful real fetch should be marked live, not a fallback");
+        assert!(!result.models.is_empty());
+
+        // A second call without force_refresh should hit the now-warm
+        // cache rather than making a second real network call.
+        let cached = list_models(&state, false);
+        assert!(cached.live);
+        assert_eq!(cached.models.len(), result.models.len());
     }
 }
