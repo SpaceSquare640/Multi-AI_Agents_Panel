@@ -128,6 +128,7 @@ pub fn run() {
             commands::list_ollama_installed_models,
             commands::pull_ollama_model,
             commands::delete_ollama_model,
+            commands::ollama_models_env_hint,
             commands::list_agents,
             commands::create_agent,
             commands::pin_agent_provider_key,

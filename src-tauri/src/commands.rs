@@ -169,6 +169,21 @@ pub fn delete_ollama_model(name: String) -> Result<(), String> {
     ollama::delete_model(&name).map_err(|e| e.to_string())
 }
 
+/// Reads `OLLAMA_MODELS` from *this app's own process environment* —
+/// best-effort information only. Ollama is an external, independently
+/// launched service (this app only calls its `localhost:11434` API, see
+/// `agent_manager/providers/ollama.rs`); if Ollama runs as a background
+/// service or was started from a different shell/session, its actual
+/// environment can differ from this app's, so a `None` here does not
+/// necessarily mean Ollama itself has no override configured. Purely a
+/// convenience hint for the AI Control Center's guidance panel — see
+/// [[Unified Data Folder & Custom Skills Design]] for why this app does
+/// not attempt to control or redirect Ollama's model storage itself.
+#[tauri::command]
+pub fn ollama_models_env_hint() -> Option<String> {
+    std::env::var("OLLAMA_MODELS").ok()
+}
+
 // --- Independent Session chat (agents, sessions, messages) ---
 
 #[tauri::command]

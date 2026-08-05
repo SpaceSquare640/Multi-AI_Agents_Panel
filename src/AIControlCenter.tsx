@@ -44,6 +44,7 @@ export default function AIControlCenter() {
   const [ollamaInstalled, setOllamaInstalled] = useState<OllamaModel[]>([]);
   const [ollamaCurated, setOllamaCurated] = useState<CuratedModel[]>([]);
   const [pullingModel, setPullingModel] = useState<string | null>(null);
+  const [ollamaModelsEnvHint, setOllamaModelsEnvHint] = useState<string | null | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
 
   // Single-add form state.
@@ -87,6 +88,9 @@ export default function AIControlCenter() {
     refreshOllama().catch((e) => setError(String(e)));
     invoke<CuratedModel[]>("list_curated_models", { provider: "ollama" })
       .then(setOllamaCurated)
+      .catch((e) => setError(String(e)));
+    invoke<string | null>("ollama_models_env_hint")
+      .then(setOllamaModelsEnvHint)
       .catch((e) => setError(String(e)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -326,6 +330,37 @@ export default function AIControlCenter() {
           {ollamaRunning === null ? "checking…" : ollamaRunning ? "running" : "not running"}{" "}
           <button onClick={() => refreshOllama().catch((e) => setError(String(e)))}>Refresh</button>
         </p>
+
+        <details className="acc-ollama-storage-hint">
+          <summary>Where are Ollama's models stored?</summary>
+          <p className="acc-hint">
+            Ollama is a separate program this app doesn't control or install — it's only called over
+            {" "}
+            <code>localhost:11434</code>. This app does not move or manage Ollama's model files itself.
+          </p>
+          {ollamaModelsEnvHint === undefined ? null : ollamaModelsEnvHint ? (
+            <p className="acc-hint">
+              This app's own process sees <code>OLLAMA_MODELS={ollamaModelsEnvHint}</code>. This may or may not
+              match what the actual Ollama service uses, if it was started from a different environment.
+            </p>
+          ) : (
+            <p className="acc-hint">
+              No <code>OLLAMA_MODELS</code> override is visible to this app (Ollama is likely using its own
+              default location). To change where Ollama stores models, set the <code>OLLAMA_MODELS</code>{" "}
+              environment variable yourself and restart the Ollama service:
+            </p>
+          )}
+          <ul className="acc-hint">
+            <li>
+              Windows (PowerShell, as your user):{" "}
+              <code>setx OLLAMA_MODELS "C:\path\to\folder"</code>, then restart Ollama
+            </li>
+            <li>
+              macOS/Linux: add <code>export OLLAMA_MODELS=/path/to/folder</code> to your shell profile, then
+              restart Ollama
+            </li>
+          </ul>
+        </details>
 
         {ollamaRunning && (
           <>
