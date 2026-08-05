@@ -63,26 +63,12 @@ pub fn send_message(
         }
     }
 
-    let result = dispatch(storage, agent, messages);
-
-    if agent.provider_kind == "cloud" {
-        // Usage logging is best-effort: a logging failure shouldn't mask
-        // the real result of the call.
-        let provider_key_id = storage
-            .latest_provider_key(&agent.provider_name)
-            .ok()
-            .flatten()
-            .map(|k| k.id);
-        let _ = storage.record_usage(
-            provider_key_id.as_deref(),
-            Some(&agent.id),
-            &agent.provider_name,
-            &agent.model,
-            result.is_ok(),
-        );
-    }
-
-    result
+    // Per-attempt usage logging happens inside `dispatch` itself (see
+    // `run_with_fallback`'s `on_attempt` callback) — one `usage_log` row per
+    // key actually tried in the fallback chain, correctly attributed to
+    // that key, rather than one summary row always attributed to
+    // `latest_provider_key` regardless of which key the chain actually used.
+    dispatch(storage, agent, messages)
 }
 
 /// The Key Vault entries `dispatch` should try, in order, for `agent`'s
@@ -114,6 +100,12 @@ fn candidate_keys(storage: &Storage, agent: &Agent, provider: &str) -> Result<Ve
 /// `run_with_fallback` with a single candidate so a failure there is
 /// coded the same consistent way as a cloud failure.
 fn dispatch(storage: &Storage, agent: &Agent, messages: &[ChatMessage]) -> Result<String, ProviderError> {
+    // Usage logging is best-effort here: a logging failure shouldn't mask
+    // the real result of a provider call.
+    let log_attempt = |key: &ProviderKey, provider: &str, success: bool| {
+        let _ = storage.record_usage(Some(&key.id), Some(&agent.id), provider, &agent.model, success);
+    };
+
     match agent.provider_name.as_str() {
         "anthropic" => {
             let candidates = candidate_keys(storage, agent, "anthropic")?;
@@ -124,6 +116,7 @@ fn dispatch(storage: &Storage, agent: &Agent, messages: &[ChatMessage]) -> Resul
                     let secret = fetch_secret(k)?;
                     providers::anthropic::send(&secret, &agent.model, messages)
                 },
+                |k, success| log_attempt(k, "anthropic", success),
             )
         }
         "openrouter" => {
@@ -135,6 +128,7 @@ fn dispatch(storage: &Storage, agent: &Agent, messages: &[ChatMessage]) -> Resul
                     let secret = fetch_secret(k)?;
                     providers::openrouter::send(&secret, &agent.model, messages)
                 },
+                |k, success| log_attempt(k, "openrouter", success),
             )
         }
         "openai" => {
@@ -146,12 +140,17 @@ fn dispatch(storage: &Storage, agent: &Agent, messages: &[ChatMessage]) -> Resul
                     let secret = fetch_secret(k)?;
                     providers::openai::send(&secret, &agent.model, messages)
                 },
+                |k, success| log_attempt(k, "openai", success),
             )
         }
+        // Local Ollama has no Key Vault entries to log against — the
+        // `cloud`-only condition that used to gate usage logging is now
+        // implicit: this branch simply never calls `log_attempt`.
         "ollama" => run_with_fallback(
             &[()],
             |_| "local Ollama".to_string(),
             |_| providers::ollama::send(&agent.model, messages),
+            |_, _| {},
         ),
         other => Err(ProviderError::Unsupported(other.to_string())),
     }
