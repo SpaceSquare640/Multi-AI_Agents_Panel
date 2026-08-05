@@ -27,6 +27,18 @@ export interface CuratedModel {
   label: string;
 }
 
+export interface OpenRouterModel {
+  id: string;
+  name: string;
+  promptPricePerMillion: number | null;
+  completionPricePerMillion: number | null;
+}
+
+export interface OpenRouterModelsResult {
+  models: OpenRouterModel[];
+  live: boolean;
+}
+
 export interface OllamaModel {
   name: string;
   size: number | null;

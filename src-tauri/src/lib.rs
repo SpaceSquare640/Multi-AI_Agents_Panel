@@ -13,6 +13,7 @@ mod usage_tracker;
 
 use std::sync::Mutex;
 
+use agent_manager::openrouter_catalog::OpenRouterCatalogState;
 use ml_engine::MlEngineRuntime;
 use skill_manager::SkillRuntime;
 use storage::Storage;
@@ -113,6 +114,7 @@ pub fn run() {
             };
             app.manage(MlEngineRuntimeState(Mutex::new(ml_runtime)));
             app.manage(MlDir(ml_dir));
+            app.manage(OpenRouterCatalogState(Mutex::new(None)));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -124,6 +126,7 @@ pub fn run() {
             commands::delete_provider_key,
             commands::get_usage_summary,
             commands::list_curated_models,
+            commands::list_openrouter_models_live,
             commands::ollama_is_running,
             commands::list_ollama_installed_models,
             commands::pull_ollama_model,

@@ -5,6 +5,7 @@ import {
   CLOUD_PROVIDERS,
   type CuratedModel,
   type OllamaModel,
+  type OpenRouterModel,
   type ProviderKeyView,
   type UsageSummary,
 } from "./types";
@@ -47,6 +48,15 @@ export default function AIControlCenter() {
   const [ollamaModelsEnvHint, setOllamaModelsEnvHint] = useState<string | null | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
 
+  // Live OpenRouter catalog (search + real USD pricing) — only relevant
+  // when modelProvider === "openrouter"; other providers stay on the
+  // static curated list. See openrouter_catalog.rs for the 24h-cache +
+  // fallback-to-static-on-failure policy this mirrors.
+  const [openRouterModels, setOpenRouterModels] = useState<OpenRouterModel[]>([]);
+  const [openRouterLive, setOpenRouterLive] = useState(true);
+  const [openRouterQuery, setOpenRouterQuery] = useState("");
+  const [openRouterLoading, setOpenRouterLoading] = useState(false);
+
   // Single-add form state.
   const [singleProvider, setSingleProvider] = useState<string>("openrouter");
   const [singleSecret, setSingleSecret] = useState("");
@@ -70,6 +80,19 @@ export default function AIControlCenter() {
 
   async function refreshCuratedModels(provider: string) {
     setCuratedModels(await invoke<CuratedModel[]>("list_curated_models", { provider }));
+  }
+
+  async function refreshOpenRouterModels(forceRefresh: boolean) {
+    setOpenRouterLoading(true);
+    try {
+      const result = await invoke<{ models: OpenRouterModel[]; live: boolean }>("list_openrouter_models_live", {
+        forceRefresh,
+      });
+      setOpenRouterModels(result.models);
+      setOpenRouterLive(result.live);
+    } finally {
+      setOpenRouterLoading(false);
+    }
   }
 
   async function refreshOllama() {
@@ -97,6 +120,10 @@ export default function AIControlCenter() {
 
   useEffect(() => {
     refreshCuratedModels(modelProvider).catch((e) => setError(String(e)));
+    if (modelProvider === "openrouter") {
+      refreshOpenRouterModels(false).catch((e) => setError(String(e)));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modelProvider]);
 
   async function handleAddSingle(e: FormEvent) {
@@ -314,13 +341,54 @@ export default function AIControlCenter() {
             </option>
           ))}
         </select>
-        <ul className="acc-model-list">
-          {curatedModels.map((m) => (
-            <li key={m.id}>
-              <span className="acc-mono">{m.id}</span> — {m.label}
-            </li>
-          ))}
-        </ul>
+        {modelProvider === "openrouter" ? (
+          <>
+            <div className="acc-form-row">
+              <input
+                type="text"
+                placeholder="Search all OpenRouter models…"
+                value={openRouterQuery}
+                onChange={(e) => setOpenRouterQuery(e.target.value)}
+              />
+              <button disabled={openRouterLoading} onClick={() => refreshOpenRouterModels(true).catch((e) => setError(String(e)))}>
+                {openRouterLoading ? "Refreshing…" : "Refresh from OpenRouter"}
+              </button>
+            </div>
+            {!openRouterLive && (
+              <p className="acc-hint">
+                ⚠ Couldn't reach OpenRouter's live catalog — showing the built-in default list instead. Prices and
+                availability shown here may not be current; check your network connection.
+              </p>
+            )}
+            <ul className="acc-model-list">
+              {openRouterModels
+                .filter((m) => {
+                  const q = openRouterQuery.trim().toLowerCase();
+                  return !q || m.id.toLowerCase().includes(q) || m.name.toLowerCase().includes(q);
+                })
+                .map((m) => (
+                  <li key={m.id}>
+                    <span className="acc-mono">{m.id}</span> — {m.name}
+                    {(m.promptPricePerMillion !== null || m.completionPricePerMillion !== null) && (
+                      <span className="acc-hint">
+                        {" "}
+                        (${m.promptPricePerMillion?.toFixed(2) ?? "?"} in / $
+                        {m.completionPricePerMillion?.toFixed(2) ?? "?"} out per 1M tokens)
+                      </span>
+                    )}
+                  </li>
+                ))}
+            </ul>
+          </>
+        ) : (
+          <ul className="acc-model-list">
+            {curatedModels.map((m) => (
+              <li key={m.id}>
+                <span className="acc-mono">{m.id}</span> — {m.label}
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section className="acc-section">

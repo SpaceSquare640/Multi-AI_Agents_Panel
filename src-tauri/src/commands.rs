@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use tauri::State;
 
 use crate::agent_manager::curated_models::{self, CuratedModel};
+use crate::agent_manager::openrouter_catalog::{self, OpenRouterCatalogState, OpenRouterModelsResult};
 use crate::agent_manager::providers::{ollama, ChatMessage};
 use crate::agent_manager::role_templates::{self, RoleTemplate};
 use crate::agent_manager::{self};
@@ -147,6 +148,18 @@ pub fn list_curated_models(provider: String) -> Result<Vec<CuratedModel>, String
         "ollama" => Ok(curated_models::ollama_models()),
         other => Err(format!("no curated model list for '{other}' yet")),
     }
+}
+
+/// Live OpenRouter model catalog (see `agent_manager::openrouter_catalog`
+/// for the caching/fallback policy) — separate from `list_curated_models`,
+/// which stays purely static for the other providers per the design
+/// doc's OpenRouter-specific decision.
+#[tauri::command]
+pub fn list_openrouter_models_live(
+    cache: State<OpenRouterCatalogState>,
+    force_refresh: bool,
+) -> OpenRouterModelsResult {
+    openrouter_catalog::list_models(&cache, force_refresh)
 }
 
 #[tauri::command]
