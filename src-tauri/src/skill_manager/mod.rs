@@ -532,4 +532,51 @@ mod live {
         assert!(matches!(err, SkillError::NotFound(_)));
         assert_eq!(err.error_code(), "E4001");
     }
+
+    /// End-to-end proof of the `import_custom_skill` flow (see
+    /// `commands::import_custom_skill`), minus the `tauri::State` wrapper
+    /// (can't be constructed outside a running app, same reasoning as
+    /// `commands::running_a_skill_in_a_session_persists_its_result_as_a_system_message`):
+    /// write a source folder shaped like what the folder picker would hand
+    /// back, copy it with the same `copy_dir_recursive` the real command
+    /// uses, start the bridge with *both* the bundled and the newly
+    /// populated custom directory (same as `SkillDirs` at app startup),
+    /// and prove the imported skill is actually callable through a real
+    /// Python subprocess — not just that the file copy succeeded.
+    #[test]
+    #[ignore]
+    fn a_custom_skill_copied_into_the_custom_dir_is_callable_through_a_freshly_started_bridge() {
+        let bundled_dir = resolve_skills_dir(None);
+
+        let source = std::env::temp_dir().join(format!("map-custom-skill-src-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&source).unwrap();
+        std::fs::write(
+            source.join("skill.json"),
+            r#"{"name":"my_custom_echo","description":"echoes input","entrypoint":"skill.py","version":"0.1.0"}"#,
+        )
+        .unwrap();
+        std::fs::write(source.join("skill.py"), "def run(payload):\n    return {\"echo\": payload}\n").unwrap();
+
+        let custom_dir = std::env::temp_dir().join(format!("map-custom-skill-dst-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&custom_dir).unwrap();
+        copy_dir_recursive(&source, &custom_dir.join("my_custom_echo")).unwrap();
+
+        let runtime = SkillRuntime::start(&[bundled_dir, custom_dir])
+            .expect("bridge should start with a real Python on PATH");
+
+        let storage = Storage::open_in_memory().unwrap();
+        let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude").unwrap();
+        storage.grant_skill_access(&agent.id, "my_custom_echo").unwrap();
+
+        let result = invoke_skill(
+            &storage,
+            Some(&runtime),
+            &agent.id,
+            "my_custom_echo",
+            serde_json::json!({"hello": "custom skill"}),
+        )
+        .expect("the imported custom skill should be callable");
+
+        assert_eq!(result, serde_json::json!({"echo": {"hello": "custom skill"}}));
+    }
 }
