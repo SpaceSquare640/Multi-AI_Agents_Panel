@@ -39,13 +39,22 @@ pub fn build_chat_request(model: &str, messages: &[ChatMessage]) -> Value {
 /// Pure function, unit-testable.
 pub fn parse_chat_response(body: &Value) -> Result<String, ProviderError> {
     if let Some(err) = body.get("error").and_then(Value::as_str) {
-        return Err(ProviderError::Api(err.to_string()));
+        // Ollama's error is a plain string, not a structured type/code —
+        // "model '...' not found" is the one common, recognizable case
+        // (E1002, matching the Error Code Registry's "本地模型檔案缺失").
+        // Anything else falls to E1000, the registry's documented E1xxx
+        // catch-all, rather than guessing at a more specific code.
+        let error_code = if err.to_lowercase().contains("not found") { "E1002" } else { "E1000" };
+        return Err(ProviderError::Api { error_code, message: err.to_string() });
     }
     body.get("message")
         .and_then(|m| m.get("content"))
         .and_then(Value::as_str)
         .map(str::to_string)
-        .ok_or_else(|| ProviderError::Api("response had no message content".to_string()))
+        .ok_or_else(|| ProviderError::Api {
+            error_code: "E1000",
+            message: "response had no message content".to_string(),
+        })
 }
 
 /// Extracts the installed-model list from an `/api/tags` response body.
@@ -77,11 +86,14 @@ pub fn send(model: &str, messages: &[ChatMessage]) -> Result<String, ProviderErr
         .post(format!("{BASE_URL}/api/chat"))
         .json(&build_chat_request(model, messages))
         .send()
-        .map_err(|e| ProviderError::Network(format!("could not reach Ollama: {e}")))?;
+        .map_err(|e| ProviderError::Network {
+            error_code: "E1001",
+            message: format!("could not reach Ollama: {e}"),
+        })?;
 
     let body: Value = response
         .json()
-        .map_err(|e| ProviderError::Network(e.to_string()))?;
+        .map_err(|e| ProviderError::Network { error_code: "E1001", message: e.to_string() })?;
     parse_chat_response(&body)
 }
 
@@ -99,10 +111,13 @@ pub fn list_installed() -> Result<Vec<OllamaModel>, ProviderError> {
     let response = client()
         .get(format!("{BASE_URL}/api/tags"))
         .send()
-        .map_err(|e| ProviderError::Network(format!("could not reach Ollama: {e}")))?;
+        .map_err(|e| ProviderError::Network {
+            error_code: "E1001",
+            message: format!("could not reach Ollama: {e}"),
+        })?;
     let body: Value = response
         .json()
-        .map_err(|e| ProviderError::Network(e.to_string()))?;
+        .map_err(|e| ProviderError::Network { error_code: "E1001", message: e.to_string() })?;
     Ok(parse_tags_response(&body))
 }
 
@@ -156,26 +171,29 @@ pub fn pull_model_with_progress(
         .post(format!("{BASE_URL}/api/pull"))
         .json(&json!({ "name": name, "stream": true }))
         .send()
-        .map_err(|e| ProviderError::Network(format!("could not reach Ollama: {e}")))?;
+        .map_err(|e| ProviderError::Network {
+            error_code: "E1001",
+            message: format!("could not reach Ollama: {e}"),
+        })?;
 
     if !response.status().is_success() {
-        return Err(ProviderError::Api(format!(
-            "pull failed with status {}",
-            response.status()
-        )));
+        return Err(ProviderError::Api {
+            error_code: "E1000",
+            message: format!("pull failed with status {}", response.status()),
+        });
     }
 
     let reader = std::io::BufReader::new(response);
     let mut last_status = String::new();
     for line in std::io::BufRead::lines(reader) {
-        let line = line.map_err(|e| ProviderError::Network(e.to_string()))?;
+        let line = line.map_err(|e| ProviderError::Network { error_code: "E1001", message: e.to_string() })?;
         if let Some(progress) = parse_pull_progress_line(&line) {
             last_status = progress.status.clone();
             on_progress(progress);
         }
     }
     if last_status.to_lowercase().contains("error") {
-        return Err(ProviderError::Api(format!("pull failed: {last_status}")));
+        return Err(ProviderError::Api { error_code: "E1000", message: format!("pull failed: {last_status}") });
     }
     Ok(())
 }
@@ -185,13 +203,16 @@ pub fn delete_model(name: &str) -> Result<(), ProviderError> {
         .delete(format!("{BASE_URL}/api/delete"))
         .json(&json!({ "name": name }))
         .send()
-        .map_err(|e| ProviderError::Network(format!("could not reach Ollama: {e}")))?;
+        .map_err(|e| ProviderError::Network {
+            error_code: "E1001",
+            message: format!("could not reach Ollama: {e}"),
+        })?;
 
     if !response.status().is_success() {
-        return Err(ProviderError::Api(format!(
-            "delete failed with status {}",
-            response.status()
-        )));
+        return Err(ProviderError::Api {
+            error_code: "E1000",
+            message: format!("delete failed with status {}", response.status()),
+        });
     }
     Ok(())
 }
@@ -222,7 +243,16 @@ mod tests {
     fn parse_chat_response_surfaces_error() {
         let body = json!({ "error": "model 'nope' not found" });
         let err = parse_chat_response(&body).unwrap_err();
-        assert!(matches!(err, ProviderError::Api(msg) if msg == "model 'nope' not found"));
+        assert!(matches!(err, ProviderError::Api { ref message, .. } if message == "model 'nope' not found"));
+        // "not found" should classify as E1002 (local model file missing).
+        assert!(matches!(err, ProviderError::Api { error_code: "E1002", .. }));
+    }
+
+    #[test]
+    fn parse_chat_response_falls_back_to_the_e1000_catch_all_for_unrecognized_errors() {
+        let body = json!({ "error": "something went wrong internally" });
+        let err = parse_chat_response(&body).unwrap_err();
+        assert!(matches!(err, ProviderError::Api { error_code: "E1000", .. }));
     }
 
     #[test]

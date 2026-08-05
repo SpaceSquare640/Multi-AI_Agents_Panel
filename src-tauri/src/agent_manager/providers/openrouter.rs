@@ -28,7 +28,12 @@ pub fn parse_response(body: &Value) -> Result<String, ProviderError> {
             .get("message")
             .and_then(Value::as_str)
             .unwrap_or("unknown error");
-        return Err(ProviderError::Api(message.to_string()));
+        // OpenRouter reports an HTTP-style numeric `error.code` (e.g. 401,
+        // 429) — the most reliable signal available, checked before
+        // falling back to the message text.
+        let numeric_code = error.get("code").and_then(Value::as_i64);
+        let error_code = super::classify_cloud_api_error(message, numeric_code);
+        return Err(ProviderError::Api { error_code, message: message.to_string() });
     }
 
     body.get("choices")
@@ -38,7 +43,10 @@ pub fn parse_response(body: &Value) -> Result<String, ProviderError> {
         .and_then(|message| message.get("content"))
         .and_then(Value::as_str)
         .map(str::to_string)
-        .ok_or_else(|| ProviderError::Api("response had no message content".to_string()))
+        .ok_or_else(|| ProviderError::Api {
+            error_code: "E2000",
+            message: "response had no message content".to_string(),
+        })
 }
 
 pub fn send(api_key: &str, model: &str, messages: &[ChatMessage]) -> Result<String, ProviderError> {
@@ -49,11 +57,11 @@ pub fn send(api_key: &str, model: &str, messages: &[ChatMessage]) -> Result<Stri
         .header("content-type", "application/json")
         .json(&build_request(model, messages))
         .send()
-        .map_err(|e| ProviderError::Network(e.to_string()))?;
+        .map_err(|e| ProviderError::Network { error_code: "E2003", message: e.to_string() })?;
 
     let body: Value = response
         .json()
-        .map_err(|e| ProviderError::Network(e.to_string()))?;
+        .map_err(|e| ProviderError::Network { error_code: "E2003", message: e.to_string() })?;
 
     parse_response(&body)
 }
@@ -88,7 +96,8 @@ mod tests {
             "error": { "message": "invalid api key", "code": 401 }
         });
         let err = parse_response(&body).unwrap_err();
-        assert!(matches!(err, ProviderError::Api(msg) if msg == "invalid api key"));
+        assert!(matches!(err, ProviderError::Api { ref message, .. } if message == "invalid api key"));
+        assert!(matches!(err, ProviderError::Api { error_code: "E2001", .. }));
     }
 
     #[test]

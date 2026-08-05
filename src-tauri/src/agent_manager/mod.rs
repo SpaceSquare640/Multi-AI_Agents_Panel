@@ -19,12 +19,10 @@ pub use providers::{ChatMessage, ProviderError};
 /// (or another app) touches the OS credential store directly, it could.
 fn fetch_secret(entry: &ProviderKey) -> Result<String, ProviderError> {
     key_vault::get_secret(&entry.id)
-        .map_err(|e| ProviderError::Api(format!("key vault error: {e}")))?
-        .ok_or_else(|| {
-            ProviderError::Api(format!(
-                "Key Vault entry {} is indexed but its secret is missing",
-                entry.id
-            ))
+        .map_err(|e| ProviderError::Api { error_code: "E2000", message: format!("key vault error: {e}") })?
+        .ok_or_else(|| ProviderError::Api {
+            error_code: "E2000",
+            message: format!("Key Vault entry {} is indexed but its secret is missing", entry.id),
         })
 }
 
@@ -85,12 +83,12 @@ fn candidate_keys(storage: &Storage, agent: &Agent, provider: &str) -> Result<Ve
     if let Some(pinned_id) = &agent.pinned_provider_key_id {
         let pinned = storage
             .get_provider_key(pinned_id)
-            .map_err(|e| ProviderError::Api(format!("storage error: {e}")))?;
+            .map_err(|e| ProviderError::Api { error_code: "E2000", message: format!("storage error: {e}") })?;
         return Ok(pinned.into_iter().collect());
     }
     storage
         .keys_for_provider(provider)
-        .map_err(|e| ProviderError::Api(format!("storage error: {e}")))
+        .map_err(|e| ProviderError::Api { error_code: "E2000", message: format!("storage error: {e}") })
 }
 
 /// Dispatches to the agent's provider, falling back through every Key

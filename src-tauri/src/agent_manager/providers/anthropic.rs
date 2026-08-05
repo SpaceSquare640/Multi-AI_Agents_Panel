@@ -52,7 +52,12 @@ pub fn parse_response(body: &Value) -> Result<String, ProviderError> {
             .get("message")
             .and_then(Value::as_str)
             .unwrap_or("unknown error");
-        return Err(ProviderError::Api(message.to_string()));
+        // Anthropic reports a machine-readable `error.type` (e.g.
+        // "authentication_error", "rate_limit_error") — no numeric HTTP
+        // code in the body itself.
+        let error_type = error.get("type").and_then(Value::as_str).unwrap_or("");
+        let error_code = super::classify_cloud_api_error(error_type, None);
+        return Err(ProviderError::Api { error_code, message: message.to_string() });
     }
 
     body.get("content")
@@ -61,7 +66,10 @@ pub fn parse_response(body: &Value) -> Result<String, ProviderError> {
         .and_then(|block| block.get("text"))
         .and_then(Value::as_str)
         .map(str::to_string)
-        .ok_or_else(|| ProviderError::Api("response had no text content block".to_string()))
+        .ok_or_else(|| ProviderError::Api {
+            error_code: "E2000",
+            message: "response had no text content block".to_string(),
+        })
 }
 
 pub fn send(api_key: &str, model: &str, messages: &[ChatMessage]) -> Result<String, ProviderError> {
@@ -73,11 +81,11 @@ pub fn send(api_key: &str, model: &str, messages: &[ChatMessage]) -> Result<Stri
         .header("content-type", "application/json")
         .json(&build_request(model, messages))
         .send()
-        .map_err(|e| ProviderError::Network(e.to_string()))?;
+        .map_err(|e| ProviderError::Network { error_code: "E2003", message: e.to_string() })?;
 
     let body: Value = response
         .json()
-        .map_err(|e| ProviderError::Network(e.to_string()))?;
+        .map_err(|e| ProviderError::Network { error_code: "E2003", message: e.to_string() })?;
 
     parse_response(&body)
 }
@@ -141,7 +149,9 @@ mod tests {
             "error": { "type": "authentication_error", "message": "invalid x-api-key" }
         });
         let err = parse_response(&body).unwrap_err();
-        assert!(matches!(err, ProviderError::Api(msg) if msg == "invalid x-api-key"));
+        assert!(matches!(err, ProviderError::Api { ref message, .. } if message == "invalid x-api-key"));
+        // "authentication_error" should classify as E2001 (invalid/missing key).
+        assert!(matches!(err, ProviderError::Api { error_code: "E2001", .. }));
     }
 
     #[test]

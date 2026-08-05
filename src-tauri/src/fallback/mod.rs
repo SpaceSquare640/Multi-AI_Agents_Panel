@@ -71,7 +71,7 @@ mod tests {
                 if *c == "a" {
                     Ok("ok from a".to_string())
                 } else {
-                    Err(ProviderError::Network("should not be reached".to_string()))
+                    Err(ProviderError::Network { error_code: "E2003", message: "should not be reached".to_string() })
                 }
             },
             |_, _| {},
@@ -88,7 +88,7 @@ mod tests {
             |c| c.to_string(),
             |c| {
                 if *c == "a" {
-                    Err(ProviderError::Network("timed out".to_string()))
+                    Err(ProviderError::Network { error_code: "E2003", message: "timed out".to_string() })
                 } else {
                     Ok("ok from b".to_string())
                 }
@@ -104,7 +104,7 @@ mod tests {
         let err = run_with_fallback(
             &candidates,
             |c| format!("candidate {c}"),
-            |_| Err(ProviderError::Network("unreachable".to_string())),
+            |_| Err(ProviderError::Network { error_code: "E2003", message: "unreachable".to_string() }),
             |_, _| {},
         )
         .unwrap_err();
@@ -138,7 +138,7 @@ mod tests {
                 if *c == "b" {
                     Ok("ok from b".to_string())
                 } else {
-                    Err(ProviderError::Network("nope".to_string()))
+                    Err(ProviderError::Network { error_code: "E2003", message: "nope".to_string() })
                 }
             },
             |c, success| log.push((c, success)),
