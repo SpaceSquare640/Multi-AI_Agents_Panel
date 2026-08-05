@@ -226,3 +226,31 @@ mod tests {
         assert!(ancient.elapsed() >= CACHE_TTL);
     }
 }
+
+/// Live test: a real network round-trip to OpenRouter's public catalog,
+/// proving `fetch_live`/`parse_models_response` actually work against the
+/// real API response shape, not just the realistic-looking fixtures used
+/// in the unit tests above. Not run in CI (needs outbound network access)
+/// — run manually with `cargo test openrouter_catalog::live -- --ignored`.
+#[cfg(test)]
+mod live {
+    use super::*;
+
+    #[test]
+    #[ignore]
+    fn fetch_live_returns_a_real_non_empty_catalog_with_at_least_one_priced_model() {
+        let models = fetch_live().expect("a real call to OpenRouter's public /models endpoint should succeed");
+        assert!(!models.is_empty(), "OpenRouter's catalog should never be empty");
+        assert!(
+            models.iter().any(|m| m.prompt_price_per_million.is_some()),
+            "at least one real model should report a parseable prompt price"
+        );
+        // Sanity-check a well-known, long-lived model id is present, so
+        // this isn't just "got 200 OK with some JSON" — it's "the shape
+        // we parse actually lines up with what OpenRouter returns".
+        assert!(
+            models.iter().any(|m| m.id.starts_with("anthropic/")),
+            "expected at least one anthropic/* model in OpenRouter's real catalog"
+        );
+    }
+}
