@@ -24,9 +24,17 @@ use tauri::Manager;
 /// works; see `skill_manager::SkillRuntime`).
 pub(crate) struct SkillRuntimeState(pub(crate) Mutex<Option<SkillRuntime>>);
 
-/// The resolved `skills/` directory, stashed as managed state so commands
-/// can re-scan it (`list_skills`) without re-deriving the path each time.
-pub(crate) struct SkillsDir(pub(crate) std::path::PathBuf);
+/// The two directories `list_skills`/`import_custom_skill` work with:
+/// `builtin` is the bundled, read-only resource directory (refreshed by
+/// the installer on every app update); `custom` is the user-writable
+/// directory under the unified data folder (see `resolve_data_dir`) that
+/// survives app updates/reinstalls. See
+/// `Unified Data Folder & Custom Skills Design.md` in the vault for why
+/// these are deliberately two separate directories rather than one.
+pub(crate) struct SkillDirs {
+    pub(crate) builtin: std::path::PathBuf,
+    pub(crate) custom: std::path::PathBuf,
+}
 
 /// Tauri managed state wrapping the optional Python `ml_engine` bridge —
 /// a separate process from `SkillRuntimeState`, see `ml_engine` module
@@ -46,13 +54,28 @@ fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
+/// Resolves the unified data folder: `data.sqlite3`, the ML model cache,
+/// and user-imported custom Skills all live under here. Deliberately a
+/// fixed, cross-platform-consistent folder under the user's home
+/// directory (`~/MultiAIAgentsPanel-Data/`) rather than Tauri's default
+/// `app_data_dir()` (which scatters across `%APPDATA%`, `~/Library/...`,
+/// `~/.local/share/...` depending on OS) or the install directory itself
+/// (installer upgrade/reinstall behavior touching that path has never
+/// been verified, and deb/AppImage have no equivalent writable "install
+/// directory" concept at all). See ADR 0004 and
+/// `Unified Data Folder & Custom Skills Design.md` in the vault for the
+/// full reasoning.
+fn resolve_data_dir(home_dir: std::path::PathBuf) -> std::path::PathBuf {
+    home_dir.join("MultiAIAgentsPanel-Data")
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
-            let data_dir = app.path().app_data_dir()?;
+            let data_dir = resolve_data_dir(app.path().home_dir()?);
             std::fs::create_dir_all(&data_dir)?;
             let db_path = data_dir.join("data.sqlite3");
             let storage = Storage::open(&db_path)
@@ -60,10 +83,12 @@ pub fn run() {
             app.manage(storage);
 
             let resource_dir = app.path().resource_dir().ok();
-            let skills_dir = skill_manager::resolve_skills_dir(resource_dir);
+            let builtin_skills_dir = skill_manager::resolve_skills_dir(resource_dir);
+            let custom_skills_dir = data_dir.join("skills");
+            std::fs::create_dir_all(&custom_skills_dir)?;
             // Best-effort: a missing/broken Python install shouldn't stop
             // the rest of the app from working, only Skills.
-            let runtime = match SkillRuntime::start(&skills_dir) {
+            let runtime = match SkillRuntime::start(&[builtin_skills_dir.clone(), custom_skills_dir.clone()]) {
                 Ok(runtime) => Some(runtime),
                 Err(e) => {
                     eprintln!("skill bridge unavailable: {e}");
@@ -71,13 +96,15 @@ pub fn run() {
                 }
             };
             app.manage(SkillRuntimeState(Mutex::new(runtime)));
-            app.manage(SkillsDir(skills_dir));
+            app.manage(SkillDirs { builtin: builtin_skills_dir, custom: custom_skills_dir });
 
             let ml_dir = ml_engine::resolve_ml_dir(app.path().resource_dir().ok());
+            let ml_cache_dir = data_dir.join("ml-cache");
+            std::fs::create_dir_all(&ml_cache_dir)?;
             // Same best-effort policy as the Skills bridge: a missing
             // Python/sentence-transformers install shouldn't stop the
             // rest of the app from working, only ML capabilities.
-            let ml_runtime = match MlEngineRuntime::start(&ml_dir) {
+            let ml_runtime = match MlEngineRuntime::start(&ml_dir, Some(&ml_cache_dir)) {
                 Ok(runtime) => Some(runtime),
                 Err(e) => {
                     eprintln!("ML engine bridge unavailable: {e}");
@@ -120,6 +147,7 @@ pub fn run() {
             commands::update_custom_role_template,
             commands::delete_custom_role_template,
             commands::list_skills,
+            commands::import_custom_skill,
             commands::grant_skill_access,
             commands::list_skill_access_grants,
             commands::revoke_skill_access,
@@ -143,4 +171,16 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn resolve_data_dir_is_a_fixed_subfolder_of_home_not_an_os_default_app_data_path() {
+        let home = std::path::PathBuf::from("/home/someone");
+        let data_dir = resolve_data_dir(home.clone());
+        assert_eq!(data_dir, home.join("MultiAIAgentsPanel-Data"));
+    }
 }

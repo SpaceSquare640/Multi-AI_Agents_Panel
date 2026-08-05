@@ -130,7 +130,15 @@ impl MlEngineRuntime {
     /// importing `sentence_transformers` at module load time is slower
     /// than the Skills bridge's plain-stdlib import) for its `/health`
     /// endpoint to answer.
-    pub fn start(ml_dir: &Path) -> Result<MlEngineRuntime, String> {
+    ///
+    /// `cache_dir`, if given, is passed to the subprocess as `HF_HOME` —
+    /// the standard Hugging Face Hub cache-root env var that
+    /// `sentence-transformers` respects — so the downloaded model weights
+    /// land under the app's unified data folder instead of the OS's
+    /// default HuggingFace cache location. `None` leaves the default
+    /// behavior untouched (used by tests that don't care where the cache
+    /// lands).
+    pub fn start(ml_dir: &Path, cache_dir: Option<&Path>) -> Result<MlEngineRuntime, String> {
         let python_bin = find_python().ok_or("no working Python interpreter found on PATH")?;
         let bridge_script = ml_dir.join("_engine.py");
         if !bridge_script.exists() {
@@ -140,14 +148,19 @@ impl MlEngineRuntime {
         let port = free_local_port().map_err(|e| e.to_string())?;
         let token = uuid::Uuid::new_v4().to_string();
 
-        let child = Command::new(&python_bin)
+        let mut command = Command::new(&python_bin);
+        command
             .arg(&bridge_script)
             .arg("--port")
             .arg(port.to_string())
             .arg("--token")
             .arg(&token)
             .arg("--ml-dir")
-            .arg(ml_dir)
+            .arg(ml_dir);
+        if let Some(dir) = cache_dir {
+            command.env("HF_HOME", dir);
+        }
+        let child = command
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
@@ -430,7 +443,7 @@ mod live {
     #[ignore]
     fn semantic_search_ranks_a_real_query_against_real_embeddings() {
         let ml_dir = resolve_ml_dir(None);
-        let runtime = MlEngineRuntime::start(&ml_dir).expect("ml_engine bridge should start with a real Python on PATH");
+        let runtime = MlEngineRuntime::start(&ml_dir, None).expect("ml_engine bridge should start with a real Python on PATH");
 
         let storage = Storage::open_in_memory().unwrap();
         let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude").unwrap();

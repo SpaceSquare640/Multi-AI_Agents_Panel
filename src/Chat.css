@@ -149,6 +149,12 @@
   gap: 0.4rem;
 }
 
+.chat-skill-import-warning {
+  font-size: 0.75rem;
+  color: #b45309;
+  margin: 0.1rem 0 0.4rem;
+}
+
 .chat-file-chip {
   background: rgba(128, 128, 128, 0.15);
   border-radius: 6px;

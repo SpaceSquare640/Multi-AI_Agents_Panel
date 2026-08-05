@@ -16,17 +16,23 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
 
-def load_skills(skills_dir: Path) -> dict:
-    """Imports every `<skills_dir>/<name>/skill.json` + its entrypoint
-    module, keyed by manifest name (== JSON-RPC method name)."""
+def load_skills(skills_dirs: list) -> dict:
+    """Imports every `<dir>/<name>/skill.json` + its entrypoint module
+    across all `skills_dirs`, keyed by manifest name (== JSON-RPC method
+    name). Directories are scanned in the order given; a name that
+    appears in a later directory overwrites one from an earlier
+    directory — this is what lets a user-supplied custom skill directory
+    (passed after the built-in one) override a built-in skill of the
+    same name."""
     skills = {}
-    for manifest_path in sorted(skills_dir.glob("*/skill.json")):
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        entrypoint = manifest_path.parent / manifest["entrypoint"]
-        spec = importlib.util.spec_from_file_location(manifest["name"], entrypoint)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        skills[manifest["name"]] = module
+    for skills_dir in skills_dirs:
+        for manifest_path in sorted(skills_dir.glob("*/skill.json")):
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            entrypoint = manifest_path.parent / manifest["entrypoint"]
+            spec = importlib.util.spec_from_file_location(manifest["name"], entrypoint)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            skills[manifest["name"]] = module
     return skills
 
 
@@ -99,10 +105,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, required=True)
     parser.add_argument("--token", required=True)
-    parser.add_argument("--skills-dir", required=True)
+    parser.add_argument("--skills-dir", required=True, action="append")
     args = parser.parse_args()
 
-    skills = load_skills(Path(args.skills_dir))
+    skills = load_skills([Path(d) for d in args.skills_dir])
     server = HTTPServer(("127.0.0.1", args.port), make_handler(skills, args.token))
     server.serve_forever()
 

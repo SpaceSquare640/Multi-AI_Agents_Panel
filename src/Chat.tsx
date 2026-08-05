@@ -79,6 +79,7 @@ export default function Chat() {
   const [runSkillName, setRunSkillName] = useState("");
   const [runSkillPayload, setRunSkillPayload] = useState("{}");
   const [runningSkill, setRunningSkill] = useState(false);
+  const [importingSkill, setImportingSkill] = useState(false);
 
   // Semantic search (ml_engine): same catalog + per-tab-grants pattern as
   // Skills. Index name is always the agent's id for now — Group Chat's
@@ -515,6 +516,25 @@ export default function Chat() {
       setError(String(err));
     } finally {
       setRunningSkill(false);
+    }
+  }
+
+  /// Imports a user-picked folder (containing `skill.json` + its
+  /// entrypoint) as a new custom Skill, global to the whole app catalog
+  /// (not per-session, unlike grants) — refreshes `availableSkills` so it
+  /// shows up immediately in every session's "Grant a skill…" picker.
+  async function handleImportSkill() {
+    setError(null);
+    try {
+      const folder = await openFolderPicker({ directory: true, multiple: false });
+      if (!folder) return; // user cancelled the picker
+      setImportingSkill(true);
+      await invoke("import_custom_skill", { sourceFolder: folder });
+      setAvailableSkills(await invoke<SkillManifest[]>("list_skills"));
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setImportingSkill(false);
     }
   }
 
@@ -1088,14 +1108,21 @@ export default function Chat() {
                       .filter((s) => !activeTab.skillGrants.some((g) => g.skillName === s.name))
                       .map((s) => (
                         <option key={s.name} value={s.name}>
-                          {s.name}
+                          {s.name} {s.source === "custom" ? "(custom)" : ""}
                         </option>
                       ))}
                   </select>
                   <button className="chat-link-button" disabled={!skillToGrant} onClick={() => handleGrantSkill(activeSessionId)}>
                     + Grant
                   </button>
+                  <button className="chat-link-button" disabled={importingSkill} onClick={() => handleImportSkill()}>
+                    {importingSkill ? "Importing…" : "+ Import custom skill…"}
+                  </button>
                 </div>
+                <p className="chat-skill-import-warning">
+                  ⚠ Importing a Skill runs its Python code with the same trust level as a built-in Skill — there is
+                  no per-skill sandbox yet. Only import Skills from sources you trust.
+                </p>
                 {activeTab.skillGrants.length > 0 && (
                   <div className="chat-run-skill">
                     <select value={runSkillName} onChange={(e) => setRunSkillName(e.target.value)}>

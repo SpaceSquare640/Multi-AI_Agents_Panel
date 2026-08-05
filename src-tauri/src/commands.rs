@@ -17,7 +17,7 @@ use crate::skill_manager::{self, SkillManifest};
 use crate::storage::{
     Agent, FileAccessGrant, MlAccessGrant, Message, ProviderKey, Session, SkillAccessGrant, Storage, UsageSummary,
 };
-use crate::{MlDir, MlEngineRuntimeState, SkillRuntimeState, SkillsDir};
+use crate::{MlDir, MlEngineRuntimeState, SkillDirs, SkillRuntimeState};
 
 /// A `ProviderKey` plus a masked preview of the secret (never the real
 /// value) — this is what the frontend actually renders.
@@ -640,9 +640,55 @@ pub fn delete_custom_role_template(storage: State<Storage>, id: String) -> Resul
 
 // --- Skills (Python bridge) ---
 
+/// Merges the bundled (built-in) and user-writable (custom) skills
+/// directories into one list, each manifest tagged with where it came
+/// from — mirrors how Role Templates merge built-in Rust consts with
+/// user-authored ones into a single list for the UI.
 #[tauri::command]
-pub fn list_skills(skills_dir: State<SkillsDir>) -> Vec<SkillManifest> {
-    skill_manager::discover_skills(&skills_dir.0)
+pub fn list_skills(skill_dirs: State<SkillDirs>) -> Vec<SkillManifest> {
+    let mut manifests = skill_manager::discover_skills_tagged(&skill_dirs.builtin, "built-in");
+    manifests.extend(skill_manager::discover_skills_tagged(&skill_dirs.custom, "custom"));
+    manifests.sort_by(|a, b| a.name.cmp(&b.name));
+    manifests
+}
+
+/// Copies a user-picked folder (containing `skill.json` + its entrypoint)
+/// into the custom-skills directory, then restarts the skill bridge so
+/// the newly added skill becomes callable without restarting the app.
+/// Validation is deliberately minimal (manifest parses, entrypoint file
+/// exists) — see [[Unified Data Folder & Custom Skills Design]] for why
+/// deeper code-safety scanning is explicitly out of scope for this pass,
+/// and why importing a skill carries the same trust level as a built-in
+/// one (no per-skill sandboxing exists yet).
+#[tauri::command]
+pub fn import_custom_skill(
+    skill_dirs: State<SkillDirs>,
+    skill_runtime: State<SkillRuntimeState>,
+    source_folder: String,
+) -> Result<SkillManifest, String> {
+    let source = std::path::Path::new(&source_folder);
+    let manifest_text = std::fs::read_to_string(source.join("skill.json"))
+        .map_err(|e| format!("skill.json not found or unreadable in {source_folder}: {e}"))?;
+    let manifest: SkillManifest =
+        serde_json::from_str(&manifest_text).map_err(|e| format!("invalid skill.json: {e}"))?;
+    if !source.join(&manifest.entrypoint).exists() {
+        return Err(format!("entrypoint \"{}\" not found in {source_folder}", manifest.entrypoint));
+    }
+
+    let dest = skill_dirs.custom.join(&manifest.name);
+    if dest.exists() {
+        return Err(format!("a custom skill named \"{}\" already exists — remove it first to re-import", manifest.name));
+    }
+    skill_manager::copy_dir_recursive(source, &dest).map_err(|e| format!("failed to copy skill files: {e}"))?;
+
+    // Best-effort restart, same policy as the initial app-startup spawn:
+    // a missing/broken Python install shouldn't stop the rest of the app,
+    // it just means Skills (including the one just imported) stay
+    // unavailable until the underlying problem is fixed.
+    let mut guard = skill_runtime.0.lock().unwrap();
+    *guard = skill_manager::SkillRuntime::start(&[skill_dirs.builtin.clone(), skill_dirs.custom.clone()]).ok();
+
+    Ok(SkillManifest { source: "custom".to_string(), ..manifest })
 }
 
 #[tauri::command]
@@ -956,7 +1002,7 @@ mod live {
         // running app) — spawns the real Python bridge, same as
         // `skill_manager::live`.
         let skills_dir = skill_manager::resolve_skills_dir(None);
-        let runtime = skill_manager::SkillRuntime::start(&skills_dir)
+        let runtime = skill_manager::SkillRuntime::start(&[skills_dir.clone()])
             .expect("bridge should start with a real Python on PATH");
 
         let storage = Storage::open_in_memory().unwrap();

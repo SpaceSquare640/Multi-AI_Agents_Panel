@@ -80,6 +80,7 @@ export interface SkillManifest {
   description: string;
   entrypoint: string;
   version: string;
+  source: string;
 }
 
 export interface SkillAccessGrant {

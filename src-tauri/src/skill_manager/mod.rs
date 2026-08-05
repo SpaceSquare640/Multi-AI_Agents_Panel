@@ -30,6 +30,17 @@ pub struct SkillManifest {
     pub description: String,
     pub entrypoint: String,
     pub version: String,
+    /// "built-in" or "custom" — not part of `skill.json` itself, filled in
+    /// by whoever calls `discover_skills` based on which directory it came
+    /// from (see `commands::list_skills`, which merges the bundled and
+    /// user-writable custom-skills directories). Defaults to "built-in" so
+    /// existing manifests/tests that don't set it still parse.
+    #[serde(default = "default_source")]
+    pub source: String,
+}
+
+fn default_source() -> String {
+    "built-in".to_string()
 }
 
 #[derive(Debug)]
@@ -98,6 +109,34 @@ pub fn discover_skills(skills_dir: &Path) -> Vec<SkillManifest> {
     manifests
 }
 
+/// `discover_skills` plus stamping every manifest's `source` field — used
+/// by `commands::list_skills` to merge the bundled (built-in) and
+/// user-writable (custom) skills directories into one tagged list.
+pub fn discover_skills_tagged(skills_dir: &Path, source: &str) -> Vec<SkillManifest> {
+    discover_skills(skills_dir)
+        .into_iter()
+        .map(|m| SkillManifest { source: source.to_string(), ..m })
+        .collect()
+}
+
+/// Copies a directory tree from `src` to `dst`, creating `dst` and any
+/// subdirectories as needed. Used by `import_custom_skill` to copy a
+/// user-picked skill folder into the custom-skills directory — `std::fs`
+/// has no recursive copy built in.
+pub fn copy_dir_recursive(src: &Path, dst: &Path) -> std::io::Result<()> {
+    std::fs::create_dir_all(dst)?;
+    for entry in std::fs::read_dir(src)? {
+        let entry = entry?;
+        let dst_path = dst.join(entry.file_name());
+        if entry.file_type()?.is_dir() {
+            copy_dir_recursive(&entry.path(), &dst_path)?;
+        } else {
+            std::fs::copy(entry.path(), dst_path)?;
+        }
+    }
+    Ok(())
+}
+
 /// Owns the Python bridge subprocess for the app's lifetime. Created once
 /// in `lib.rs::run` and stored as Tauri managed state (`Mutex<Option<..>>`
 /// — `None` if no working Python interpreter was found or the bridge
@@ -112,11 +151,17 @@ pub struct SkillRuntime {
 
 impl SkillRuntime {
     /// Picks a free localhost port and a random bearer token, spawns the
-    /// Python bridge pointed at `skills_dir`, and waits (up to 5s) for its
-    /// `/health` endpoint to answer.
-    pub fn start(skills_dir: &Path) -> Result<SkillRuntime, String> {
+    /// Python bridge pointed at every directory in `skills_dirs`, and
+    /// waits (up to 5s) for its `/health` endpoint to answer. The bridge
+    /// script itself (`_bridge.py`) is expected to live in the first
+    /// directory (the bundled, built-in one) — later directories (e.g. a
+    /// user-writable custom-skills folder) only contribute `<name>/skill.json`
+    /// subfolders, scanned in order, with later directories' skills
+    /// overriding earlier ones of the same name (see `_bridge.py::load_skills`).
+    pub fn start(skills_dirs: &[PathBuf]) -> Result<SkillRuntime, String> {
+        let bundled_dir = skills_dirs.first().ok_or("no skills directory given")?;
         let python_bin = find_python().ok_or("no working Python interpreter found on PATH")?;
-        let bridge_script = skills_dir.join("_bridge.py");
+        let bridge_script = bundled_dir.join("_bridge.py");
         if !bridge_script.exists() {
             return Err(format!("bridge script not found at {bridge_script:?}"));
         }
@@ -124,14 +169,17 @@ impl SkillRuntime {
         let port = free_local_port().map_err(|e| e.to_string())?;
         let token = uuid::Uuid::new_v4().to_string();
 
-        let child = Command::new(&python_bin)
+        let mut command = Command::new(&python_bin);
+        command
             .arg(&bridge_script)
             .arg("--port")
             .arg(port.to_string())
             .arg("--token")
-            .arg(&token)
-            .arg("--skills-dir")
-            .arg(skills_dir)
+            .arg(&token);
+        for dir in skills_dirs {
+            command.arg("--skills-dir").arg(dir);
+        }
+        let child = command
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
@@ -298,6 +346,29 @@ mod tests {
         let manifests = discover_skills(&dir);
         assert_eq!(manifests.len(), 1);
         assert_eq!(manifests[0].name, "greeter");
+        // Not stamped by plain `discover_skills` — defaults to "built-in".
+        assert_eq!(manifests[0].source, "built-in");
+    }
+
+    #[test]
+    fn discover_skills_tagged_stamps_the_given_source() {
+        let dir = temp_skills_dir("tagged");
+        let manifests = discover_skills_tagged(&dir, "custom");
+        assert_eq!(manifests[0].source, "custom");
+    }
+
+    #[test]
+    fn copy_dir_recursive_copies_nested_files_and_dirs() {
+        let src = std::env::temp_dir().join(format!("map-skills-copy-src-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(src.join("nested")).unwrap();
+        std::fs::write(src.join("skill.json"), "{}").unwrap();
+        std::fs::write(src.join("nested/skill.py"), "def run(p): return p").unwrap();
+
+        let dst = std::env::temp_dir().join(format!("map-skills-copy-dst-{}", uuid::Uuid::new_v4()));
+        copy_dir_recursive(&src, &dst).unwrap();
+
+        assert_eq!(std::fs::read_to_string(dst.join("skill.json")).unwrap(), "{}");
+        assert_eq!(std::fs::read_to_string(dst.join("nested/skill.py")).unwrap(), "def run(p): return p");
     }
 
     #[test]
@@ -394,7 +465,7 @@ mod live {
     #[ignore]
     fn example_skill_echoes_its_payload_through_the_real_bridge() {
         let skills_dir = resolve_skills_dir(None);
-        let runtime = SkillRuntime::start(&skills_dir).expect("bridge should start with a real Python on PATH");
+        let runtime = SkillRuntime::start(&[skills_dir.clone()]).expect("bridge should start with a real Python on PATH");
 
         let storage = Storage::open_in_memory().unwrap();
         let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude").unwrap();
@@ -416,7 +487,7 @@ mod live {
     #[ignore]
     fn raffle_winner_picker_picks_a_real_seeded_winner_through_the_real_bridge() {
         let skills_dir = resolve_skills_dir(None);
-        let runtime = SkillRuntime::start(&skills_dir).expect("bridge should start with a real Python on PATH");
+        let runtime = SkillRuntime::start(&[skills_dir.clone()]).expect("bridge should start with a real Python on PATH");
 
         let storage = Storage::open_in_memory().unwrap();
         let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude").unwrap();
@@ -450,7 +521,7 @@ mod live {
     #[ignore]
     fn calling_an_unregistered_skill_name_is_reported_as_not_found() {
         let skills_dir = resolve_skills_dir(None);
-        let runtime = SkillRuntime::start(&skills_dir).expect("bridge should start with a real Python on PATH");
+        let runtime = SkillRuntime::start(&[skills_dir.clone()]).expect("bridge should start with a real Python on PATH");
 
         let storage = Storage::open_in_memory().unwrap();
         let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude").unwrap();
