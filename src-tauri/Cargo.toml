@@ -32,7 +32,7 @@ reqwest = { version = "0.12", default-features = false, features = ["blocking", 
 # game_agent (Track A, see Game-Playing Agent Design.md): screen capture +
 # mouse/keyboard automation for the LLM vision loop, plus base64 for
 # encoding screenshots into Ollama's `images` field.
-xcap = "0.0.14"
+xcap = "0.9"
 enigo = "0.2"
 base64 = "0.22"
 image = { version = "0.25", default-features = false, features = ["png"] }
