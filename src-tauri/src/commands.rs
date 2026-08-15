@@ -16,7 +16,8 @@ use crate::orchestrator::{self, GroupChatError};
 use crate::session_manager;
 use crate::skill_manager::{self, SkillManifest};
 use crate::storage::{
-    Agent, FileAccessGrant, MlAccessGrant, Message, ProviderKey, Session, SkillAccessGrant, Storage, UsageSummary,
+    Agent, AgentFallbackProvider, FileAccessGrant, MlAccessGrant, Message, ProviderKey, Session, SkillAccessGrant,
+    Storage, UsageSummary,
 };
 use crate::{MlDir, MlEngineRuntimeState, SkillDirs, SkillRuntimeState};
 
@@ -254,6 +255,32 @@ pub fn pin_agent_provider_key(
     provider_key_id: Option<String>,
 ) -> Result<(), String> {
     storage.pin_agent_provider_key(&agent_id, provider_key_id.as_deref()).map_err(|e| e.to_string())
+}
+
+/// Adds one step to an agent's cross-provider fallback chain — tried in
+/// the order added, only after the agent's own primary provider has
+/// exhausted its own key rotation. See `agent_manager::dispatch`.
+#[tauri::command]
+pub fn add_agent_fallback_provider(
+    storage: State<Storage>,
+    agent_id: String,
+    provider_kind: String,
+    provider_name: String,
+    model: String,
+) -> Result<AgentFallbackProvider, String> {
+    storage
+        .add_agent_fallback_provider(&agent_id, &provider_kind, &provider_name, &model)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn list_agent_fallback_providers(storage: State<Storage>, agent_id: String) -> Result<Vec<AgentFallbackProvider>, String> {
+    storage.list_agent_fallback_providers(&agent_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn remove_agent_fallback_provider(storage: State<Storage>, id: String) -> Result<(), String> {
+    storage.remove_agent_fallback_provider(&id).map_err(|e| e.to_string())
 }
 
 #[tauri::command]

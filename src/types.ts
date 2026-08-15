@@ -124,6 +124,16 @@ export interface SemanticSearchResult {
   excerpt: string;
 }
 
+export interface AgentFallbackProvider {
+  id: string;
+  agentId: string;
+  position: number;
+  providerKind: string;
+  providerName: string;
+  model: string;
+  createdAt: string;
+}
+
 export interface RoleTemplate {
   id: string;
   name: string;

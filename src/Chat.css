@@ -149,6 +149,14 @@
   gap: 0.4rem;
 }
 
+.chat-fallback-chain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+}
+
 .chat-skill-import-warning {
   font-size: 0.75rem;
   color: #b45309;

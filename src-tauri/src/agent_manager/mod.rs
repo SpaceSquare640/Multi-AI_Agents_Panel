@@ -80,32 +80,50 @@ pub fn send_message(
 /// which `run_with_fallback` reports as the normal E3001 "no keys
 /// available" case.
 fn candidate_keys(storage: &Storage, agent: &Agent, provider: &str) -> Result<Vec<ProviderKey>, ProviderError> {
-    if let Some(pinned_id) = &agent.pinned_provider_key_id {
-        let pinned = storage
-            .get_provider_key(pinned_id)
-            .map_err(|e| ProviderError::Api { error_code: "E2000", message: format!("storage error: {e}") })?;
-        return Ok(pinned.into_iter().collect());
+    // A pin only applies to the Agent's own primary provider — it's a
+    // pairing of "this Agent" with "this specific key", which has no
+    // natural meaning for a cross-provider fallback step the Agent isn't
+    // primarily configured for (see `storage::AgentFallbackProvider`).
+    if provider == agent.provider_name {
+        if let Some(pinned_id) = &agent.pinned_provider_key_id {
+            let pinned = storage
+                .get_provider_key(pinned_id)
+                .map_err(|e| ProviderError::Api { error_code: "E2000", message: format!("storage error: {e}") })?;
+            return Ok(pinned.into_iter().collect());
+        }
     }
     storage
         .keys_for_provider(provider)
         .map_err(|e| ProviderError::Api { error_code: "E2000", message: format!("storage error: {e}") })
 }
 
-/// Dispatches to the agent's provider, falling back through every Key
-/// Vault entry for that provider (see `storage::keys_for_provider`, most
-/// recently added first — or, if pinned, only the pinned entry, see
-/// `candidate_keys`) before giving up with E3001. Local providers
-/// (Ollama) have no keys to fall back across, but still go through
-/// `run_with_fallback` with a single candidate so a failure there is
-/// coded the same consistent way as a cloud failure.
-fn dispatch(storage: &Storage, agent: &Agent, messages: &[ChatMessage]) -> Result<String, ProviderError> {
+/// Dispatches one provider/model, falling back through every Key Vault
+/// entry for that provider (see `storage::keys_for_provider`, most
+/// recently added first — or, if pinned and this is the agent's primary
+/// provider, only the pinned entry, see `candidate_keys`) before giving
+/// up with E3001. Local providers (Ollama) have no keys to fall back
+/// across, but still go through `run_with_fallback` with a single
+/// candidate so a failure there is coded the same consistent way as a
+/// cloud failure.
+///
+/// Used both for the agent's own primary provider and for each step of
+/// its cross-provider fallback chain (see `dispatch` below) — `model` is
+/// a parameter rather than always `agent.model` so a fallback step can
+/// use its own model, not the primary provider's.
+fn dispatch_one(
+    storage: &Storage,
+    agent: &Agent,
+    provider_name: &str,
+    model: &str,
+    messages: &[ChatMessage],
+) -> Result<String, ProviderError> {
     // Usage logging is best-effort here: a logging failure shouldn't mask
     // the real result of a provider call.
     let log_attempt = |key: &ProviderKey, provider: &str, success: bool| {
-        let _ = storage.record_usage(Some(&key.id), Some(&agent.id), provider, &agent.model, success);
+        let _ = storage.record_usage(Some(&key.id), Some(&agent.id), provider, model, success);
     };
 
-    match agent.provider_name.as_str() {
+    match provider_name {
         "anthropic" => {
             let candidates = candidate_keys(storage, agent, "anthropic")?;
             run_with_fallback(
@@ -113,7 +131,7 @@ fn dispatch(storage: &Storage, agent: &Agent, messages: &[ChatMessage]) -> Resul
                 |k| k.label.clone().unwrap_or_else(|| format!("key {}", k.id)),
                 |k| {
                     let secret = fetch_secret(k)?;
-                    providers::anthropic::send(&secret, &agent.model, messages)
+                    providers::anthropic::send(&secret, model, messages)
                 },
                 |k, success| log_attempt(k, "anthropic", success),
             )
@@ -125,7 +143,7 @@ fn dispatch(storage: &Storage, agent: &Agent, messages: &[ChatMessage]) -> Resul
                 |k| k.label.clone().unwrap_or_else(|| format!("key {}", k.id)),
                 |k| {
                     let secret = fetch_secret(k)?;
-                    providers::openrouter::send(&secret, &agent.model, messages)
+                    providers::openrouter::send(&secret, model, messages)
                 },
                 |k, success| log_attempt(k, "openrouter", success),
             )
@@ -137,7 +155,7 @@ fn dispatch(storage: &Storage, agent: &Agent, messages: &[ChatMessage]) -> Resul
                 |k| k.label.clone().unwrap_or_else(|| format!("key {}", k.id)),
                 |k| {
                     let secret = fetch_secret(k)?;
-                    providers::openai::send(&secret, &agent.model, messages)
+                    providers::openai::send(&secret, model, messages)
                 },
                 |k, success| log_attempt(k, "openai", success),
             )
@@ -148,11 +166,47 @@ fn dispatch(storage: &Storage, agent: &Agent, messages: &[ChatMessage]) -> Resul
         "ollama" => run_with_fallback(
             &[()],
             |_| "local Ollama".to_string(),
-            |_| providers::ollama::send(&agent.model, messages),
+            |_| providers::ollama::send(model, messages),
             |_, _| {},
         ),
         other => Err(ProviderError::Unsupported(other.to_string())),
     }
+}
+
+/// Tries the agent's own primary provider first; if (and only if) that
+/// exhausts its own key rotation and fails, tries each step of the
+/// agent's cross-provider fallback chain in order (Backlog: "跨 Provider
+/// 備援" — e.g. Anthropic fails, fall through to OpenRouter), stopping at
+/// the first success. Only after every provider — primary and every
+/// fallback step — has failed does this surface E3001, with `attempts`
+/// aggregated across all of them so the user can see exactly what was
+/// tried and why each one failed, not just the primary provider's
+/// attempts.
+fn dispatch(storage: &Storage, agent: &Agent, messages: &[ChatMessage]) -> Result<String, ProviderError> {
+    let mut all_attempts = Vec::new();
+
+    match dispatch_one(storage, agent, &agent.provider_name, &agent.model, messages) {
+        Ok(reply) => return Ok(reply),
+        Err(ProviderError::AllProvidersFailed { attempts, .. }) => all_attempts.extend(attempts),
+        Err(ProviderError::Unsupported(name)) => {
+            all_attempts.push(format!("{name}: no provider adapter for this provider yet"))
+        }
+        Err(other) => return Err(other),
+    }
+
+    let fallback_chain = storage.list_agent_fallback_providers(&agent.id).unwrap_or_default();
+    for step in fallback_chain {
+        match dispatch_one(storage, agent, &step.provider_name, &step.model, messages) {
+            Ok(reply) => return Ok(reply),
+            Err(ProviderError::AllProvidersFailed { attempts, .. }) => all_attempts.extend(attempts),
+            Err(ProviderError::Unsupported(name)) => {
+                all_attempts.push(format!("{name}: no provider adapter for this provider yet"))
+            }
+            Err(other) => return Err(other),
+        }
+    }
+
+    Err(ProviderError::AllProvidersFailed { error_code: "E3001", attempts: all_attempts })
 }
 
 #[cfg(test)]
@@ -252,7 +306,13 @@ mod tests {
     }
 
     #[test]
-    fn unsupported_provider_is_rejected_before_any_network_call() {
+    fn unsupported_primary_provider_with_no_fallback_chain_surfaces_as_e3001() {
+        // Once cross-provider fallback exists, an unsupported primary
+        // provider is just "the first attempt failed" — `dispatch` still
+        // checks the (empty) fallback chain before giving up, so the
+        // final error is the same E3001 shape a real network failure
+        // would produce, with the "no adapter" reason folded into
+        // `attempts` rather than surfacing as a bare `Unsupported`.
         let storage = Storage::open_in_memory().unwrap();
         let agent = agent_with_provider("cloud", "some-provider-with-no-adapter-yet");
         let messages = vec![ChatMessage {
@@ -260,7 +320,48 @@ mod tests {
             content: "hi".to_string(),
         }];
         let err = send_message(&storage, &agent, &messages).unwrap_err();
-        assert!(matches!(err, ProviderError::Unsupported(name) if name == "some-provider-with-no-adapter-yet"));
+        match err {
+            ProviderError::AllProvidersFailed { error_code, attempts } => {
+                assert_eq!(error_code, "E3001");
+                assert!(attempts.iter().any(|a| a.contains("some-provider-with-no-adapter-yet")));
+            }
+            other => panic!("expected AllProvidersFailed, got {other:?}"),
+        }
+    }
+
+    /// Proves the cross-provider fallback chain is actually walked, not
+    /// just stored: both the primary provider and every fallback step get
+    /// a real dispatch attempt, and the final error aggregates attempts
+    /// from all of them — not just the primary's. Uses provider names
+    /// with no adapter as a deterministic, network-free stand-in for "this
+    /// provider failed" (a real Anthropic/OpenRouter failure would behave
+    /// the same way from `dispatch`'s point of view — see
+    /// `unsupported_primary_provider_with_no_fallback_chain_surfaces_as_e3001`
+    /// for why an unsupported provider surfaces as a normal E3001 attempt).
+    #[test]
+    fn cross_provider_fallback_chain_is_tried_in_order_after_the_primary_provider_fails() {
+        let storage = Storage::open_in_memory().unwrap();
+        // add_agent_fallback_provider has a real FOREIGN KEY on agent_id,
+        // so (unlike most tests here) this one needs an agent that's
+        // actually been persisted, not just an in-memory `Agent` literal.
+        let agent = storage
+            .create_agent("Test", None, None, "cloud", "primary-provider-with-no-adapter", "model-primary")
+            .unwrap();
+        storage.add_agent_fallback_provider(&agent.id, "cloud", "first-fallback-with-no-adapter", "model-a").unwrap();
+        storage.add_agent_fallback_provider(&agent.id, "cloud", "second-fallback-with-no-adapter", "model-b").unwrap();
+
+        let messages = vec![ChatMessage { role: "user".to_string(), content: "hi".to_string() }];
+        let err = send_message(&storage, &agent, &messages).unwrap_err();
+
+        match err {
+            ProviderError::AllProvidersFailed { error_code, attempts } => {
+                assert_eq!(error_code, "E3001");
+                assert!(attempts.iter().any(|a| a.contains("primary-provider-with-no-adapter")));
+                assert!(attempts.iter().any(|a| a.contains("first-fallback-with-no-adapter")));
+                assert!(attempts.iter().any(|a| a.contains("second-fallback-with-no-adapter")));
+            }
+            other => panic!("expected AllProvidersFailed, got {other:?}"),
+        }
     }
 
     /// Multiple independent sessions must be able to run concurrently —
@@ -292,8 +393,8 @@ mod tests {
         let result_a = handle_a.join().expect("thread a panicked");
         let result_b = handle_b.join().expect("thread b panicked");
 
-        assert!(matches!(result_a, Err(ProviderError::Unsupported(name)) if name == "unsupported-a"));
-        assert!(matches!(result_b, Err(ProviderError::Unsupported(name)) if name == "unsupported-b"));
+        assert!(matches!(result_a, Err(ProviderError::AllProvidersFailed { error_code: "E3001", .. })));
+        assert!(matches!(result_b, Err(ProviderError::AllProvidersFailed { error_code: "E3001", .. })));
     }
 
     #[test]

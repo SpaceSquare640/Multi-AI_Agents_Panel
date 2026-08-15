@@ -222,7 +222,15 @@ mod tests {
         // this only proves the staleness check itself (that an old
         // timestamp doesn't satisfy `elapsed() < CACHE_TTL`), not the
         // network fallback path (no real network access in unit tests).
-        let ancient = Instant::now() - Duration::from_secs(25 * 60 * 60);
+        // `checked_sub` rather than `-`: on a fresh test process, `Instant::now()`
+        // can be close enough to the OS's monotonic-clock epoch that
+        // subtracting a large enough duration would underflow and panic.
+        let Some(ancient) = Instant::now().checked_sub(Duration::from_secs(25 * 60 * 60)) else {
+            // If the process genuinely hasn't been up long enough to
+            // subtract 25h from its clock, the staleness check can't be
+            // exercised this way — nothing to assert.
+            return;
+        };
         assert!(ancient.elapsed() >= CACHE_TTL);
     }
 }

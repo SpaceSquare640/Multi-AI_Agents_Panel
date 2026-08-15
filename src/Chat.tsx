@@ -114,6 +114,15 @@ export default function Chat() {
   // once set, selecting a role template stops overwriting it, since the
   // user's explicit choice should win over the template's suggestion.
   const [newAgentProviderTouched, setNewAgentProviderTouched] = useState(false);
+  // Cross-provider fallback chain, staged locally until the agent is
+  // actually created (add_agent_fallback_provider needs a real agentId) —
+  // e.g. Anthropic fails, fall through to OpenRouter. Tried in this order,
+  // only after the primary provider's own key rotation is exhausted.
+  const [fallbackProvider, setFallbackProvider] = useState<string>("openrouter");
+  const [fallbackModel, setFallbackModel] = useState("");
+  const [fallbackChain, setFallbackChain] = useState<{ providerKind: string; providerName: string; model: string }[]>(
+    [],
+  );
 
   // Role templates ("1 人公司"): default (built-in) + custom (user-authored).
   // The same form handles both creating a new template and editing an
@@ -237,17 +246,47 @@ export default function Chat() {
       if (newAgentPinnedKeyId) {
         await invoke("pin_agent_provider_key", { agentId: agent.id, providerKeyId: newAgentPinnedKeyId });
       }
+      // Fallback chain steps are staged locally (see fallbackChain state)
+      // since add_agent_fallback_provider needs a real agentId — write
+      // them in order now that the agent actually exists.
+      for (const step of fallbackChain) {
+        await invoke("add_agent_fallback_provider", {
+          agentId: agent.id,
+          providerKind: step.providerKind,
+          providerName: step.providerName,
+          model: step.model,
+        });
+      }
       setNewAgentName("");
       setNewAgentSystemPrompt("");
       setNewAgentTemplateId("");
       setNewAgentPinnedKeyId("");
       setNewAgentProviderTouched(false);
+      setFallbackChain([]);
+      setFallbackModel("");
       setShowNewAgent(false);
       await refreshAgents();
       setNewSessionAgentId(agent.id);
     } catch (err) {
       setError(String(err));
     }
+  }
+
+  function handleAddFallbackStep() {
+    if (!fallbackModel.trim()) return;
+    setFallbackChain((prev) => [
+      ...prev,
+      {
+        providerKind: fallbackProvider === "ollama" ? "local" : "cloud",
+        providerName: fallbackProvider,
+        model: fallbackModel.trim(),
+      },
+    ]);
+    setFallbackModel("");
+  }
+
+  function handleRemoveFallbackStep(index: number) {
+    setFallbackChain((prev) => prev.filter((_, i) => i !== index));
   }
 
   /// Opens a session as a tab (loading its messages/agent(s)/grants the
@@ -998,6 +1037,38 @@ export default function Chat() {
                 ))}
               </select>
             )}
+
+            <div className="chat-fallback-chain">
+              <span>Fallback (tried in order, only if the primary provider fails):</span>
+              {fallbackChain.length === 0 && <span className="chat-empty">none configured</span>}
+              {fallbackChain.map((step, i) => (
+                <span key={i} className="chat-file-chip">
+                  {i + 1}. {step.providerName}/{step.model}
+                  <button type="button" onClick={() => handleRemoveFallbackStep(i)} title="Remove">
+                    ×
+                  </button>
+                </span>
+              ))}
+              <div className="acc-form-row">
+                <select value={fallbackProvider} onChange={(e) => setFallbackProvider(e.target.value)}>
+                  {PROVIDER_OPTIONS.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="text"
+                  placeholder="Model id"
+                  value={fallbackModel}
+                  onChange={(e) => setFallbackModel(e.target.value)}
+                />
+                <button type="button" disabled={!fallbackModel.trim()} onClick={() => handleAddFallbackStep()}>
+                  + Add fallback
+                </button>
+              </div>
+            </div>
+
             <button type="submit">Create agent</button>
           </form>
         )}

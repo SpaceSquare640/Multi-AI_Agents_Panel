@@ -39,6 +39,28 @@ pub struct Agent {
     pub created_at: String,
 }
 
+/// One step in an Agent's cross-provider fallback chain (Backlog: "跨
+/// Provider 備援" — e.g. Anthropic fails, fall through to OpenRouter),
+/// tried in `position` order only after the Agent's own primary
+/// provider has exhausted its own key rotation. Key selection for a
+/// fallback step always uses the full key rotation for that provider —
+/// `Agent::pinned_provider_key_id` only applies to the Agent's primary
+/// provider, since a pin is scoped to one specific provider/key pairing
+/// and has no natural meaning for a provider the Agent isn't primarily
+/// configured for.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AgentFallbackProvider {
+    pub id: String,
+    pub agent_id: String,
+    pub position: i64,
+    /// "local" | "cloud"
+    pub provider_kind: String,
+    pub provider_name: String,
+    pub model: String,
+    pub created_at: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Session {
@@ -296,6 +318,16 @@ impl Storage {
                 capability_name   TEXT NOT NULL,
                 granted_at        TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS agent_fallback_providers (
+                id             TEXT PRIMARY KEY,
+                agent_id       TEXT NOT NULL REFERENCES agents(id),
+                position       INTEGER NOT NULL,
+                provider_kind  TEXT NOT NULL,
+                provider_name  TEXT NOT NULL,
+                model          TEXT NOT NULL,
+                created_at     TEXT NOT NULL
+            );
             ",
         )?;
         // `session_agents` predates Group Chat's need for a stable join
@@ -363,6 +395,75 @@ impl Storage {
             "UPDATE agents SET pinned_provider_key_id = ?1 WHERE id = ?2",
             params![provider_key_id, agent_id],
         )?;
+        Ok(())
+    }
+
+    /// Appends one step to an Agent's cross-provider fallback chain —
+    /// always at the end (`position` = current max + 1), so the order
+    /// existing steps were added in is preserved.
+    pub fn add_agent_fallback_provider(
+        &self,
+        agent_id: &str,
+        provider_kind: &str,
+        provider_name: &str,
+        model: &str,
+    ) -> rusqlite::Result<AgentFallbackProvider> {
+        let conn = self.conn.lock().unwrap();
+        let next_position: i64 = conn.query_row(
+            "SELECT COALESCE(MAX(position), -1) + 1 FROM agent_fallback_providers WHERE agent_id = ?1",
+            params![agent_id],
+            |row| row.get(0),
+        )?;
+        let step = AgentFallbackProvider {
+            id: uuid::Uuid::new_v4().to_string(),
+            agent_id: agent_id.to_string(),
+            position: next_position,
+            provider_kind: provider_kind.to_string(),
+            provider_name: provider_name.to_string(),
+            model: model.to_string(),
+            created_at: chrono::Utc::now().to_rfc3339(),
+        };
+        conn.execute(
+            "INSERT INTO agent_fallback_providers (id, agent_id, position, provider_kind, provider_name, model, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![
+                step.id,
+                step.agent_id,
+                step.position,
+                step.provider_kind,
+                step.provider_name,
+                step.model,
+                step.created_at,
+            ],
+        )?;
+        Ok(step)
+    }
+
+    /// The fallback chain for one Agent, in the order `agent_manager::dispatch`
+    /// should try them — after the Agent's own primary provider, before
+    /// giving up with E3001.
+    pub fn list_agent_fallback_providers(&self, agent_id: &str) -> rusqlite::Result<Vec<AgentFallbackProvider>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, agent_id, position, provider_kind, provider_name, model, created_at
+             FROM agent_fallback_providers WHERE agent_id = ?1 ORDER BY position ASC",
+        )?;
+        let rows = stmt.query_map(params![agent_id], |row| {
+            Ok(AgentFallbackProvider {
+                id: row.get(0)?,
+                agent_id: row.get(1)?,
+                position: row.get(2)?,
+                provider_kind: row.get(3)?,
+                provider_name: row.get(4)?,
+                model: row.get(5)?,
+                created_at: row.get(6)?,
+            })
+        })?;
+        rows.collect()
+    }
+
+    pub fn remove_agent_fallback_provider(&self, id: &str) -> rusqlite::Result<()> {
+        self.conn.lock().unwrap().execute("DELETE FROM agent_fallback_providers WHERE id = ?1", params![id])?;
         Ok(())
     }
 
@@ -1247,6 +1348,34 @@ mod tests {
         storage.pin_agent_provider_key(&agent.id, None).unwrap();
         let cleared = storage.get_agent(&agent.id).unwrap().unwrap();
         assert_eq!(cleared.pinned_provider_key_id, None);
+    }
+
+    #[test]
+    fn agent_fallback_chain_preserves_add_order_and_can_be_shortened() {
+        let storage = Storage::open_in_memory().unwrap();
+        let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude").unwrap();
+
+        let first = storage.add_agent_fallback_provider(&agent.id, "cloud", "openrouter", "some/model").unwrap();
+        let second = storage.add_agent_fallback_provider(&agent.id, "local", "ollama", "llama3.1:8b").unwrap();
+        assert_eq!(first.position, 0);
+        assert_eq!(second.position, 1);
+
+        let chain = storage.list_agent_fallback_providers(&agent.id).unwrap();
+        assert_eq!(chain.len(), 2);
+        assert_eq!(chain[0].id, first.id);
+        assert_eq!(chain[1].id, second.id);
+
+        storage.remove_agent_fallback_provider(&first.id).unwrap();
+        let remaining = storage.list_agent_fallback_providers(&agent.id).unwrap();
+        assert_eq!(remaining.len(), 1);
+        assert_eq!(remaining[0].id, second.id);
+    }
+
+    #[test]
+    fn agent_fallback_chain_is_empty_for_an_agent_with_none_added() {
+        let storage = Storage::open_in_memory().unwrap();
+        let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude").unwrap();
+        assert!(storage.list_agent_fallback_providers(&agent.id).unwrap().is_empty());
     }
 
     #[test]
