@@ -34,8 +34,10 @@ jobs:
         run: |
           sudo apt-get update
           # libxdo-dev: needed by `enigo` (game_agent's mouse/keyboard
-          # automation on X11) — see Backlog's Linux system-dep caveat.
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libdbus-1-dev pkg-config libxdo-dev
+          # automation on X11). libpipewire-0.3-dev: needed by `xcap`
+          # (game_agent's screen capture, Wayland/PipeWire portal
+          # backend) — see Backlog's Linux system-dep caveat.
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libdbus-1-dev pkg-config libxdo-dev libpipewire-0.3-dev
       - run: npm ci
       - uses: tauri-apps/tauri-action@v1
         env:
