@@ -59,6 +59,19 @@ export default function AIControlCenter() {
   const [openRouterQuery, setOpenRouterQuery] = useState("");
   const [openRouterLoading, setOpenRouterLoading] = useState(false);
 
+  // Game-Playing Agent (Track A — see "Game-Playing Agent Design.md" in
+  // the vault): a persistent screenshot -> local vision model -> real
+  // mouse/keyboard automation loop. Off by default, only ever starts on
+  // an explicit click here — see game_agent module docs.
+  const [gameAgentRunning, setGameAgentRunning] = useState(false);
+  const [gameAgentModel, setGameAgentModel] = useState("llava");
+  const [gameAgentPrompt, setGameAgentPrompt] = useState(
+    "You are playing a game. Look at the screenshot and decide the single best next action. " +
+      'Reply with ONLY a JSON object: {"action":"click","x":<int>,"y":<int>} or ' +
+      '{"action":"key","key":"<name>"} or {"action":"wait"}.',
+  );
+  const [gameAgentBusy, setGameAgentBusy] = useState(false);
+
   // Single-add form state.
   const [singleProvider, setSingleProvider] = useState<string>("openrouter");
   const [singleSecret, setSingleSecret] = useState("");
@@ -117,6 +130,7 @@ export default function AIControlCenter() {
     invoke<string | null>("ollama_models_env_hint")
       .then(setOllamaModelsEnvHint)
       .catch((e) => setError(String(e)));
+    invoke<boolean>("game_agent_status").then(setGameAgentRunning).catch((e) => setError(String(e)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -223,6 +237,29 @@ export default function AIControlCenter() {
     try {
       await invoke("delete_ollama_model", { name });
       await refreshOllama();
+    } catch (err) {
+      setError(String(err));
+    }
+  }
+
+  async function handleStartGameAgent() {
+    setError(null);
+    setGameAgentBusy(true);
+    try {
+      await invoke("start_game_agent", { model: gameAgentModel, prompt: gameAgentPrompt });
+      setGameAgentRunning(true);
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setGameAgentBusy(false);
+    }
+  }
+
+  async function handleStopGameAgent() {
+    setError(null);
+    try {
+      await invoke("stop_game_agent");
+      setGameAgentRunning(false);
     } catch (err) {
       setError(String(err));
     }
@@ -527,6 +564,40 @@ export default function AIControlCenter() {
             ))}
           </tbody>
         </table>
+      </section>
+
+      <section className="acc-section">
+        <h2>Game-Playing Agent (experimental)</h2>
+        <p className="acc-hint">
+          ⚠ Starting this makes the app take real screenshots and simulate real mouse/keyboard input on this
+          computer, on a loop, until you click Stop. It only ever starts when you click "Start" below — nothing
+          triggers it automatically. Requires a vision-capable model already pulled in Ollama (e.g. <code>llava</code>).
+        </p>
+        <div className="acc-form-row">
+          <input
+            type="text"
+            placeholder="Ollama vision model (e.g. llava)"
+            value={gameAgentModel}
+            onChange={(e) => setGameAgentModel(e.target.value)}
+            disabled={gameAgentRunning}
+          />
+        </div>
+        <textarea
+          rows={3}
+          value={gameAgentPrompt}
+          onChange={(e) => setGameAgentPrompt(e.target.value)}
+          disabled={gameAgentRunning}
+        />
+        <p>
+          Status: {gameAgentRunning ? "running" : "stopped"}{" "}
+          {gameAgentRunning ? (
+            <button onClick={() => handleStopGameAgent()}>Stop</button>
+          ) : (
+            <button disabled={gameAgentBusy} onClick={() => handleStartGameAgent()}>
+              {gameAgentBusy ? "Starting…" : "Start"}
+            </button>
+          )}
+        </p>
       </section>
     </div>
   );

@@ -29,4 +29,11 @@ keyring = { version = "3", features = ["windows-native", "apple-native", "sync-s
 uuid = { version = "1", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+# game_agent (Track A, see Game-Playing Agent Design.md): screen capture +
+# mouse/keyboard automation for the LLM vision loop, plus base64 for
+# encoding screenshots into Ollama's `images` field.
+xcap = "0.0.14"
+enigo = "0.2"
+base64 = "0.22"
+image = { version = "0.25", default-features = false, features = ["png"] }
 

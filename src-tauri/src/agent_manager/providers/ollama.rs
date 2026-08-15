@@ -81,6 +81,45 @@ pub fn parse_tags_response(body: &Value) -> Vec<OllamaModel> {
         .unwrap_or_default()
 }
 
+/// Builds the JSON request body for `/api/chat` with a single image
+/// attached (Ollama's `images` field on a message, base64-encoded, no
+/// data-URL prefix) — used by the game-playing agent's vision loop (see
+/// `game_agent`), which sends one screenshot + one instruction per
+/// decision tick. Deliberately separate from `build_chat_request`/
+/// `ChatMessage` rather than adding image support to the shared
+/// multi-turn chat path: no existing Agent chat flow needs images, and
+/// bolting an `images` field onto `ChatMessage` would touch every
+/// provider adapter and call site for a capability only Ollama (and only
+/// the game agent) actually uses. Pure function, unit-testable.
+pub fn build_vision_chat_request(model: &str, prompt: &str, image_base64: &str) -> Value {
+    json!({
+        "model": model,
+        "stream": false,
+        "messages": [
+            { "role": "user", "content": prompt, "images": [image_base64] }
+        ],
+    })
+}
+
+/// Sends one screenshot + instruction to a local vision-capable Ollama
+/// model and returns its raw text reply (the game agent parses that text
+/// for a structured action — see `game_agent::parse_agent_action`).
+pub fn send_vision(model: &str, prompt: &str, image_base64: &str) -> Result<String, ProviderError> {
+    let response = client()
+        .post(format!("{BASE_URL}/api/chat"))
+        .json(&build_vision_chat_request(model, prompt, image_base64))
+        .send()
+        .map_err(|e| ProviderError::Network {
+            error_code: "E1001",
+            message: format!("could not reach Ollama: {e}"),
+        })?;
+
+    let body: Value = response
+        .json()
+        .map_err(|e| ProviderError::Network { error_code: "E1001", message: e.to_string() })?;
+    parse_chat_response(&body)
+}
+
 pub fn send(model: &str, messages: &[ChatMessage]) -> Result<String, ProviderError> {
     let response = client()
         .post(format!("{BASE_URL}/api/chat"))
@@ -231,6 +270,19 @@ mod tests {
         assert_eq!(body["model"], "llama3.1:8b");
         assert_eq!(body["stream"], false);
         assert_eq!(body["messages"][0]["content"], "hello");
+    }
+
+    #[test]
+    fn build_vision_chat_request_attaches_the_image_to_the_one_message() {
+        let body = build_vision_chat_request("llava", "what do you see?", "base64pixels");
+        assert_eq!(body["model"], "llava");
+        assert_eq!(body["messages"][0]["role"], "user");
+        assert_eq!(body["messages"][0]["content"], "what do you see?");
+        assert_eq!(body["messages"][0]["images"][0], "base64pixels");
+        // Only one image, one message — this is a single-shot decision
+        // tick, not an accumulating multi-turn conversation.
+        assert_eq!(body["messages"].as_array().unwrap().len(), 1);
+        assert_eq!(body["messages"][0]["images"].as_array().unwrap().len(), 1);
     }
 
     #[test]

@@ -2,6 +2,7 @@ mod agent_manager;
 mod commands;
 mod fallback;
 mod file_access;
+mod game_agent;
 mod guardrails;
 mod key_vault;
 mod ml_engine;
@@ -14,6 +15,7 @@ mod usage_tracker;
 use std::sync::Mutex;
 
 use agent_manager::openrouter_catalog::OpenRouterCatalogState;
+use game_agent::GameAgentState;
 use ml_engine::MlEngineRuntime;
 use skill_manager::SkillRuntime;
 use storage::Storage;
@@ -115,6 +117,10 @@ pub fn run() {
             app.manage(MlEngineRuntimeState(Mutex::new(ml_runtime)));
             app.manage(MlDir(ml_dir));
             app.manage(OpenRouterCatalogState(Mutex::new(None)));
+            // Starts every launch stopped — the game agent never runs
+            // unless a user explicitly clicks "start" (see game_agent
+            // module docs).
+            app.manage(GameAgentState(std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false))));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -127,6 +133,9 @@ pub fn run() {
             commands::get_usage_summary,
             commands::list_curated_models,
             commands::list_openrouter_models_live,
+            commands::start_game_agent,
+            commands::stop_game_agent,
+            commands::game_agent_status,
             commands::ollama_is_running,
             commands::list_ollama_installed_models,
             commands::pull_ollama_model,

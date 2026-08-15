@@ -7,6 +7,7 @@ use tauri::State;
 use crate::agent_manager::curated_models::{self, CuratedModel};
 use crate::agent_manager::openrouter_catalog::{self, OpenRouterCatalogState, OpenRouterModelsResult};
 use crate::agent_manager::providers::{ollama, ChatMessage};
+use crate::game_agent::{self, GameAgentState};
 use crate::agent_manager::role_templates::{self, RoleTemplate};
 use crate::agent_manager::{self};
 use crate::file_access;
@@ -161,6 +162,24 @@ pub fn list_openrouter_models_live(
     force_refresh: bool,
 ) -> OpenRouterModelsResult {
     openrouter_catalog::list_models(&cache, force_refresh)
+}
+
+/// Starts the Track A game-playing vision loop (see `game_agent` module
+/// docs) — real mouse/keyboard automation on the user's machine, only
+/// ever started by this explicit, user-triggered command.
+#[tauri::command]
+pub fn start_game_agent(state: State<GameAgentState>, model: String, prompt: String) -> Result<(), String> {
+    game_agent::start(&state, model, prompt)
+}
+
+#[tauri::command]
+pub fn stop_game_agent(state: State<GameAgentState>) {
+    game_agent::stop(&state);
+}
+
+#[tauri::command]
+pub fn game_agent_status(state: State<GameAgentState>) -> bool {
+    game_agent::is_running(&state)
 }
 
 #[tauri::command]
