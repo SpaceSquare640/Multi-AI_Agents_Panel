@@ -72,6 +72,15 @@ export default function AIControlCenter() {
   );
   const [gameAgentBusy, setGameAgentBusy] = useState(false);
 
+  // Track B (Deep RL) — "record" pipeline stage only (see
+  // Game-Playing Agent Design.md §4): starts game_agent_rl's Python CLI
+  // as a background subprocess to capture a human demonstration
+  // session. label/train-bc/train-rl/play don't exist yet.
+  const [recording, setRecording] = useState(false);
+  const [recordingSession, setRecordingSession] = useState("session-1");
+  const [recordingOutputDir, setRecordingOutputDir] = useState("");
+  const [recordingBusy, setRecordingBusy] = useState(false);
+
   // Single-add form state.
   const [singleProvider, setSingleProvider] = useState<string>("openrouter");
   const [singleSecret, setSingleSecret] = useState("");
@@ -131,6 +140,7 @@ export default function AIControlCenter() {
       .then(setOllamaModelsEnvHint)
       .catch((e) => setError(String(e)));
     invoke<boolean>("game_agent_status").then(setGameAgentRunning).catch((e) => setError(String(e)));
+    invoke<boolean>("recording_status").then(setRecording).catch((e) => setError(String(e)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -260,6 +270,32 @@ export default function AIControlCenter() {
     try {
       await invoke("stop_game_agent");
       setGameAgentRunning(false);
+    } catch (err) {
+      setError(String(err));
+    }
+  }
+
+  async function handleStartRecording() {
+    setError(null);
+    setRecordingBusy(true);
+    try {
+      await invoke("start_recording_session", {
+        session: recordingSession,
+        outputDir: recordingOutputDir,
+      });
+      setRecording(true);
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setRecordingBusy(false);
+    }
+  }
+
+  async function handleStopRecording() {
+    setError(null);
+    try {
+      await invoke("stop_recording_session");
+      setRecording(false);
     } catch (err) {
       setError(String(err));
     }
@@ -595,6 +631,41 @@ export default function AIControlCenter() {
           ) : (
             <button disabled={gameAgentBusy} onClick={() => handleStartGameAgent()}>
               {gameAgentBusy ? "Starting…" : "Start"}
+            </button>
+          )}
+        </p>
+      </section>
+
+      <section className="acc-section">
+        <h2>Deep RL: Record Demonstration (experimental)</h2>
+        <p className="acc-hint">
+          Track B (see the Game-Playing Agent design doc) — only the "record" pipeline stage exists so far. This
+          captures screenshots + your mouse/keyboard input to a folder for later training; it does not itself
+          automate anything. Requires Python with <code>game_agent_rl/requirements.txt</code> installed.
+        </p>
+        <div className="acc-form-row">
+          <input
+            type="text"
+            placeholder="Session name"
+            value={recordingSession}
+            onChange={(e) => setRecordingSession(e.target.value)}
+            disabled={recording}
+          />
+          <input
+            type="text"
+            placeholder="Output directory"
+            value={recordingOutputDir}
+            onChange={(e) => setRecordingOutputDir(e.target.value)}
+            disabled={recording}
+          />
+        </div>
+        <p>
+          Status: {recording ? "recording" : "stopped"}{" "}
+          {recording ? (
+            <button onClick={() => handleStopRecording()}>Stop</button>
+          ) : (
+            <button disabled={recordingBusy || !recordingOutputDir.trim()} onClick={() => handleStartRecording()}>
+              {recordingBusy ? "Starting…" : "Start recording"}
             </button>
           )}
         </p>

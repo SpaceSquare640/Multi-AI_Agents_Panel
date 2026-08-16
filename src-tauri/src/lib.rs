@@ -15,7 +15,7 @@ mod usage_tracker;
 use std::sync::Mutex;
 
 use agent_manager::openrouter_catalog::OpenRouterCatalogState;
-use game_agent::GameAgentState;
+use game_agent::{GameAgentState, RecordingState};
 use ml_engine::MlEngineRuntime;
 use skill_manager::SkillRuntime;
 use storage::Storage;
@@ -50,6 +50,10 @@ pub(crate) struct MlEngineRuntimeState(pub(crate) Mutex<Option<MlEngineRuntime>>
 /// re-scan it (`list_ml_capabilities`) without re-deriving the path each
 /// time.
 pub(crate) struct MlDir(pub(crate) std::path::PathBuf);
+
+/// The resolved `game_agent_rl/` directory — Track B's standalone Python
+/// CLI tooling, see `game_agent::resolve_recording_dir`.
+pub(crate) struct RecordingDir(pub(crate) std::path::PathBuf);
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -121,6 +125,8 @@ pub fn run() {
             // unless a user explicitly clicks "start" (see game_agent
             // module docs).
             app.manage(GameAgentState(std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false))));
+            app.manage(RecordingState(Mutex::new(None)));
+            app.manage(RecordingDir(game_agent::resolve_recording_dir(app.path().resource_dir().ok())));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -136,6 +142,9 @@ pub fn run() {
             commands::start_game_agent,
             commands::stop_game_agent,
             commands::game_agent_status,
+            commands::start_recording_session,
+            commands::stop_recording_session,
+            commands::recording_status,
             commands::ollama_is_running,
             commands::list_ollama_installed_models,
             commands::pull_ollama_model,

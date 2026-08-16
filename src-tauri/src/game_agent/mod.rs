@@ -13,6 +13,8 @@
 //! this module.
 
 use std::io::Cursor;
+use std::path::PathBuf;
+use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
@@ -165,6 +167,106 @@ pub fn is_running(state: &GameAgentState) -> bool {
     state.0.load(Ordering::SeqCst)
 }
 
+// --- Track B (Deep RL): the `record` pipeline stage ---
+//
+// Everything below manages `game_agent_rl`'s Python CLI as a background
+// subprocess — the "record" stage of the design doc's §4 pipeline
+// (record → label → train-bc → train-rl → play). Only `record` exists
+// on the Python side so far; `label`/`train-bc`/`train-rl`/`play` are
+// future work, not stubbed here. Per ADR 0005, this is a standalone CLI
+// tool Rust starts/monitors/stops — not the JSON-RPC bridge pattern
+// `skill_manager`/`ml_engine` use, since a recording session is a
+// long-running background job, not a request/response call.
+
+fn find_python() -> Option<String> {
+    for candidate in ["python", "python3", "py"] {
+        let works = Command::new(candidate)
+            .arg("--version")
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false);
+        if works {
+            return Some(candidate.to_string());
+        }
+    }
+    None
+}
+
+/// Resolves the `game_agent_rl/` directory: the packaged resource
+/// location first, falling back to the repo-relative path for `cargo
+/// tauri dev` — same pattern as `skill_manager::resolve_skills_dir`/
+/// `ml_engine::resolve_ml_dir`. Unlike those, `game_agent_rl` is
+/// deliberately *not* added to `tauri.conf.json`'s `bundle.resources` —
+/// see its `requirements.txt`: this is developer/research tooling run
+/// manually, not a capability the packaged app calls at runtime.
+pub fn resolve_recording_dir(resource_dir: Option<PathBuf>) -> PathBuf {
+    if let Some(dir) = resource_dir {
+        let candidate = dir.join("game_agent_rl");
+        if candidate.exists() {
+            return candidate;
+        }
+    }
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..").join("game_agent_rl")
+}
+
+/// Owns the recording subprocess's `Child` handle, if one is running.
+/// `None` means no session is currently being recorded.
+pub struct RecordingState(pub std::sync::Mutex<Option<std::process::Child>>);
+
+/// Starts `python -m game_agent_rl.cli record` as a background
+/// subprocess, writing frames/events under `output_dir/session`.
+/// Returns an error immediately (does not spawn a second recorder) if a
+/// session is already running.
+pub fn start_recording(
+    state: &RecordingState,
+    game_agent_rl_dir: &std::path::Path,
+    session: &str,
+    output_dir: &str,
+) -> Result<(), String> {
+    let mut guard = state.0.lock().unwrap();
+    if guard.is_some() {
+        return Err("a recording session is already running".to_string());
+    }
+    let python_bin = find_python().ok_or("no working Python interpreter found on PATH")?;
+    let working_dir = game_agent_rl_dir
+        .parent()
+        .ok_or_else(|| format!("could not resolve the parent of {game_agent_rl_dir:?}"))?;
+    let child = Command::new(&python_bin)
+        .arg("-m")
+        .arg("game_agent_rl.cli")
+        .arg("record")
+        .arg("--session")
+        .arg(session)
+        .arg("--output-dir")
+        .arg(output_dir)
+        .current_dir(working_dir)
+        .spawn()
+        .map_err(|e| format!("failed to spawn {python_bin} -m game_agent_rl.cli record: {e}"))?;
+    *guard = Some(child);
+    Ok(())
+}
+
+/// Stops the running recording session. This is a hard process
+/// termination (`Child::kill`), not the graceful `Ctrl+C`/`SIGINT` the
+/// CLI's own `try/except KeyboardInterrupt` is written to handle — a
+/// real terminal Ctrl+C isn't reproducible by signaling a child process
+/// this way on every platform. Frames/events already written to disk
+/// are unaffected either way; only the "N frames recorded" summary the
+/// CLI prints on a graceful stop is skipped.
+pub fn stop_recording(state: &RecordingState) -> Result<(), String> {
+    let mut guard = state.0.lock().unwrap();
+    let Some(mut child) = guard.take() else {
+        return Err("no recording session is running".to_string());
+    };
+    child.kill().map_err(|e| e.to_string())?;
+    let _ = child.wait();
+    Ok(())
+}
+
+pub fn is_recording(state: &RecordingState) -> bool {
+    state.0.lock().unwrap().is_some()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -232,5 +334,24 @@ mod tests {
         assert!(is_running(&state));
         stop(&state);
         assert!(!is_running(&state));
+    }
+
+    #[test]
+    fn resolve_recording_dir_falls_back_to_the_repo_relative_path_when_no_resource_dir_is_given() {
+        let dir = resolve_recording_dir(None);
+        assert!(dir.ends_with("game_agent_rl"));
+    }
+
+    #[test]
+    fn stop_recording_reports_an_error_when_nothing_is_running() {
+        let state = RecordingState(std::sync::Mutex::new(None));
+        let err = stop_recording(&state).unwrap_err();
+        assert!(err.contains("no recording session"));
+    }
+
+    #[test]
+    fn is_recording_reflects_whether_a_child_handle_is_held() {
+        let state = RecordingState(std::sync::Mutex::new(None));
+        assert!(!is_recording(&state));
     }
 }

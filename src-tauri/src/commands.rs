@@ -7,7 +7,7 @@ use tauri::State;
 use crate::agent_manager::curated_models::{self, CuratedModel};
 use crate::agent_manager::openrouter_catalog::{self, OpenRouterCatalogState, OpenRouterModelsResult};
 use crate::agent_manager::providers::{ollama, ChatMessage};
-use crate::game_agent::{self, GameAgentState};
+use crate::game_agent::{self, GameAgentState, RecordingState};
 use crate::agent_manager::role_templates::{self, RoleTemplate};
 use crate::agent_manager::{self};
 use crate::file_access;
@@ -180,6 +180,29 @@ pub fn stop_game_agent(state: State<GameAgentState>) {
 #[tauri::command]
 pub fn game_agent_status(state: State<GameAgentState>) -> bool {
     game_agent::is_running(&state)
+}
+
+/// Starts Track B's `record` stage (see `game_agent`'s recording
+/// section) as a background Python subprocess — a human demonstration
+/// session, not the Track A vision-agent loop.
+#[tauri::command]
+pub fn start_recording_session(
+    state: State<RecordingState>,
+    recording_dir: State<crate::RecordingDir>,
+    session: String,
+    output_dir: String,
+) -> Result<(), String> {
+    game_agent::start_recording(&state, &recording_dir.0, &session, &output_dir)
+}
+
+#[tauri::command]
+pub fn stop_recording_session(state: State<RecordingState>) -> Result<(), String> {
+    game_agent::stop_recording(&state)
+}
+
+#[tauri::command]
+pub fn recording_status(state: State<RecordingState>) -> bool {
+    game_agent::is_recording(&state)
 }
 
 #[tauri::command]
