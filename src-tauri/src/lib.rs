@@ -184,6 +184,7 @@ pub fn run() {
             commands::list_session_members,
             commands::send_group_message,
             commands::advance_group_turn,
+            commands::confirm_local_to_cloud_boundary,
             commands::end_group_chat_meeting,
             commands::pull_out_to_independent_session,
             commands::list_ml_capabilities,

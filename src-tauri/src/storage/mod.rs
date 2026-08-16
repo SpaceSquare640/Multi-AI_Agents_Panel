@@ -328,6 +328,11 @@ impl Storage {
                 model          TEXT NOT NULL,
                 created_at     TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS group_boundary_consent (
+                session_id  TEXT PRIMARY KEY REFERENCES sessions(id),
+                granted_at  TEXT NOT NULL
+            );
             ",
         )?;
         // `session_agents` predates Group Chat's need for a stable join
@@ -629,6 +634,32 @@ impl Storage {
             params![session_id],
         )?;
         Ok(())
+    }
+
+    /// Records that the user has confirmed sending local-Agent-produced
+    /// content across the local→cloud boundary for this Group Chat
+    /// session — see `Orchestration Design.md`'s decided "第一次跨越本地
+    /// →雲端邊界時顯示即將送出的內容供使用者確認（可設定本場 Group Chat
+    /// 都記住我的選擇）" rule. Idempotent: confirming twice for the same
+    /// session is a no-op, not an error.
+    pub fn grant_local_to_cloud_consent(&self, session_id: &str) -> rusqlite::Result<()> {
+        let now = chrono::Utc::now().to_rfc3339();
+        self.conn.lock().unwrap().execute(
+            "INSERT INTO group_boundary_consent (session_id, granted_at) VALUES (?1, ?2)
+             ON CONFLICT(session_id) DO NOTHING",
+            params![session_id, now],
+        )?;
+        Ok(())
+    }
+
+    pub fn has_local_to_cloud_consent(&self, session_id: &str) -> rusqlite::Result<bool> {
+        let conn = self.conn.lock().unwrap();
+        let count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM group_boundary_consent WHERE session_id = ?1",
+            params![session_id],
+            |row| row.get(0),
+        )?;
+        Ok(count > 0)
     }
 
     pub fn add_message(
@@ -1416,6 +1447,32 @@ mod tests {
         let after_reset = storage.get_group_session_state(&session.id).unwrap();
         assert_eq!(after_reset.consecutive_agent_turns, 0);
         assert_eq!(after_reset.rotation_cursor, 2, "resetting the turn counter must not touch the rotation cursor");
+    }
+
+    #[test]
+    fn local_to_cloud_consent_defaults_to_false_and_is_idempotent_once_granted() {
+        let storage = Storage::open_in_memory().unwrap();
+        let session = storage.create_session("group", "Standup").unwrap();
+
+        assert!(!storage.has_local_to_cloud_consent(&session.id).unwrap());
+
+        storage.grant_local_to_cloud_consent(&session.id).unwrap();
+        assert!(storage.has_local_to_cloud_consent(&session.id).unwrap());
+
+        // Granting twice must not error (idempotent, not a duplicate-key failure).
+        storage.grant_local_to_cloud_consent(&session.id).unwrap();
+        assert!(storage.has_local_to_cloud_consent(&session.id).unwrap());
+    }
+
+    #[test]
+    fn local_to_cloud_consent_is_scoped_to_its_own_session() {
+        let storage = Storage::open_in_memory().unwrap();
+        let session_a = storage.create_session("group", "A").unwrap();
+        let session_b = storage.create_session("group", "B").unwrap();
+
+        storage.grant_local_to_cloud_consent(&session_a.id).unwrap();
+        assert!(storage.has_local_to_cloud_consent(&session_a.id).unwrap());
+        assert!(!storage.has_local_to_cloud_consent(&session_b.id).unwrap());
     }
 
     #[test]

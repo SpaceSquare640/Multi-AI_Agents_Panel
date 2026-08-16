@@ -80,6 +80,12 @@ export interface Message {
   createdAt: string;
 }
 
+/** What send_group_message/advance_group_turn return — see
+ * Orchestration Design.md's local→cloud boundary rule (E6004). */
+export type GroupTurnResult =
+  | { kind: "message"; message: Message }
+  | { kind: "boundaryConfirmationNeeded"; errorCode: string; previewContent: string };
+
 export interface FileAccessGrant {
   id: string;
   agentId: string;

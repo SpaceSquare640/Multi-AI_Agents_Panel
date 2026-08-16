@@ -496,12 +496,66 @@ fn build_group_history_for_speaker(
         .collect())
 }
 
+/// What `run_one_group_turn` (and therefore `send_group_message`/
+/// `advance_group_turn`) can produce: either a completed turn, or a
+/// pause for the local→cloud boundary confirmation decided in
+/// `Orchestration Design.md` (Error Code Registry E6004) — not
+/// persisted as a failure, since the rule working as designed isn't an
+/// error, the same reasoning `guardrails`' E9003 uses.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum GroupTurnResult {
+    Message(Message),
+    /// The next speaker would be a cloud Agent, and their view of the
+    /// conversation includes content a local Agent produced, and this
+    /// session hasn't confirmed sending local content to the cloud yet.
+    /// `previewContent` is exactly what would be sent — the frontend
+    /// shows it, then either calls `confirm_local_to_cloud_boundary`
+    /// and retries, or the user cancels and nothing happens.
+    BoundaryConfirmationNeeded { error_code: &'static str, preview_content: String },
+}
+
+/// The text of every local-Agent-authored message currently in
+/// `session_id`'s history — exactly what `run_one_group_turn` would be
+/// about to send to a cloud Agent, used both to decide whether a
+/// confirmation is needed and as the content shown in that confirmation.
+fn local_agent_content_preview(storage: &Storage, session_id: &str) -> Result<Vec<String>, String> {
+    let members = session_members(storage, session_id)?;
+    let local_agent_ids: std::collections::HashSet<String> =
+        members.iter().filter(|a| a.provider_kind == "local").map(|a| a.id.clone()).collect();
+    if local_agent_ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    let history = storage.list_messages(session_id).map_err(|e| e.to_string())?;
+    Ok(history
+        .into_iter()
+        .filter(|m| m.role == "assistant" && m.agent_id.as_deref().is_some_and(|id| local_agent_ids.contains(id)))
+        .map(|m| m.content)
+        .collect())
+}
+
+/// Explicit, per-session opt-in for sending local-Agent content across
+/// the local→cloud boundary — see `Orchestration Design.md`'s decided
+/// "本場 Group Chat 都記住我的選擇" rule.
+#[tauri::command]
+pub fn confirm_local_to_cloud_boundary(storage: State<Storage>, session_id: String) -> Result<(), String> {
+    storage.grant_local_to_cloud_consent(&session_id).map_err(|e| e.to_string())
+}
+
 /// Runs exactly one agent turn: resolves the speaker (mention or
 /// rotation), builds their view of the conversation, calls them, persists
 /// the reply, and saves the updated turn-taking state. Shared by
 /// `send_group_message` (after the user's own message) and
 /// `advance_group_turn` (no new user message — "let them keep talking").
-fn run_one_group_turn(storage: &Storage, session_id: &str, mention: Option<&str>) -> Result<Message, String> {
+///
+/// Before ever calling a cloud provider, checks the local→cloud boundary
+/// rule (E6004): if the resolved speaker is a cloud Agent, their history
+/// contains content a local Agent produced, and this session hasn't
+/// confirmed sending local content to the cloud yet, this returns
+/// `BoundaryConfirmationNeeded` instead of calling the provider — no
+/// message is persisted, no turn-taking state changes, so retrying after
+/// confirmation resolves the exact same speaker.
+fn run_one_group_turn(storage: &Storage, session_id: &str, mention: Option<&str>) -> Result<GroupTurnResult, String> {
     let member_ids = storage.agents_for_session(session_id).map_err(|e| e.to_string())?;
     let state = storage.get_group_session_state(session_id).map_err(|e| e.to_string())?;
 
@@ -512,6 +566,16 @@ fn run_one_group_turn(storage: &Storage, session_id: &str, mention: Option<&str>
         .get_agent(&speaker_id)
         .map_err(|e| e.to_string())?
         .ok_or_else(|| format!("agent {speaker_id} not found"))?;
+
+    if agent.provider_kind == "cloud" && !storage.has_local_to_cloud_consent(session_id).map_err(|e| e.to_string())? {
+        let local_content = local_agent_content_preview(storage, session_id)?;
+        if !local_content.is_empty() {
+            return Ok(GroupTurnResult::BoundaryConfirmationNeeded {
+                error_code: "E6004",
+                preview_content: local_content.join("\n---\n"),
+            });
+        }
+    }
 
     let mut history = build_group_history_for_speaker(storage, session_id, &speaker_id)?;
     if let Some(system_prompt) = &agent.system_prompt {
@@ -532,14 +596,18 @@ fn run_one_group_turn(storage: &Storage, session_id: &str, mention: Option<&str>
         })
         .map_err(|e| e.to_string())?;
 
-    Ok(saved)
+    Ok(GroupTurnResult::Message(saved))
 }
 
 /// A user message in a Group Chat: persists it, resets the loop
 /// safety-net (a real user spoke), then runs exactly one agent turn —
 /// the `@mentioned` agent if any, otherwise whoever is next in rotation.
 #[tauri::command]
-pub fn send_group_message(storage: State<Storage>, session_id: String, content: String) -> Result<Message, String> {
+pub fn send_group_message(
+    storage: State<Storage>,
+    session_id: String,
+    content: String,
+) -> Result<GroupTurnResult, String> {
     storage.add_message(&session_id, None, "user", &content).map_err(|e| e.to_string())?;
     storage.reset_group_session_turn_counter(&session_id).map_err(|e| e.to_string())?;
 
@@ -553,7 +621,7 @@ pub fn send_group_message(storage: State<Storage>, session_id: String, content: 
 /// turn in rotation. This is the path the E6001 loop safety-net actually
 /// guards, since nothing else prevents calling this repeatedly.
 #[tauri::command]
-pub fn advance_group_turn(storage: State<Storage>, session_id: String) -> Result<Message, String> {
+pub fn advance_group_turn(storage: State<Storage>, session_id: String) -> Result<GroupTurnResult, String> {
     run_one_group_turn(&storage, &session_id, None)
 }
 
@@ -1039,6 +1107,101 @@ pub fn semantic_search_query(
     ml_engine::invoke(&storage, guard.as_ref(), &agent_id, "semantic_search", payload).map_err(|e| e.to_string())
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Proves the E6004 boundary check actually blocks a cloud call
+    /// before it happens, not just that the logic exists — no real
+    /// network/provider call occurs in this test, because a correct
+    /// implementation returns `BoundaryConfirmationNeeded` before ever
+    /// reaching `agent_manager::send_message`. Local content is seeded
+    /// directly into storage (bypassing any real Ollama call) so this
+    /// test needs no local model, no API key, and no network access —
+    /// it can run in every `cargo test`, not just `-- --ignored`.
+    #[test]
+    fn cloud_speaker_with_unconfirmed_local_content_pauses_instead_of_calling_the_provider() {
+        let storage = Storage::open_in_memory().unwrap();
+        let local_agent =
+            storage.create_agent("Local", None, None, "local", "ollama", "llama3.1:8b").unwrap();
+        let cloud_agent = storage
+            .create_agent("Cloud", None, None, "cloud", "openrouter", "some/model")
+            .unwrap();
+
+        let session = storage.create_session("group", "Boundary test").unwrap();
+        storage.add_agent_to_session(&session.id, &local_agent.id).unwrap();
+        storage.add_agent_to_session(&session.id, &cloud_agent.id).unwrap();
+
+        // Seed the local agent's "turn" directly — no real Ollama call.
+        storage.add_message(&session.id, Some(&local_agent.id), "assistant", "local agent's output").unwrap();
+        // Point rotation at the cloud agent (index 1) so this resolves to
+        // it directly, without needing to actually run the local agent's
+        // turn through send_message.
+        storage
+            .save_group_session_state(&crate::storage::GroupSessionState {
+                session_id: session.id.clone(),
+                rotation_cursor: 1,
+                consecutive_agent_turns: 0,
+            })
+            .unwrap();
+
+        let result = run_one_group_turn(&storage, &session.id, None).unwrap();
+        match result {
+            GroupTurnResult::BoundaryConfirmationNeeded { error_code, preview_content } => {
+                assert_eq!(error_code, "E6004");
+                assert!(preview_content.contains("local agent's output"));
+            }
+            GroupTurnResult::Message(_) => panic!("expected a boundary pause, got a completed turn"),
+        }
+
+        // No turn-taking state should have advanced — retrying after
+        // confirmation must resolve the exact same speaker.
+        let state = storage.get_group_session_state(&session.id).unwrap();
+        assert_eq!(state.rotation_cursor, 1);
+        assert_eq!(state.consecutive_agent_turns, 0);
+    }
+
+    #[test]
+    fn confirming_the_boundary_lets_the_same_turn_proceed_past_the_check() {
+        let storage = Storage::open_in_memory().unwrap();
+        let local_agent =
+            storage.create_agent("Local", None, None, "local", "ollama", "llama3.1:8b").unwrap();
+        let cloud_agent = storage
+            .create_agent("Cloud", None, None, "cloud", "openrouter", "some/model")
+            .unwrap();
+
+        let session = storage.create_session("group", "Boundary confirm test").unwrap();
+        storage.add_agent_to_session(&session.id, &local_agent.id).unwrap();
+        storage.add_agent_to_session(&session.id, &cloud_agent.id).unwrap();
+        storage.add_message(&session.id, Some(&local_agent.id), "assistant", "local agent's output").unwrap();
+        storage
+            .save_group_session_state(&crate::storage::GroupSessionState {
+                session_id: session.id.clone(),
+                rotation_cursor: 1,
+                consecutive_agent_turns: 0,
+            })
+            .unwrap();
+
+        assert!(matches!(
+            run_one_group_turn(&storage, &session.id, None).unwrap(),
+            GroupTurnResult::BoundaryConfirmationNeeded { .. }
+        ));
+
+        storage.grant_local_to_cloud_consent(&session.id).unwrap();
+
+        // The check itself is now satisfied — this would go on to call
+        // the real cloud provider next (which fails here because
+        // "some/model" isn't real and there's no API key), proving the
+        // *boundary check* no longer blocks it; the resulting provider
+        // error is expected and irrelevant to what this test verifies.
+        let after_confirm = run_one_group_turn(&storage, &session.id, None);
+        assert!(
+            !matches!(after_confirm, Ok(GroupTurnResult::BoundaryConfirmationNeeded { .. })),
+            "confirming consent should let the turn past the boundary check, got: {after_confirm:?}"
+        );
+    }
+}
+
 /// Live end-to-end tests exercising the internal (`&Storage`-only, no
 /// `tauri::State`) Group Chat functions against real OpenRouter agents.
 /// Not run in CI (needs a real free API key) — run manually with
@@ -1047,6 +1210,19 @@ pub fn semantic_search_query(
 mod live {
     use super::*;
     use crate::key_vault;
+
+    /// These live tests only ever exercise all-cloud sessions (no local
+    /// Agent involved), so `run_one_group_turn` never has anything to
+    /// pause for — this just unwraps the `Message` variant so the tests
+    /// below can keep asserting on `.agent_id`/`.content` directly.
+    fn expect_message(result: GroupTurnResult) -> Message {
+        match result {
+            GroupTurnResult::Message(message) => message,
+            GroupTurnResult::BoundaryConfirmationNeeded { .. } => {
+                panic!("expected a completed turn, got a boundary confirmation pause")
+            }
+        }
+    }
 
     fn make_openrouter_agent(storage: &Storage, name: &str, system_prompt: &str, api_key: &str) -> Agent {
         let meta = storage.create_provider_key("openrouter", Some(name), None).unwrap();
@@ -1083,22 +1259,22 @@ mod live {
         storage.reset_group_session_turn_counter(&session.id).unwrap();
 
         // No @mention: round-robin should pick the first-joined member (Alice) first.
-        let first_reply = run_one_group_turn(&storage, &session.id, None).unwrap();
+        let first_reply = expect_message(run_one_group_turn(&storage, &session.id, None).unwrap());
         assert_eq!(first_reply.agent_id.as_deref(), Some(alice.id.as_str()));
         assert!(first_reply.content.to_uppercase().contains("ALICE"), "got: {}", first_reply.content);
 
         // Then Bob, in rotation order.
-        let second_reply = run_one_group_turn(&storage, &session.id, None).unwrap();
+        let second_reply = expect_message(run_one_group_turn(&storage, &session.id, None).unwrap());
         assert_eq!(second_reply.agent_id.as_deref(), Some(bob.id.as_str()));
         assert!(second_reply.content.to_uppercase().contains("BOB"), "got: {}", second_reply.content);
 
         // An @mention pulls Alice back in out of turn.
-        let mentioned_reply = run_one_group_turn(&storage, &session.id, Some(&alice.id)).unwrap();
+        let mentioned_reply = expect_message(run_one_group_turn(&storage, &session.id, Some(&alice.id)).unwrap());
         assert_eq!(mentioned_reply.agent_id.as_deref(), Some(alice.id.as_str()));
 
         // Rotation resumes where it left off: Alice (index 0) was next before
         // the mention, so it should still be Alice's turn now.
-        let fourth_reply = run_one_group_turn(&storage, &session.id, None).unwrap();
+        let fourth_reply = expect_message(run_one_group_turn(&storage, &session.id, None).unwrap());
         assert_eq!(fourth_reply.agent_id.as_deref(), Some(alice.id.as_str()));
     }
 

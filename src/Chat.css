@@ -149,6 +149,27 @@
   gap: 0.4rem;
 }
 
+.chat-boundary-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.6rem;
+  border: 1px solid #b58900;
+  border-radius: 6px;
+  background: rgba(181, 137, 0, 0.08);
+  font-size: 0.85rem;
+}
+
+.chat-boundary-preview {
+  max-height: 8rem;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  background: rgba(0, 0, 0, 0.04);
+  padding: 0.4rem;
+  border-radius: 4px;
+  margin: 0;
+}
+
 .chat-fallback-chain {
   display: flex;
   flex-wrap: wrap;

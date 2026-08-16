@@ -5,6 +5,7 @@ import type {
   Agent,
   CuratedModel,
   FileAccessGrant,
+  GroupTurnResult,
   Message,
   MlAccessGrant,
   MlCapabilityManifest,
@@ -45,6 +46,10 @@ interface TabState {
   /** True while this tab is open but not the one currently in view — used
    *  to show a "new reply" dot without disturbing the active tab. */
   hasUnseenReply: boolean;
+  /** Set when a Group Chat turn paused for the local→cloud boundary
+   *  confirmation (E6004, see Orchestration Design.md) — the content
+   *  that would be sent to a cloud Agent. Null when nothing is pending. */
+  pendingBoundary: string | null;
 }
 
 function emptyTab(): TabState {
@@ -60,6 +65,7 @@ function emptyTab(): TabState {
     draft: "",
     sending: false,
     hasUnseenReply: false,
+    pendingBoundary: null,
   };
 }
 
@@ -731,8 +737,15 @@ export default function Chat() {
     const content = tab.draft;
     patchTab(sessionId, { draft: "", sending: true });
     try {
-      const command = tab.kind === "group" ? "send_group_message" : "send_chat_message";
-      await invoke(command, { sessionId, content });
+      if (tab.kind === "group") {
+        const result = await invoke<GroupTurnResult>("send_group_message", { sessionId, content });
+        if (result.kind === "boundaryConfirmationNeeded") {
+          patchTab(sessionId, { sending: false, pendingBoundary: result.previewContent });
+          return;
+        }
+      } else {
+        await invoke("send_chat_message", { sessionId, content });
+      }
       const messages = await invoke<Message[]>("list_messages", { sessionId });
       setTabs((prev) => ({
         ...prev,
@@ -762,7 +775,11 @@ export default function Chat() {
     setError(null);
     patchTab(sessionId, { sending: true });
     try {
-      await invoke("advance_group_turn", { sessionId });
+      const result = await invoke<GroupTurnResult>("advance_group_turn", { sessionId });
+      if (result.kind === "boundaryConfirmationNeeded") {
+        patchTab(sessionId, { sending: false, pendingBoundary: result.previewContent });
+        return;
+      }
       const messages = await invoke<Message[]>("list_messages", { sessionId });
       patchTab(sessionId, { messages, sending: false, hasUnseenReply: sessionId !== activeSessionId });
     } catch (err) {
@@ -779,12 +796,19 @@ export default function Chat() {
   /// is what actually stops this from running away; hitting it here just
   /// surfaces as the normal error banner and ends the loop early, same as
   /// if the user had clicked "Let them continue" that many times by hand.
+  /// Also stops early (without an error) if a turn pauses for the
+  /// local→cloud boundary confirmation (E6004) — the user needs to decide
+  /// before any further turns run.
   async function handleAutoContinue(sessionId: string, turns: number) {
     setError(null);
     for (let i = 0; i < turns; i++) {
       patchTab(sessionId, { sending: true });
       try {
-        await invoke("advance_group_turn", { sessionId });
+        const result = await invoke<GroupTurnResult>("advance_group_turn", { sessionId });
+        if (result.kind === "boundaryConfirmationNeeded") {
+          patchTab(sessionId, { sending: false, pendingBoundary: result.previewContent });
+          break;
+        }
         const messages = await invoke<Message[]>("list_messages", { sessionId });
         patchTab(sessionId, { messages, sending: false, hasUnseenReply: sessionId !== activeSessionId });
       } catch (err) {
@@ -793,6 +817,35 @@ export default function Chat() {
         break;
       }
     }
+  }
+
+  /// User approved sending the previewed local-Agent content to a cloud
+  /// provider (E6004). Grants session-scoped consent, then retries via
+  /// `advance_group_turn` — not `send_group_message`, since the user's
+  /// message that triggered this was already persisted before the pause.
+  async function handleConfirmBoundary(sessionId: string) {
+    setError(null);
+    patchTab(sessionId, { pendingBoundary: null, sending: true });
+    try {
+      await invoke("confirm_local_to_cloud_boundary", { sessionId });
+      const result = await invoke<GroupTurnResult>("advance_group_turn", { sessionId });
+      if (result.kind === "boundaryConfirmationNeeded") {
+        patchTab(sessionId, { sending: false, pendingBoundary: result.previewContent });
+        return;
+      }
+      const messages = await invoke<Message[]>("list_messages", { sessionId });
+      patchTab(sessionId, { messages, sending: false, hasUnseenReply: sessionId !== activeSessionId });
+    } catch (err) {
+      setError(String(err));
+      patchTab(sessionId, { sending: false });
+    }
+  }
+
+  /// User declined — just dismiss the prompt, no consent granted, no
+  /// turn advanced. The paused turn can be retried later (e.g. via
+  /// "Let them continue").
+  function handleCancelBoundary(sessionId: string) {
+    patchTab(sessionId, { pendingBoundary: null });
   }
 
   /// Ends the meeting: the backend picks a summarizer (Product Lead
@@ -1297,6 +1350,30 @@ export default function Chat() {
                     End meeting (summarize)
                   </button>
                 </div>
+                {activeTab.pendingBoundary && (
+                  <div className="chat-boundary-confirm">
+                    <div>
+                      <strong>E6004 — Confirm before sending to a cloud provider:</strong> a local
+                      Agent's reply in this Group Chat would be sent to a cloud Agent. Local content
+                      preview:
+                    </div>
+                    <pre className="chat-boundary-preview">{activeTab.pendingBoundary}</pre>
+                    <div className="chat-group-actions">
+                      <button
+                        className="chat-link-button"
+                        onClick={() => handleConfirmBoundary(activeSessionId)}
+                      >
+                        Send to cloud provider
+                      </button>
+                      <button
+                        className="chat-link-button"
+                        onClick={() => handleCancelBoundary(activeSessionId)}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <div className="chat-file-access">
                   <span>Files (shared with this meeting):</span>
                   {activeTab.fileGrants.length === 0 && (
