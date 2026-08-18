@@ -637,11 +637,21 @@ pub fn end_group_chat_meeting(
     storage: State<Storage>,
     session_id: String,
     summarizer_agent_id: Option<String>,
-) -> Result<Message, String> {
+) -> Result<GroupTurnResult, String> {
     let members = session_members(&storage, &session_id)?;
     let summarizer = orchestrator::pick_summarizer(&members, summarizer_agent_id.as_deref())
         .cloned()
         .ok_or_else(|| GroupChatError::NoMembers.to_string())?;
+
+    if summarizer.provider_kind == "cloud" && !storage.has_local_to_cloud_consent(&session_id).map_err(|e| e.to_string())? {
+        let local_content = local_agent_content_preview(&storage, &session_id)?;
+        if !local_content.is_empty() {
+            return Ok(GroupTurnResult::BoundaryConfirmationNeeded {
+                error_code: "E6004",
+                preview_content: local_content.join("\n---\n"),
+            });
+        }
+    }
 
     let mut history = build_group_history_for_speaker(&storage, &session_id, &summarizer.id)?;
     history.push(ChatMessage {
@@ -654,9 +664,11 @@ pub fn end_group_chat_meeting(
 
     let summary = agent_manager::send_message(&storage, &summarizer, &history).map_err(|e| e.to_string())?;
 
-    storage
+    let saved = storage
         .add_message(&session_id, Some(&summarizer.id), "assistant", &summary)
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+
+    Ok(GroupTurnResult::Message(saved))
 }
 
 /// Copies everything a given member has seen in this Group Chat into a

@@ -50,6 +50,10 @@ interface TabState {
    *  confirmation (E6004, see Orchestration Design.md) — the content
    *  that would be sent to a cloud Agent. Null when nothing is pending. */
   pendingBoundary: string | null;
+  /** Which action to retry after the user confirms `pendingBoundary` —
+   *  a regular turn (`advance_group_turn`) or ending the meeting
+   *  (`end_group_chat_meeting`), since both can trigger E6004. */
+  pendingBoundaryRetry: "turn" | "endMeeting" | null;
 }
 
 function emptyTab(): TabState {
@@ -66,6 +70,7 @@ function emptyTab(): TabState {
     sending: false,
     hasUnseenReply: false,
     pendingBoundary: null,
+    pendingBoundaryRetry: null,
   };
 }
 
@@ -740,7 +745,11 @@ export default function Chat() {
       if (tab.kind === "group") {
         const result = await invoke<GroupTurnResult>("send_group_message", { sessionId, content });
         if (result.kind === "boundaryConfirmationNeeded") {
-          patchTab(sessionId, { sending: false, pendingBoundary: result.previewContent });
+          patchTab(sessionId, {
+            sending: false,
+            pendingBoundary: result.previewContent,
+            pendingBoundaryRetry: "turn",
+          });
           return;
         }
       } else {
@@ -777,7 +786,11 @@ export default function Chat() {
     try {
       const result = await invoke<GroupTurnResult>("advance_group_turn", { sessionId });
       if (result.kind === "boundaryConfirmationNeeded") {
-        patchTab(sessionId, { sending: false, pendingBoundary: result.previewContent });
+        patchTab(sessionId, {
+          sending: false,
+          pendingBoundary: result.previewContent,
+          pendingBoundaryRetry: "turn",
+        });
         return;
       }
       const messages = await invoke<Message[]>("list_messages", { sessionId });
@@ -806,7 +819,11 @@ export default function Chat() {
       try {
         const result = await invoke<GroupTurnResult>("advance_group_turn", { sessionId });
         if (result.kind === "boundaryConfirmationNeeded") {
-          patchTab(sessionId, { sending: false, pendingBoundary: result.previewContent });
+          patchTab(sessionId, {
+            sending: false,
+            pendingBoundary: result.previewContent,
+            pendingBoundaryRetry: "turn",
+          });
           break;
         }
         const messages = await invoke<Message[]>("list_messages", { sessionId });
@@ -820,17 +837,24 @@ export default function Chat() {
   }
 
   /// User approved sending the previewed local-Agent content to a cloud
-  /// provider (E6004). Grants session-scoped consent, then retries via
-  /// `advance_group_turn` — not `send_group_message`, since the user's
-  /// message that triggered this was already persisted before the pause.
+  /// provider (E6004). Grants session-scoped consent, then retries
+  /// whichever action paused — a regular turn (`advance_group_turn`,
+  /// not `send_group_message`, since the user's message was already
+  /// persisted before the pause) or ending the meeting
+  /// (`end_group_chat_meeting`, which can also hit this boundary via its
+  /// summarizer).
   async function handleConfirmBoundary(sessionId: string) {
     setError(null);
-    patchTab(sessionId, { pendingBoundary: null, sending: true });
+    const retry = tabs[sessionId]?.pendingBoundaryRetry ?? "turn";
+    patchTab(sessionId, { pendingBoundary: null, pendingBoundaryRetry: null, sending: true });
     try {
       await invoke("confirm_local_to_cloud_boundary", { sessionId });
-      const result = await invoke<GroupTurnResult>("advance_group_turn", { sessionId });
+      const result =
+        retry === "endMeeting"
+          ? await invoke<GroupTurnResult>("end_group_chat_meeting", { sessionId, summarizerAgentId: null })
+          : await invoke<GroupTurnResult>("advance_group_turn", { sessionId });
       if (result.kind === "boundaryConfirmationNeeded") {
-        patchTab(sessionId, { sending: false, pendingBoundary: result.previewContent });
+        patchTab(sessionId, { sending: false, pendingBoundary: result.previewContent, pendingBoundaryRetry: retry });
         return;
       }
       const messages = await invoke<Message[]>("list_messages", { sessionId });
@@ -845,7 +869,7 @@ export default function Chat() {
   /// turn advanced. The paused turn can be retried later (e.g. via
   /// "Let them continue").
   function handleCancelBoundary(sessionId: string) {
-    patchTab(sessionId, { pendingBoundary: null });
+    patchTab(sessionId, { pendingBoundary: null, pendingBoundaryRetry: null });
   }
 
   /// Ends the meeting: the backend picks a summarizer (Product Lead
@@ -854,7 +878,18 @@ export default function Chat() {
     setError(null);
     patchTab(sessionId, { sending: true });
     try {
-      await invoke("end_group_chat_meeting", { sessionId, summarizerAgentId: null });
+      const result = await invoke<GroupTurnResult>("end_group_chat_meeting", {
+        sessionId,
+        summarizerAgentId: null,
+      });
+      if (result.kind === "boundaryConfirmationNeeded") {
+        patchTab(sessionId, {
+          sending: false,
+          pendingBoundary: result.previewContent,
+          pendingBoundaryRetry: "endMeeting",
+        });
+        return;
+      }
       const messages = await invoke<Message[]>("list_messages", { sessionId });
       patchTab(sessionId, { messages, sending: false });
     } catch (err) {
