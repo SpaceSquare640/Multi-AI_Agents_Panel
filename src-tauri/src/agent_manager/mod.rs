@@ -110,6 +110,32 @@ fn candidate_keys(storage: &Storage, agent: &Agent, provider: &str) -> Result<Ve
 /// its cross-provider fallback chain (see `dispatch` below) — `model` is
 /// a parameter rather than always `agent.model` so a fallback step can
 /// use its own model, not the primary provider's.
+/// The closed set of provider adapters `dispatch_one` knows how to call.
+/// Parsed from `Agent::provider_name`/`AgentFallbackProvider::provider_name`
+/// (still plain strings in `Storage`, since those persist user-entered
+/// values and a new provider shouldn't need a schema migration) so the
+/// actual dispatch match is exhaustive and can't silently typo its way
+/// into the `other => Unsupported` catch-all.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Provider {
+    Anthropic,
+    OpenRouter,
+    OpenAi,
+    Ollama,
+}
+
+impl Provider {
+    fn parse(name: &str) -> Option<Self> {
+        match name {
+            "anthropic" => Some(Provider::Anthropic),
+            "openrouter" => Some(Provider::OpenRouter),
+            "openai" => Some(Provider::OpenAi),
+            "ollama" => Some(Provider::Ollama),
+            _ => None,
+        }
+    }
+}
+
 fn dispatch_one(
     storage: &Storage,
     agent: &Agent,
@@ -123,8 +149,12 @@ fn dispatch_one(
         let _ = storage.record_usage(Some(&key.id), Some(&agent.id), provider, model, success);
     };
 
-    match provider_name {
-        "anthropic" => {
+    let Some(provider) = Provider::parse(provider_name) else {
+        return Err(ProviderError::Unsupported(provider_name.to_string()));
+    };
+
+    match provider {
+        Provider::Anthropic => {
             let candidates = candidate_keys(storage, agent, "anthropic")?;
             run_with_fallback(
                 &candidates,
@@ -136,7 +166,7 @@ fn dispatch_one(
                 |k, success| log_attempt(k, "anthropic", success),
             )
         }
-        "openrouter" => {
+        Provider::OpenRouter => {
             let candidates = candidate_keys(storage, agent, "openrouter")?;
             run_with_fallback(
                 &candidates,
@@ -148,7 +178,7 @@ fn dispatch_one(
                 |k, success| log_attempt(k, "openrouter", success),
             )
         }
-        "openai" => {
+        Provider::OpenAi => {
             let candidates = candidate_keys(storage, agent, "openai")?;
             run_with_fallback(
                 &candidates,
@@ -163,13 +193,12 @@ fn dispatch_one(
         // Local Ollama has no Key Vault entries to log against — the
         // `cloud`-only condition that used to gate usage logging is now
         // implicit: this branch simply never calls `log_attempt`.
-        "ollama" => run_with_fallback(
+        Provider::Ollama => run_with_fallback(
             &[()],
             |_| "local Ollama".to_string(),
             |_| providers::ollama::send(model, messages),
             |_, _| {},
         ),
-        other => Err(ProviderError::Unsupported(other.to_string())),
     }
 }
 
@@ -395,6 +424,16 @@ mod tests {
 
         assert!(matches!(result_a, Err(ProviderError::AllProvidersFailed { error_code: "E3001", .. })));
         assert!(matches!(result_b, Err(ProviderError::AllProvidersFailed { error_code: "E3001", .. })));
+    }
+
+    #[test]
+    fn provider_parse_only_recognizes_the_four_known_provider_names() {
+        assert_eq!(Provider::parse("anthropic"), Some(Provider::Anthropic));
+        assert_eq!(Provider::parse("openrouter"), Some(Provider::OpenRouter));
+        assert_eq!(Provider::parse("openai"), Some(Provider::OpenAi));
+        assert_eq!(Provider::parse("ollama"), Some(Provider::Ollama));
+        assert_eq!(Provider::parse("Anthropic"), None); // case-sensitive, no typo tolerance
+        assert_eq!(Provider::parse("not-a-real-provider"), None);
     }
 
     #[test]
