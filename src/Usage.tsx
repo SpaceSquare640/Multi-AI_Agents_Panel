@@ -3,6 +3,8 @@ import { invoke } from "@tauri-apps/api/core";
 import type { UsageSummary } from "./types";
 import "./Usage.css";
 
+const SOFT_CAP_STORAGE_KEY = "multi-ai-agents-panel:usage-soft-cap";
+
 /** High-level usage dashboard: KPI cards + per-provider breakdown,
  *  aggregated from the same `get_usage_summary` data the AI Control
  *  Center's raw per-key table already shows (that table stays — it's
@@ -15,11 +17,18 @@ import "./Usage.css";
  *  estimation is still open in the Backlog: it needs a decision on
  *  where per-model pricing comes from, and today's `usage_log` doesn't
  *  even record token counts). Showing a fabricated cost number would
- *  be worse than not showing one. */
+ *  be worse than not showing one.
+ *
+ *  What IS real: a soft call-count budget warning — the actual purpose
+ *  Architecture.md gives Usage Tracker ("避免失控燒 API 額度"). Only
+ *  cloud calls ever reach `usage_log` (local Ollama has no Key Vault
+ *  entry to log against — see `dispatch_one`), so `totalCalls` here is
+ *  already cloud-only, which is the number that actually costs money. */
 export default function Usage() {
   const [usage, setUsage] = useState<UsageSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [softCapInput, setSoftCapInput] = useState(() => localStorage.getItem(SOFT_CAP_STORAGE_KEY) ?? "");
 
   useEffect(() => {
     void refresh();
@@ -37,10 +46,22 @@ export default function Usage() {
     }
   }
 
+  function updateSoftCap(value: string) {
+    setSoftCapInput(value);
+    if (value.trim() === "") {
+      localStorage.removeItem(SOFT_CAP_STORAGE_KEY);
+    } else {
+      localStorage.setItem(SOFT_CAP_STORAGE_KEY, value);
+    }
+  }
+
   const totalSuccess = usage.reduce((sum, u) => sum + u.successCount, 0);
   const totalFailure = usage.reduce((sum, u) => sum + u.failureCount, 0);
   const totalCalls = totalSuccess + totalFailure;
   const failureRate = totalCalls === 0 ? 0 : (totalFailure / totalCalls) * 100;
+
+  const softCap = softCapInput.trim() === "" ? null : Number(softCapInput);
+  const overSoftCap = softCap !== null && Number.isFinite(softCap) && softCap > 0 && totalCalls >= softCap;
 
   const byProvider = new Map<string, { success: number; failure: number }>();
   for (const u of usage) {
@@ -77,6 +98,26 @@ export default function Usage() {
           <div className="usage-kpi-value">{failureRate.toFixed(1)}%</div>
         </div>
       </div>
+
+      <div className="usage-budget-row">
+        <label htmlFor="usage-soft-cap">Soft call budget</label>
+        <input
+          id="usage-soft-cap"
+          type="number"
+          min={1}
+          placeholder="unset"
+          value={softCapInput}
+          onChange={(e) => updateSoftCap(e.target.value)}
+        />
+        <span className="acc-hint">calls — a local reminder only, doesn't block anything</span>
+      </div>
+
+      {overSoftCap && (
+        <div className="usage-budget-warning">
+          ⚠ You've reached your soft budget of {softCap!.toLocaleString()} calls ({totalCalls.toLocaleString()} so
+          far). This is only a reminder — cloud Agents keep working.
+        </div>
+      )}
 
       <p className="acc-hint">
         Estimated cost isn't shown yet — this app doesn't record token counts or per-model pricing

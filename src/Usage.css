@@ -13,6 +13,28 @@
   margin-bottom: 0.5rem;
 }
 
+.usage-budget-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.75rem 0;
+  font-size: 0.85rem;
+}
+
+.usage-budget-row input {
+  width: 6rem;
+}
+
+.usage-budget-warning {
+  background: #241f14;
+  color: #f2b84b;
+  border: 1px solid #4a3a1c;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
 .usage-head h1 {
   margin: 0;
 }
