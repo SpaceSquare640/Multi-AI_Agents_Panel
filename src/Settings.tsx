@@ -56,7 +56,7 @@ const LANGUAGES = [
   { code: "ko", label: "한국어", ready: false },
 ];
 
-export default function Settings() {
+export default function Settings({ onShowGuardrailsSummary }: { onShowGuardrailsSummary?: () => void }) {
   const [theme, setThemeState] = useState<ThemeChoice>("system");
   const [version, setVersion] = useState<string | null>(null);
 
@@ -131,6 +131,19 @@ export default function Settings() {
             </li>
           ))}
         </ul>
+      </section>
+
+      <section className="acc-section">
+        <h2>Safety</h2>
+        <div className="settings-row">
+          <div>
+            <div className="settings-row-label">AI Guardrails</div>
+            <div className="acc-hint">
+              The non-negotiable rules every Agent always follows — shown once at first launch.
+            </div>
+          </div>
+          <button onClick={() => onShowGuardrailsSummary?.()}>View summary again</button>
+        </div>
       </section>
 
       <section className="acc-section">
