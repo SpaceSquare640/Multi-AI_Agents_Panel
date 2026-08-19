@@ -1,19 +1,21 @@
 import { useState } from "react";
 import AIControlCenter from "./AIControlCenter";
 import Chat from "./Chat";
+import Manual from "./Manual";
 import Onboarding, { hasAcknowledgedGuardrails } from "./Onboarding";
 import Settings from "./Settings";
 import Skills from "./Skills";
 import Usage from "./Usage";
 import "./App.css";
 
-type Tab = "chat" | "control-center" | "skills" | "usage" | "settings";
+type Tab = "chat" | "control-center" | "skills" | "usage" | "manual" | "settings";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "chat", label: "Chat" },
   { id: "control-center", label: "AI Control Center" },
   { id: "skills", label: "Skills" },
   { id: "usage", label: "Usage" },
+  { id: "manual", label: "Help" },
   { id: "settings", label: "Settings" },
 ];
 
@@ -35,8 +37,15 @@ function App() {
         return <Skills />;
       case "usage":
         return <Usage />;
+      case "manual":
+        return <Manual />;
       case "settings":
-        return <Settings onShowGuardrailsSummary={() => setShowOnboarding(true)} />;
+        return (
+          <Settings
+            onShowGuardrailsSummary={() => setShowOnboarding(true)}
+            onOpenManual={() => setTab("manual")}
+          />
+        );
     }
   }
 

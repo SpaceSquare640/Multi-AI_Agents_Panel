@@ -56,7 +56,13 @@ const LANGUAGES = [
   { code: "ko", label: "한국어", ready: false },
 ];
 
-export default function Settings({ onShowGuardrailsSummary }: { onShowGuardrailsSummary?: () => void }) {
+export default function Settings({
+  onShowGuardrailsSummary,
+  onOpenManual,
+}: {
+  onShowGuardrailsSummary?: () => void;
+  onOpenManual?: () => void;
+}) {
   const [theme, setThemeState] = useState<ThemeChoice>("system");
   const [version, setVersion] = useState<string | null>(null);
 
@@ -151,6 +157,10 @@ export default function Settings({ onShowGuardrailsSummary }: { onShowGuardrails
         <div className="settings-row">
           <span className="settings-row-label">Version</span>
           <span className="acc-mono">{version ?? "—"}</span>
+        </div>
+        <div className="settings-row">
+          <span className="settings-row-label">User Manual</span>
+          <button onClick={() => onOpenManual?.()}>Open →</button>
         </div>
       </section>
     </div>
