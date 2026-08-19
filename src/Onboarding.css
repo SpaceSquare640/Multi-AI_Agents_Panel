@@ -1,7 +1,7 @@
 .onboarding-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -14,12 +14,12 @@
   max-width: 640px;
   max-height: 90vh;
   overflow-y: auto;
-  background: #16181f;
-  color: #e6e6ea;
-  border: 1px solid #3a3f52;
+  background: var(--card-bg);
+  color: var(--card-fg);
+  border: 1px solid var(--card-border);
   border-radius: 16px;
   padding: 1.75rem 2rem;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
 }
 
 .onboarding-modal h1 {
@@ -42,8 +42,8 @@
 }
 
 .onboarding-category {
-  background: #1a1d27;
-  border: 1px solid #262a35;
+  background: var(--card-bg-alt);
+  border: 1px solid var(--card-border);
   border-radius: 10px;
   padding: 0.75rem 1rem;
 }

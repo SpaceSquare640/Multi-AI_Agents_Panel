@@ -26,6 +26,17 @@ body,
   color: #0f0f0f;
   background-color: #f6f6f6;
 
+  /* Shared tokens for cards/modals/overlays outside the base app shell
+     (e.g. Onboarding.tsx's modal) — same three-tier override pattern as
+     the rest of this file, so anything using these vars stays correct
+     in both themes without repeating the media-query dance per file. */
+  --card-bg: #ffffff;
+  --card-bg-alt: #f6f6f6;
+  --card-border: rgba(0, 0, 0, 0.15);
+  --card-fg: #0f0f0f;
+  --card-fg-muted: rgba(15, 15, 15, 0.7);
+  --overlay-bg: rgba(0, 0, 0, 0.4);
+
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -103,6 +114,13 @@ select {
   :root:not([data-theme="light"]) {
     color: #f6f6f6;
     background-color: #2f2f2f;
+
+    --card-bg: #16181f;
+    --card-bg-alt: #1a1d27;
+    --card-border: #3a3f52;
+    --card-fg: #e6e6ea;
+    --card-fg-muted: rgba(230, 230, 234, 0.75);
+    --overlay-bg: rgba(0, 0, 0, 0.6);
   }
 
   :root:not([data-theme="light"]) a:hover {
@@ -123,6 +141,13 @@ select {
 :root[data-theme="dark"] {
   color: #f6f6f6;
   background-color: #2f2f2f;
+
+  --card-bg: #16181f;
+  --card-bg-alt: #1a1d27;
+  --card-border: #3a3f52;
+  --card-fg: #e6e6ea;
+  --card-fg-muted: rgba(230, 230, 234, 0.75);
+  --overlay-bg: rgba(0, 0, 0, 0.6);
 }
 
 :root[data-theme="dark"] a:hover {
