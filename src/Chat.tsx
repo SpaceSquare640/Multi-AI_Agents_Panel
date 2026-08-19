@@ -74,6 +74,18 @@ function emptyTab(): TabState {
   };
 }
 
+/// Every error surfaced from the Rust side is formatted as
+/// `"${error_code} ${message}"` (see `ProviderError`'s `Display` impl
+/// and the Error Code Registry) — this pulls that code back out so the
+/// UI can show it as its own chip instead of buried in prose, per
+/// Design Principles' "錯誤訊息一律帶錯誤代號" rule. Errors that don't
+/// match the pattern (e.g. a plain client-side validation message like
+/// "Create an agent first.") just render with no code chip.
+function parseErrorCode(message: string): { code: string | null; rest: string } {
+  const match = /^(E\d{4})\s+(.*)$/s.exec(message);
+  return match ? { code: match[1], rest: match[2] } : { code: null, rest: message };
+}
+
 export default function Chat() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -1224,12 +1236,29 @@ export default function Chat() {
       </aside>
 
       <main className="chat-main">
-        {error && (
-          <div className="chat-error" role="alert">
-            {error}
-            <button onClick={() => setError(null)}>×</button>
-          </div>
-        )}
+        {error &&
+          (() => {
+            const { code, rest } = parseErrorCode(error);
+            return (
+              <div className="chat-error" role="alert">
+                <div className="chat-error-body">
+                  {code && <span className="chat-error-code">{code}</span>}
+                  <span>{rest}</span>
+                </div>
+                <div className="chat-error-actions">
+                  {code && (
+                    <button
+                      className="chat-error-copy"
+                      onClick={() => void navigator.clipboard.writeText(error)}
+                    >
+                      Copy error details
+                    </button>
+                  )}
+                  <button onClick={() => setError(null)}>×</button>
+                </div>
+              </div>
+            );
+          })()}
 
         {openTabIds.length > 0 && (
           <div className="chat-tabs">
