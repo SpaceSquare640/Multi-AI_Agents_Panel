@@ -2,9 +2,10 @@ import { useState } from "react";
 import AIControlCenter from "./AIControlCenter";
 import Chat from "./Chat";
 import Settings from "./Settings";
+import Skills from "./Skills";
 import "./App.css";
 
-type Tab = "chat" | "control-center" | "settings";
+type Tab = "chat" | "control-center" | "skills" | "settings";
 
 function App() {
   const [tab, setTab] = useState<Tab>("chat");
@@ -21,12 +22,23 @@ function App() {
         >
           AI Control Center
         </button>
+        <button className={tab === "skills" ? "active" : ""} onClick={() => setTab("skills")}>
+          Skills
+        </button>
         <button className={tab === "settings" ? "active" : ""} onClick={() => setTab("settings")}>
           Settings
         </button>
       </nav>
       <div className="app-tab-content">
-        {tab === "chat" ? <Chat /> : tab === "control-center" ? <AIControlCenter /> : <Settings />}
+        {tab === "chat" ? (
+          <Chat />
+        ) : tab === "control-center" ? (
+          <AIControlCenter />
+        ) : tab === "skills" ? (
+          <Skills />
+        ) : (
+          <Settings />
+        )}
       </div>
     </div>
   );
