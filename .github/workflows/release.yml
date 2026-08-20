@@ -39,7 +39,8 @@ jobs:
           # backend) — see Backlog's Linux system-dep caveat.
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libdbus-1-dev pkg-config libxdo-dev libpipewire-0.3-dev libgbm-dev
       - run: npm ci
-      - uses: tauri-apps/tauri-action@v1
+      - id: tauri_build
+        uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -49,3 +50,29 @@ jobs:
           # Alpha/Beta stage: mark as prerelease. Flip to false only for the
           # first tag with no -alpha/-beta suffix (see CI-CD Pipeline.md).
           prerelease: true
+      - name: Generate and upload SHA256 checksums
+        # The header comment above claims "Checksums are attached so users
+        # can verify what they downloaded" — this step is what actually
+        # makes that true; it previously wasn't implemented at all. Uses
+        # Node's crypto (already available via actions/setup-node, and
+        # identical across all three OSes) rather than shelling out to
+        # sha256sum/Get-FileHash, which would need per-OS branching.
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARTIFACT_PATHS: ${{ steps.tauri_build.outputs.artifactPaths }}
+        run: |
+          node -e '
+            const fs = require("fs");
+            const crypto = require("crypto");
+            const path = require("path");
+            const paths = JSON.parse(process.env.ARTIFACT_PATHS || "[]");
+            const lines = paths
+              .filter((p) => fs.existsSync(p) && fs.statSync(p).isFile())
+              .map((p) => {
+                const hash = crypto.createHash("sha256").update(fs.readFileSync(p)).digest("hex");
+                return `${hash}  ${path.basename(p)}`;
+              });
+            fs.writeFileSync("checksums-${{ matrix.platform }}.sha256.txt", lines.join("\n") + "\n");
+          '
+          gh release upload "${{ github.ref_name }}" "checksums-${{ matrix.platform }}.sha256.txt" --clobber
