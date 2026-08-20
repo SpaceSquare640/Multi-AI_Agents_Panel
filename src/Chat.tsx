@@ -81,7 +81,7 @@ function emptyTab(): TabState {
 /// Design Principles' "錯誤訊息一律帶錯誤代號" rule. Errors that don't
 /// match the pattern (e.g. a plain client-side validation message like
 /// "Create an agent first.") just render with no code chip.
-function parseErrorCode(message: string): { code: string | null; rest: string } {
+export function parseErrorCode(message: string): { code: string | null; rest: string } {
   const match = /^(E\d{4})\s+(.*)$/s.exec(message);
   return match ? { code: match[1], rest: match[2] } : { code: null, rest: message };
 }

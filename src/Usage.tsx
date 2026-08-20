@@ -5,6 +5,17 @@ import "./Usage.css";
 
 const SOFT_CAP_STORAGE_KEY = "multi-ai-agents-panel:usage-soft-cap";
 
+/** Parses the soft-cap input field's raw string and decides whether
+ *  `totalCalls` has crossed it. Extracted as a pure function (rather
+ *  than inline arithmetic in the component) so it's independently
+ *  testable — blank/non-numeric/zero/negative input all mean "no cap
+ *  set", not "always warn". */
+export function isOverSoftCap(totalCalls: number, rawCapInput: string): boolean {
+  if (rawCapInput.trim() === "") return false;
+  const cap = Number(rawCapInput);
+  return Number.isFinite(cap) && cap > 0 && totalCalls >= cap;
+}
+
 /** High-level usage dashboard: KPI cards + per-provider breakdown,
  *  aggregated from the same `get_usage_summary` data the AI Control
  *  Center's raw per-key table already shows (that table stays — it's
@@ -61,7 +72,7 @@ export default function Usage() {
   const failureRate = totalCalls === 0 ? 0 : (totalFailure / totalCalls) * 100;
 
   const softCap = softCapInput.trim() === "" ? null : Number(softCapInput);
-  const overSoftCap = softCap !== null && Number.isFinite(softCap) && softCap > 0 && totalCalls >= softCap;
+  const overSoftCap = isOverSoftCap(totalCalls, softCapInput);
 
   const byProvider = new Map<string, { success: number; failure: number }>();
   for (const u of usage) {
