@@ -3,6 +3,31 @@ import { invoke } from "@tauri-apps/api/core";
 import type { Agent, SkillAccessGrant, SkillManifest } from "./types";
 import "./Skills.css";
 
+/** Aggregates "which Agents have this Skill granted" from the raw data
+ *  three separate `invoke` calls return. Extracted as a pure function
+ *  (inputs in, `Map` out — no `invoke`/state) so it's testable without
+ *  a fake Tauri backend; `refresh()` below just wires it to the real
+ *  calls. Falls back to the agent's id if `byAgentId` somehow doesn't
+ *  have its name (shouldn't happen — `agents`/`grantLists` come from
+ *  the same fetch — but a missing display name is a much smaller
+ *  problem than losing the grant from the list entirely). */
+export function aggregateGrantsBySkill(
+  agents: Agent[],
+  grantLists: SkillAccessGrant[][],
+): Map<string, string[]> {
+  const byAgentId = new Map(agents.map((a) => [a.id, a.name]));
+  const bySkill = new Map<string, string[]>();
+  grantLists.forEach((grants, i) => {
+    const agentName = byAgentId.get(agents[i].id) ?? agents[i].id;
+    for (const grant of grants) {
+      const names = bySkill.get(grant.skillName) ?? [];
+      names.push(agentName);
+      bySkill.set(grant.skillName, names);
+    }
+  });
+  return bySkill;
+}
+
 /** Read-only global overview of every discovered Skill and which Agents
  *  currently have it granted. Deliberately does NOT offer a global
  *  enable/disable toggle — Skill access is granted per-Agent (see
@@ -33,17 +58,7 @@ export default function Skills() {
       const grantLists = await Promise.all(
         agents.map((agent) => invoke<SkillAccessGrant[]>("list_skill_access_grants", { agentId: agent.id })),
       );
-      const byAgentId = new Map(agents.map((a) => [a.id, a.name]));
-      const bySkill = new Map<string, string[]>();
-      grantLists.forEach((grants, i) => {
-        const agentName = byAgentId.get(agents[i].id) ?? agents[i].id;
-        for (const grant of grants) {
-          const names = bySkill.get(grant.skillName) ?? [];
-          names.push(agentName);
-          bySkill.set(grant.skillName, names);
-        }
-      });
-      setGrantsBySkill(bySkill);
+      setGrantsBySkill(aggregateGrantsBySkill(agents, grantLists));
     } catch (err) {
       setError(String(err));
     } finally {
