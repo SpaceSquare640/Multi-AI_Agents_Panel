@@ -1,9 +1,19 @@
 name: Release
 
-# Builds and publishes installers for Windows, Linux, and macOS whenever a
-# version tag is pushed. Unsigned for now (see CI-CD Pipeline.md — code
-# signing is deferred, not blocking). Checksums are attached so users can
-# verify what they downloaded.
+# Builds and publishes a Windows installer whenever a version tag is
+# pushed. Unsigned for now (see CI-CD Pipeline.md — code signing is
+# deferred, not blocking). A checksum is attached so users can verify
+# what they downloaded.
+#
+# Windows-only by explicit user decision: they have no way to test Linux
+# or macOS builds on real hardware, so shipping installers for platforms
+# nobody can verify isn't worth it. This also sidesteps the still-open
+# upstream Linux AppImage bundling failure ("failed to run linuxdeploy",
+# tauri-apps/tauri#14796) that blocked several prior release attempts —
+# see Backlog for that history. macOS/Linux config (tauri.macos.conf.json,
+# tauri.linux.conf.json, the vendored-Python bundling code paths) is left
+# in place, not deleted, in case real-machine testing becomes possible
+# later.
 on:
   push:
     tags:
@@ -14,14 +24,7 @@ permissions:
 
 jobs:
   build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: windows-latest
-          - platform: ubuntu-latest
-          - platform: macos-latest
-    runs-on: ${{ matrix.platform }}
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -29,29 +32,13 @@ jobs:
           node-version: 20
           cache: npm
       - uses: dtolnay/rust-toolchain@stable
-      - name: Install Linux Tauri + keyring build deps
-        if: matrix.platform == 'ubuntu-latest'
-        run: |
-          sudo apt-get update
-          # libxdo-dev: needed by `enigo` (game_agent's mouse/keyboard
-          # automation on X11). libpipewire-0.3-dev: needed by `xcap`
-          # (game_agent's screen capture, Wayland/PipeWire portal
-          # backend) — see Backlog's Linux system-dep caveat.
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libdbus-1-dev pkg-config libxdo-dev libpipewire-0.3-dev libgbm-dev
-          # AppImage bundling runs `linuxdeploy`, which is itself an AppImage
-          # and needs FUSE to execute itself — ubuntu-latest (24.04) doesn't
-          # ship libfuse2 by default (unlike ci.yml's job, which never builds
-          # an AppImage so never hit this). Package name changed between
-          # Ubuntu releases (libfuse2 → libfuse2t64), so try both.
-          sudo apt-get install -y libfuse2t64 || sudo apt-get install -y libfuse2
       - run: npm ci
       - name: Download bundled Windows Python runtime
-        # Windows-only slice of the "bundle a portable Python so users don't
-        # need their own" gap (see bridge_support.rs). Fetches the official
+        # See bridge_support.rs for the "bundle a portable Python so users
+        # don't need their own" gap this fills. Fetches the official
         # embeddable package and unpacks it where tauri.windows.conf.json's
         # bundle.resources expects it. Skills bridge only for now — it's
         # pure stdlib, so the vanilla embeddable package (no pip) is enough.
-        if: matrix.platform == 'windows-latest'
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
@@ -59,41 +46,10 @@ jobs:
           New-Item -ItemType Directory -Force -Path $dest | Out-Null
           Invoke-WebRequest -Uri "https://www.python.org/ftp/python/3.12.8/python-3.12.8-embed-amd64.zip" -OutFile "python-embed.zip"
           Expand-Archive -Path "python-embed.zip" -DestinationPath $dest -Force
-      - name: Download bundled macOS/Linux Python runtime
-        # macOS/Linux slice of the same gap. python.org has no official
-        # portable build for these platforms (unlike Windows's embeddable
-        # package), so this uses astral-sh/python-build-standalone's
-        # "install_only" CPython builds instead — same idea (self-contained,
-        # no system Python needed), different upstream. macos-latest is
-        # currently an arm64 runner (see actions/runner-images), hence
-        # aarch64-apple-darwin; ubuntu-latest is x86_64.
-        if: matrix.platform == 'ubuntu-latest' || matrix.platform == 'macos-latest'
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [ "${{ matrix.platform }}" = "ubuntu-latest" ]; then
-            target="x86_64-unknown-linux-gnu"
-            dest="src-tauri/vendor/python-linux"
-          else
-            target="aarch64-apple-darwin"
-            dest="src-tauri/vendor/python-macos"
-          fi
-          url="https://github.com/astral-sh/python-build-standalone/releases/download/20260814/cpython-3.12.14+20260814-${target}-install_only.tar.gz"
-          mkdir -p "$dest"
-          curl -sL -o python-standalone.tar.gz "$url"
-          tar -xzf python-standalone.tar.gz -C "$dest" --strip-components=1
       - id: tauri_build
         uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # AppImage bundling needs FUSE to mount `linuxdeploy` (itself
-          # shipped as an AppImage). Installing libfuse2/libfuse2t64 alone
-          # didn't fix "failed to run linuxdeploy" on ubuntu-latest — this
-          # makes linuxdeploy/AppRun self-extract-and-run instead of
-          # requiring an actual FUSE mount, sidestepping the runner's FUSE
-          # setup entirely (the commonly recommended fix for this failure
-          # in CI, per linuxdeploy/AppImage's own docs).
-          APPIMAGE_EXTRACT_AND_RUN: "1"
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "Multi-AI Agents Panel ${{ github.ref_name }}"
@@ -101,13 +57,14 @@ jobs:
           # Alpha/Beta stage: mark as prerelease. Flip to false only for the
           # first tag with no -alpha/-beta suffix (see CI-CD Pipeline.md).
           prerelease: true
-      - name: Generate and upload SHA256 checksums
-        # The header comment above claims "Checksums are attached so users
+      - name: Generate and upload SHA256 checksum
+        # The header comment above claims "a checksum is attached so users
         # can verify what they downloaded" — this step is what actually
-        # makes that true; it previously wasn't implemented at all. Uses
-        # Node's crypto (already available via actions/setup-node, and
-        # identical across all three OSes) rather than shelling out to
-        # sha256sum/Get-FileHash, which would need per-OS branching.
+        # makes that true. Uses Node's crypto (already available via
+        # actions/setup-node) rather than PowerShell's Get-FileHash, purely
+        # so this step's logic matches what it was before the multi-OS
+        # matrix was dropped — no functional reason to prefer one over the
+        # other now that only Windows remains.
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -124,6 +81,6 @@ jobs:
                 const hash = crypto.createHash("sha256").update(fs.readFileSync(p)).digest("hex");
                 return `${hash}  ${path.basename(p)}`;
               });
-            fs.writeFileSync("checksums-${{ matrix.platform }}.sha256.txt", lines.join("\n") + "\n");
+            fs.writeFileSync("checksums-windows-latest.sha256.txt", lines.join("\n") + "\n");
           '
-          gh release upload "${{ github.ref_name }}" "checksums-${{ matrix.platform }}.sha256.txt" --clobber
+          gh release upload "${{ github.ref_name }}" "checksums-windows-latest.sha256.txt" --clobber
