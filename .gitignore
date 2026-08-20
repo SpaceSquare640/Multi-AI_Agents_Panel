@@ -28,3 +28,6 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Bundled/vendored Python runtime (downloaded at build time, not committed)
+src-tauri/vendor/

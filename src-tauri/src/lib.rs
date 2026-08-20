@@ -91,12 +91,18 @@ pub fn run() {
             app.manage(storage);
 
             let resource_dir = app.path().resource_dir().ok();
-            let builtin_skills_dir = skill_manager::resolve_skills_dir(resource_dir);
+            let builtin_skills_dir = skill_manager::resolve_skills_dir(resource_dir.clone());
             let custom_skills_dir = data_dir.join("skills");
             std::fs::create_dir_all(&custom_skills_dir)?;
+            // Windows-only for now (see `bridge_support::find_bundled_python`);
+            // `None` elsewhere falls back to searching `PATH`.
+            let bundled_python = bridge_support::find_bundled_python(resource_dir.as_deref());
             // Best-effort: a missing/broken Python install shouldn't stop
             // the rest of the app from working, only Skills.
-            let runtime = match SkillRuntime::start(&[builtin_skills_dir.clone(), custom_skills_dir.clone()]) {
+            let runtime = match SkillRuntime::start(
+                &[builtin_skills_dir.clone(), custom_skills_dir.clone()],
+                bundled_python.as_deref(),
+            ) {
                 Ok(runtime) => Some(runtime),
                 Err(e) => {
                     eprintln!("skill bridge unavailable: {e}");

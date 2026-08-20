@@ -160,9 +160,17 @@ impl SkillRuntime {
     /// user-writable custom-skills folder) only contribute `<name>/skill.json`
     /// subfolders, scanned in order, with later directories' skills
     /// overriding earlier ones of the same name (see `_bridge.py::load_skills`).
-    pub fn start(skills_dirs: &[PathBuf]) -> Result<SkillRuntime, String> {
+    ///
+    /// `bundled_python`, when given, is used in preference to searching
+    /// `PATH` (see `bridge_support::find_bundled_python`) — this is what
+    /// lets a packaged Windows build work without the user having their
+    /// own Python installed.
+    pub fn start(skills_dirs: &[PathBuf], bundled_python: Option<&str>) -> Result<SkillRuntime, String> {
         let bundled_dir = skills_dirs.first().ok_or("no skills directory given")?;
-        let python_bin = find_python().ok_or("no working Python interpreter found on PATH")?;
+        let python_bin = bundled_python
+            .map(str::to_string)
+            .or_else(find_python)
+            .ok_or("no working Python interpreter found on PATH")?;
         let bridge_script = bundled_dir.join("_bridge.py");
         if !bridge_script.exists() {
             return Err(format!("bridge script not found at {bridge_script:?}"));
@@ -448,7 +456,7 @@ mod live {
     #[ignore]
     fn example_skill_echoes_its_payload_through_the_real_bridge() {
         let skills_dir = resolve_skills_dir(None);
-        let runtime = SkillRuntime::start(std::slice::from_ref(&skills_dir))
+        let runtime = SkillRuntime::start(std::slice::from_ref(&skills_dir), None)
             .expect("bridge should start with a real Python on PATH");
 
         let storage = Storage::open_in_memory().unwrap();
@@ -471,7 +479,7 @@ mod live {
     #[ignore]
     fn raffle_winner_picker_picks_a_real_seeded_winner_through_the_real_bridge() {
         let skills_dir = resolve_skills_dir(None);
-        let runtime = SkillRuntime::start(std::slice::from_ref(&skills_dir))
+        let runtime = SkillRuntime::start(std::slice::from_ref(&skills_dir), None)
             .expect("bridge should start with a real Python on PATH");
 
         let storage = Storage::open_in_memory().unwrap();
@@ -506,7 +514,7 @@ mod live {
     #[ignore]
     fn calling_an_unregistered_skill_name_is_reported_as_not_found() {
         let skills_dir = resolve_skills_dir(None);
-        let runtime = SkillRuntime::start(std::slice::from_ref(&skills_dir))
+        let runtime = SkillRuntime::start(std::slice::from_ref(&skills_dir), None)
             .expect("bridge should start with a real Python on PATH");
 
         let storage = Storage::open_in_memory().unwrap();
@@ -547,7 +555,7 @@ mod live {
         std::fs::create_dir_all(&custom_dir).unwrap();
         copy_dir_recursive(&source, &custom_dir.join("my_custom_echo")).unwrap();
 
-        let runtime = SkillRuntime::start(&[bundled_dir, custom_dir])
+        let runtime = SkillRuntime::start(&[bundled_dir, custom_dir], None)
             .expect("bridge should start with a real Python on PATH");
 
         let storage = Storage::open_in_memory().unwrap();

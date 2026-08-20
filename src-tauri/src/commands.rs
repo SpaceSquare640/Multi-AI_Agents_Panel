@@ -2,7 +2,7 @@
 //! cloud model pickers, and local Ollama model management.
 
 use serde::{Deserialize, Serialize};
-use tauri::State;
+use tauri::{Manager, State};
 
 use crate::agent_manager::curated_models::{self, CuratedModel};
 use crate::agent_manager::openrouter_catalog::{self, OpenRouterCatalogState, OpenRouterModelsResult};
@@ -894,6 +894,7 @@ pub fn list_skills(skill_dirs: State<SkillDirs>) -> Vec<SkillManifest> {
 /// one (no per-skill sandboxing exists yet).
 #[tauri::command]
 pub fn import_custom_skill(
+    app: tauri::AppHandle,
     skill_dirs: State<SkillDirs>,
     skill_runtime: State<SkillRuntimeState>,
     source_folder: String,
@@ -917,8 +918,11 @@ pub fn import_custom_skill(
     // a missing/broken Python install shouldn't stop the rest of the app,
     // it just means Skills (including the one just imported) stay
     // unavailable until the underlying problem is fixed.
+    let bundled_python = crate::bridge_support::find_bundled_python(app.path().resource_dir().ok().as_deref());
     let mut guard = skill_runtime.0.lock().unwrap();
-    *guard = skill_manager::SkillRuntime::start(&[skill_dirs.builtin.clone(), skill_dirs.custom.clone()]).ok();
+    *guard =
+        skill_manager::SkillRuntime::start(&[skill_dirs.builtin.clone(), skill_dirs.custom.clone()], bundled_python.as_deref())
+            .ok();
 
     Ok(SkillManifest { source: "custom".to_string(), ..manifest })
 }
@@ -1342,7 +1346,7 @@ mod live {
         // running app) — spawns the real Python bridge, same as
         // `skill_manager::live`.
         let skills_dir = skill_manager::resolve_skills_dir(None);
-        let runtime = skill_manager::SkillRuntime::start(std::slice::from_ref(&skills_dir))
+        let runtime = skill_manager::SkillRuntime::start(std::slice::from_ref(&skills_dir), None)
             .expect("bridge should start with a real Python on PATH");
 
         let storage = Storage::open_in_memory().unwrap();

@@ -39,6 +39,20 @@ jobs:
           # backend) — see Backlog's Linux system-dep caveat.
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libdbus-1-dev pkg-config libxdo-dev libpipewire-0.3-dev libgbm-dev
       - run: npm ci
+      - name: Download bundled Windows Python runtime
+        # Windows-only slice of the "bundle a portable Python so users don't
+        # need their own" gap (see bridge_support.rs). Fetches the official
+        # embeddable package and unpacks it where tauri.windows.conf.json's
+        # bundle.resources expects it. Skills bridge only for now — it's
+        # pure stdlib, so the vanilla embeddable package (no pip) is enough.
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $dest = "src-tauri/vendor/python-windows"
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          Invoke-WebRequest -Uri "https://www.python.org/ftp/python/3.12.8/python-3.12.8-embed-amd64.zip" -OutFile "python-embed.zip"
+          Expand-Archive -Path "python-embed.zip" -DestinationPath $dest -Force
       - id: tauri_build
         uses: tauri-apps/tauri-action@v1
         env:
