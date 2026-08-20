@@ -448,7 +448,8 @@ mod live {
     #[ignore]
     fn example_skill_echoes_its_payload_through_the_real_bridge() {
         let skills_dir = resolve_skills_dir(None);
-        let runtime = SkillRuntime::start(&[skills_dir.clone()]).expect("bridge should start with a real Python on PATH");
+        let runtime = SkillRuntime::start(std::slice::from_ref(&skills_dir))
+            .expect("bridge should start with a real Python on PATH");
 
         let storage = Storage::open_in_memory().unwrap();
         let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude").unwrap();
@@ -470,7 +471,8 @@ mod live {
     #[ignore]
     fn raffle_winner_picker_picks_a_real_seeded_winner_through_the_real_bridge() {
         let skills_dir = resolve_skills_dir(None);
-        let runtime = SkillRuntime::start(&[skills_dir.clone()]).expect("bridge should start with a real Python on PATH");
+        let runtime = SkillRuntime::start(std::slice::from_ref(&skills_dir))
+            .expect("bridge should start with a real Python on PATH");
 
         let storage = Storage::open_in_memory().unwrap();
         let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude").unwrap();
@@ -504,7 +506,8 @@ mod live {
     #[ignore]
     fn calling_an_unregistered_skill_name_is_reported_as_not_found() {
         let skills_dir = resolve_skills_dir(None);
-        let runtime = SkillRuntime::start(&[skills_dir.clone()]).expect("bridge should start with a real Python on PATH");
+        let runtime = SkillRuntime::start(std::slice::from_ref(&skills_dir))
+            .expect("bridge should start with a real Python on PATH");
 
         let storage = Storage::open_in_memory().unwrap();
         let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude").unwrap();

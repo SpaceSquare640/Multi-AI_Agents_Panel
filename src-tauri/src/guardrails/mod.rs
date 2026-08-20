@@ -8,12 +8,14 @@
 //!   — "法律 / 人身安全類").
 //! - A prompt/tool-injection screen (category 1) applied to every Skill
 //!   payload before it reaches the Python bridge.
+//!
 //! It does NOT yet implement:
 //! - Destructive-operation confirmation (category 1) — no destructive
 //!   operations exist yet (no file writes, no git actions); add this when
 //!   `file_access` or an Orchestrator action can mutate something.
-//! - Role-identity / impersonation checks (category 3) — no multi-agent
-//!   surface yet (no Group Chat); add this when Session Manager supports it.
+//! - Role-identity / impersonation checks (category 3, E9004) — Group Chat
+//!   itself exists now (`session_manager`/`orchestrator`), but the
+//!   impersonation-detection logic hasn't been written; add it there.
 //!
 //! Pretending to enforce checks with no real enforcement point would be
 //! worse than not having them: it would make the app *look* safe without

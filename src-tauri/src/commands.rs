@@ -1342,7 +1342,7 @@ mod live {
         // running app) — spawns the real Python bridge, same as
         // `skill_manager::live`.
         let skills_dir = skill_manager::resolve_skills_dir(None);
-        let runtime = skill_manager::SkillRuntime::start(&[skills_dir.clone()])
+        let runtime = skill_manager::SkillRuntime::start(std::slice::from_ref(&skills_dir))
             .expect("bridge should start with a real Python on PATH");
 
         let storage = Storage::open_in_memory().unwrap();
