@@ -15,9 +15,9 @@
 }
 
 .acc-error {
-  background: #4a1414;
-  color: #ffb4b4;
-  border: 1px solid #a33;
+  background: var(--error-bg);
+  color: var(--error-fg);
+  border: 1px solid var(--error-border);
   border-radius: 8px;
   padding: 0.6rem 1rem;
   margin-bottom: 1rem;
