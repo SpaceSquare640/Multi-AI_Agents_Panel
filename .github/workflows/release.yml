@@ -86,6 +86,14 @@ jobs:
         uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # AppImage bundling needs FUSE to mount `linuxdeploy` (itself
+          # shipped as an AppImage). Installing libfuse2/libfuse2t64 alone
+          # didn't fix "failed to run linuxdeploy" on ubuntu-latest — this
+          # makes linuxdeploy/AppRun self-extract-and-run instead of
+          # requiring an actual FUSE mount, sidestepping the runner's FUSE
+          # setup entirely (the commonly recommended fix for this failure
+          # in CI, per linuxdeploy/AppImage's own docs).
+          APPIMAGE_EXTRACT_AND_RUN: "1"
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "Multi-AI Agents Panel ${{ github.ref_name }}"
