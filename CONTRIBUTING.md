@@ -24,6 +24,13 @@ cd src-tauri
 cargo test
 ```
 
+Frontend tests (`vitest`, pure-logic unit tests only — no component/DOM
+testing set up yet):
+
+```bash
+npm run test
+```
+
 Some tests are `#[ignore]`d because they call real provider APIs (OpenRouter, Anthropic) or spawn the real Python skill bridge — they need a working API key or Python interpreter and are never run in CI. Run them explicitly with:
 
 ```bash

@@ -20,17 +20,32 @@ Notably:
 covered by tests, but interfaces and storage formats may still change
 without a migration path. Implemented so far:
 
-- Independent Sessions with multiple providers (Anthropic, OpenRouter,
-  Ollama), each with real fallback across multiple keys per provider
+- Independent Sessions with multiple providers (Anthropic, OpenAI,
+  OpenRouter, Ollama), each with real fallback across multiple keys per
+  provider, plus cross-provider fallback chains (e.g. Anthropic fails →
+  fall through to OpenRouter)
 - Multiple Independent Sessions open and chatting in parallel
 - Group Chat: round-robin turn-taking, `@mention` interruption, a loop
-  safety-net, and meeting summarization
-- Role Templates (10 built-in "1人公司" roles + user-defined custom ones)
+  safety-net, meeting summarization, and an explicit confirmation step
+  before a local Agent's reply is ever sent to a cloud provider
+- Role Templates (10 built-in "1人公司" roles + user-defined custom ones,
+  with export/import for sharing)
 - File Access with explicit per-folder, per-agent consent
-- A Python Skills bridge (JSON-RPC over localhost) with per-agent allowlists
+- A Python Skills bridge (JSON-RPC over localhost) with per-agent
+  allowlists, plus a separate ML Engine bridge for semantic search over
+  granted files
 - Guardrails: absolute-prohibition content screening and
   prompt/tool-injection screening, enforced inline (not opt-in) at every
   point an Agent can act
+- Live OpenRouter model catalog (real pricing, 24h cache) and Ollama
+  model management (search, install with streaming progress)
+- Usage dashboard with a soft call-count budget warning
+- Dark/Light/System theme, first-launch Guardrails summary, and an
+  in-app searchable user manual
+- An experimental Game-Playing Agent (`AI Control Center` →
+  "Game-Playing Agent") — local vision-model screenshot/action loop;
+  research-grade, off by default, see the vault's Backlog for its
+  current limitations
 
 See the vault's `Roadmap.md` and `Backlog.md` for what's next and what's
 deliberately not built yet, with reasoning.
