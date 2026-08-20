@@ -27,6 +27,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
       - uses: Swatinem/rust-cache@v2
         with:
           workingDirectories: src-tauri
@@ -39,6 +41,7 @@ jobs:
           # backend) — see Backlog's Linux system-dep caveat.
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libdbus-1-dev pkg-config gnome-keyring dbus-x11 libxdo-dev libpipewire-0.3-dev libgbm-dev
       - run: cargo check --manifest-path src-tauri/Cargo.toml
+      - run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
       - name: Run tests under a real D-Bus Secret Service
         # `key_vault` uses the OS credential store — on Linux that's the
         # D-Bus Secret Service, which a bare GitHub runner doesn't have
