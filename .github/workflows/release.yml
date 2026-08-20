@@ -38,6 +38,12 @@ jobs:
           # (game_agent's screen capture, Wayland/PipeWire portal
           # backend) — see Backlog's Linux system-dep caveat.
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libdbus-1-dev pkg-config libxdo-dev libpipewire-0.3-dev libgbm-dev
+          # AppImage bundling runs `linuxdeploy`, which is itself an AppImage
+          # and needs FUSE to execute itself — ubuntu-latest (24.04) doesn't
+          # ship libfuse2 by default (unlike ci.yml's job, which never builds
+          # an AppImage so never hit this). Package name changed between
+          # Ubuntu releases (libfuse2 → libfuse2t64), so try both.
+          sudo apt-get install -y libfuse2t64 || sudo apt-get install -y libfuse2
       - run: npm ci
       - name: Download bundled Windows Python runtime
         # Windows-only slice of the "bundle a portable Python so users don't
