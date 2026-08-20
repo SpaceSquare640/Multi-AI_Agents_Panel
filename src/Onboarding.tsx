@@ -1,5 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./Onboarding.css";
+
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 const ACK_STORAGE_KEY = "multi-ai-agents-panel:guardrails-acknowledged";
 
@@ -53,9 +56,42 @@ const RULE_CATEGORIES = [
  *  re-reading them should always be possible. */
 export default function Onboarding({ onDismiss }: { onDismiss?: () => void }) {
   const [checked, setChecked] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setChecked(false);
+  }, []);
+
+  // This modal is a *forced* gate (see Screen Inventory's decided "是，
+  // 強制") — a keyboard user must not be able to Tab past it into the
+  // app behind it, so it needs a real focus trap, not just visual
+  // z-index/backdrop layering. Also moves initial focus into the modal
+  // on mount, per WCAG 2.1 AA (a Design Principles decided requirement)
+  // rather than leaving focus on whatever was focused before it opened.
+  useEffect(() => {
+    const modal = modalRef.current;
+    if (!modal) return;
+
+    const focusables = () => Array.from(modal.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+    focusables()[0]?.focus();
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== "Tab" || !modal) return;
+      const items = focusables();
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
   }, []);
 
   function acknowledge() {
@@ -65,7 +101,13 @@ export default function Onboarding({ onDismiss }: { onDismiss?: () => void }) {
 
   return (
     <div className="onboarding-backdrop">
-      <div className="onboarding-modal" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
+      <div
+        className="onboarding-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="onboarding-title"
+        ref={modalRef}
+      >
         <h1 id="onboarding-title">Before your first Agent</h1>
         <p className="onboarding-lead">
           Every Agent in this app — local or cloud, whatever role template it's given — follows a
