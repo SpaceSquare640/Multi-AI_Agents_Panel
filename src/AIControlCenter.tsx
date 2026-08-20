@@ -311,7 +311,7 @@ export default function AIControlCenter() {
       {error && (
         <div className="acc-error" role="alert">
           {error}
-          <button onClick={() => setError(null)}>×</button>
+          <button onClick={() => setError(null)} aria-label="Dismiss error">×</button>
         </div>
       )}
 

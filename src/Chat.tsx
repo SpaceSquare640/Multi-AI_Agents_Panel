@@ -923,7 +923,11 @@ export default function Chat() {
           {tab.mlGrants.map((g) => (
             <span key={g.id} className="chat-file-chip">
               {g.capabilityName}
-              <button onClick={() => handleRevokeMlCapability(sessionId, g.id)} title="Revoke access">
+              <button
+                onClick={() => handleRevokeMlCapability(sessionId, g.id)}
+                title="Revoke access"
+                aria-label={`Revoke access to ${g.capabilityName}`}
+              >
                 ×
               </button>
             </span>
@@ -1144,7 +1148,12 @@ export default function Chat() {
               {fallbackChain.map((step, i) => (
                 <span key={i} className="chat-file-chip">
                   {i + 1}. {step.providerName}/{step.model}
-                  <button type="button" onClick={() => handleRemoveFallbackStep(i)} title="Remove">
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveFallbackStep(i)}
+                    title="Remove"
+                    aria-label={`Remove fallback step ${step.providerName}/${step.model}`}
+                  >
                     ×
                   </button>
                 </span>
@@ -1254,7 +1263,7 @@ export default function Chat() {
                       Copy error details
                     </button>
                   )}
-                  <button onClick={() => setError(null)}>×</button>
+                  <button onClick={() => setError(null)} aria-label="Dismiss error">×</button>
                 </div>
               </div>
             );
@@ -1272,7 +1281,12 @@ export default function Chat() {
                     {tab?.sending && <span className="chat-tab-spinner" title="Waiting for reply…" />}
                     {tab?.hasUnseenReply && <span className="chat-unread-dot" />}
                   </button>
-                  <button className="chat-tab-close" onClick={() => closeTab(id)} title="Close tab">
+                  <button
+                    className="chat-tab-close"
+                    onClick={() => closeTab(id)}
+                    title="Close tab"
+                    aria-label={`Close tab ${title}`}
+                  >
                     ×
                   </button>
                 </div>
@@ -1304,7 +1318,11 @@ export default function Chat() {
                   {activeTab.fileGrants.map((g) => (
                     <span key={g.id} className="chat-file-chip">
                       {g.folderPath}
-                      <button onClick={() => handleRevokeGrant(activeSessionId, g.id)} title="Revoke access">
+                      <button
+                        onClick={() => handleRevokeGrant(activeSessionId, g.id)}
+                        title="Revoke access"
+                        aria-label={`Revoke access to folder ${g.folderPath}`}
+                      >
                         ×
                       </button>
                     </span>
@@ -1321,7 +1339,11 @@ export default function Chat() {
                   {activeTab.skillGrants.map((g) => (
                     <span key={g.id} className="chat-file-chip">
                       {g.skillName}
-                      <button onClick={() => handleRevokeSkill(activeSessionId, g.id)} title="Revoke access">
+                      <button
+                        onClick={() => handleRevokeSkill(activeSessionId, g.id)}
+                        title="Revoke access"
+                        aria-label={`Revoke access to Skill ${g.skillName}`}
+                      >
                         ×
                       </button>
                     </span>
@@ -1446,7 +1468,11 @@ export default function Chat() {
                   {activeTab.fileGrants.map((g) => (
                     <span key={g.id} className="chat-file-chip">
                       {g.folderPath}
-                      <button onClick={() => handleRevokeGrant(activeSessionId, g.id)} title="Revoke access">
+                      <button
+                        onClick={() => handleRevokeGrant(activeSessionId, g.id)}
+                        title="Revoke access"
+                        aria-label={`Revoke access to folder ${g.folderPath}`}
+                      >
                         ×
                       </button>
                     </span>
