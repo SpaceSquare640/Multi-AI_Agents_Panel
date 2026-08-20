@@ -24,6 +24,8 @@ use enigo::{Button, Coordinate, Direction, Enigo, Keyboard, Mouse, Settings};
 use serde::{Deserialize, Serialize};
 use xcap::Monitor;
 
+use crate::python_env::find_python;
+
 use crate::agent_manager::providers::ollama;
 
 /// One decision the vision model can ask for. Deliberately a closed,
@@ -177,20 +179,6 @@ pub fn is_running(state: &GameAgentState) -> bool {
 // tool Rust starts/monitors/stops — not the JSON-RPC bridge pattern
 // `skill_manager`/`ml_engine` use, since a recording session is a
 // long-running background job, not a request/response call.
-
-fn find_python() -> Option<String> {
-    for candidate in ["python", "python3", "py"] {
-        let works = Command::new(candidate)
-            .arg("--version")
-            .output()
-            .map(|o| o.status.success())
-            .unwrap_or(false);
-        if works {
-            return Some(candidate.to_string());
-        }
-    }
-    None
-}
 
 /// Resolves the `game_agent_rl/` directory: the packaged resource
 /// location first, falling back to the repo-relative path for `cargo

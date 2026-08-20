@@ -7,6 +7,7 @@ mod guardrails;
 mod key_vault;
 mod ml_engine;
 mod orchestrator;
+mod python_env;
 mod session_manager;
 mod skill_manager;
 mod storage;
