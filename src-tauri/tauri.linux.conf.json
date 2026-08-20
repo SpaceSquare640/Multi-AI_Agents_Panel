@@ -1,0 +1,9 @@
+{
+  "bundle": {
+    "resources": {
+      "../skills": "skills",
+      "../ml": "ml",
+      "vendor/python-linux": "python-linux"
+    }
+  }
+}

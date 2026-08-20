@@ -7,14 +7,18 @@
 //! **Known gap**: CI-CD Pipeline.md decided the shipped installers
 //! should embed a portable Python runtime per platform, so end users
 //! never need their own Python (`不依賴使用者系統既有 Python`).
-//! `find_bundled_python` below is the first slice of that: on Windows
-//! only, it looks for the official embeddable-Python distribution
-//! vendored alongside the Skills bridge resources (see
-//! `tauri.windows.conf.json`), and callers fall back to `find_python`
-//! (searching `PATH`) when it isn't there — e.g. `cargo tauri dev`,
-//! where nothing has been bundled. macOS/Linux and the ML Engine
-//! bridge (which additionally needs `sentence-transformers`/torch,
-//! a much bigger vendoring job) are still unaddressed; they keep
+//! `find_bundled_python` below covers the Skills bridge on all three
+//! desktop platforms: Windows gets the official embeddable-Python
+//! distribution, macOS/Linux get an `install_only` build from
+//! `astral-sh/python-build-standalone` (there's no equivalent official
+//! portable build from python.org for those platforms). Each is
+//! vendored alongside the Skills bridge resources at build time (see
+//! `tauri.windows.conf.json`/`tauri.macos.conf.json`/`tauri.linux.conf.json`
+//! and `release.yml`'s per-platform download steps), and callers fall
+//! back to `find_python` (searching `PATH`) when nothing was bundled —
+//! e.g. `cargo tauri dev`, where resources aren't copied anywhere. The
+//! ML Engine bridge (which additionally needs `sentence-transformers`/
+//! torch, a much bigger vendoring job) is still unaddressed; it keeps
 //! relying on the user's own system Python.
 
 use std::path::Path;
@@ -34,19 +38,27 @@ pub(crate) fn find_python() -> Option<String> {
     None
 }
 
-/// Looks for the bundled Windows embeddable-Python interpreter under
-/// `<resource_dir>/python-windows/python.exe` (see
-/// `tauri.windows.conf.json`'s `bundle.resources`). Returns its full
-/// path as a string if found, so callers can `Command::new` it
-/// directly without depending on `PATH`. Always `None` on non-Windows
-/// targets and whenever `resource_dir` is `None` (e.g. `cargo tauri
-/// dev`, where bundle resources aren't copied anywhere).
+/// Looks for the bundled Skills-bridge Python interpreter under the
+/// per-platform resource subfolder each of the three
+/// `tauri.<platform>.conf.json` files bundles it into: `python-windows/
+/// python.exe` on Windows, `python-macos/bin/python3` on macOS,
+/// `python-linux/bin/python3` on Linux (the last two are `install_only`
+/// layouts from `python-build-standalone`, which puts the interpreter
+/// under `bin/`, unlike Windows's flat embeddable package). Returns its
+/// full path as a string if found, so callers can `Command::new` it
+/// directly without depending on `PATH`. `None` whenever `resource_dir`
+/// is `None` (e.g. `cargo tauri dev`) or the expected file isn't there.
 pub(crate) fn find_bundled_python(resource_dir: Option<&Path>) -> Option<String> {
-    if !cfg!(target_os = "windows") {
-        return None;
-    }
     let dir = resource_dir?;
-    let candidate = dir.join("python-windows").join("python.exe");
+    let candidate = if cfg!(target_os = "windows") {
+        dir.join("python-windows").join("python.exe")
+    } else if cfg!(target_os = "macos") {
+        dir.join("python-macos").join("bin").join("python3")
+    } else if cfg!(target_os = "linux") {
+        dir.join("python-linux").join("bin").join("python3")
+    } else {
+        return None;
+    };
     if candidate.exists() {
         candidate.to_str().map(str::to_string)
     } else {

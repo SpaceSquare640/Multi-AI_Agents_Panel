@@ -53,6 +53,29 @@ jobs:
           New-Item -ItemType Directory -Force -Path $dest | Out-Null
           Invoke-WebRequest -Uri "https://www.python.org/ftp/python/3.12.8/python-3.12.8-embed-amd64.zip" -OutFile "python-embed.zip"
           Expand-Archive -Path "python-embed.zip" -DestinationPath $dest -Force
+      - name: Download bundled macOS/Linux Python runtime
+        # macOS/Linux slice of the same gap. python.org has no official
+        # portable build for these platforms (unlike Windows's embeddable
+        # package), so this uses astral-sh/python-build-standalone's
+        # "install_only" CPython builds instead — same idea (self-contained,
+        # no system Python needed), different upstream. macos-latest is
+        # currently an arm64 runner (see actions/runner-images), hence
+        # aarch64-apple-darwin; ubuntu-latest is x86_64.
+        if: matrix.platform == 'ubuntu-latest' || matrix.platform == 'macos-latest'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ matrix.platform }}" = "ubuntu-latest" ]; then
+            target="x86_64-unknown-linux-gnu"
+            dest="src-tauri/vendor/python-linux"
+          else
+            target="aarch64-apple-darwin"
+            dest="src-tauri/vendor/python-macos"
+          fi
+          url="https://github.com/astral-sh/python-build-standalone/releases/download/20260814/cpython-3.12.14+20260814-${target}-install_only.tar.gz"
+          mkdir -p "$dest"
+          curl -sL -o python-standalone.tar.gz "$url"
+          tar -xzf python-standalone.tar.gz -C "$dest" --strip-components=1
       - id: tauri_build
         uses: tauri-apps/tauri-action@v1
         env:
