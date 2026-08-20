@@ -35,10 +35,10 @@ public disclosure.
   to (`skill_manager` module)
 - API keys or other secrets leaking to disk unencrypted, to logs, or to a
   provider they weren't intended for
-- The local Skill bridge (`skills/_bridge.py`) accepting requests from
-  anything other than the app's own Rust process (it's bound to localhost
-  with a random per-launch bearer token — a bypass of that isolation is a
-  valid report)
+- The local Skill bridge (`skills/_bridge.py`) or ML Engine bridge
+  (`ml/_engine.py`) accepting requests from anything other than the app's
+  own Rust process (both are bound to localhost with a random per-launch
+  bearer token — a bypass of that isolation is a valid report)
 
 ## What's explicitly out of scope (for now)
 
