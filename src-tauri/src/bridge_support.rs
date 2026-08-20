@@ -1,17 +1,15 @@
-//! Finds a working Python interpreter on the system `PATH`.
-//!
-//! Was duplicated byte-for-byte across `game_agent`, `ml_engine`, and
-//! `skill_manager` — each needed the same "which Python binary actually
-//! works" check for its own subprocess bridge, and grew its own copy.
-//! Consolidated here so there's one place to change if the candidate
-//! list or detection strategy ever needs to.
+//! Small helpers shared by the app's Python-subprocess bridges
+//! (`skill_manager`, `ml_engine`, and `game_agent`'s Track B tooling):
+//! finding a working Python interpreter, and picking a free localhost
+//! port for the bridge's own HTTP server to bind. Both were duplicated
+//! byte-for-byte across those modules before being consolidated here.
 //!
 //! **Known gap**: CI-CD Pipeline.md decided the shipped installers
 //! should embed a portable Python runtime per platform, so end users
 //! never need their own Python (`不依賴使用者系統既有 Python`). That
 //! was never implemented — `tauri.conf.json`'s `bundle.resources` only
 //! ships the `skills/`/`ml/` script directories, not an interpreter,
-//! and this function still just searches whatever's on the user's
+//! and `find_python` still just searches whatever's on the user's
 //! `PATH`. Bundling a real portable Python is a much larger task
 //! (vendoring per-platform builds, installer size, updating every
 //! caller to prefer the bundled one) — out of scope here; this module
@@ -31,4 +29,15 @@ pub(crate) fn find_python() -> Option<String> {
         }
     }
     None
+}
+
+/// Binds port 0 (OS picks any free port) and immediately reads back
+/// which one it got — the standard "ask the OS for a free port" trick.
+/// There's an inherent TOCTOU gap between this returning and the bridge
+/// subprocess actually binding it, but that's the same gap every
+/// caller already had before this was deduplicated; not introduced or
+/// worsened by consolidating the three copies into one.
+pub(crate) fn free_local_port() -> std::io::Result<u16> {
+    let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
+    Ok(listener.local_addr()?.port())
 }

@@ -19,7 +19,7 @@ use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 
-use crate::python_env::find_python;
+use crate::bridge_support::{find_python, free_local_port};
 use serde_json::Value;
 
 use crate::guardrails::{self, Violation};
@@ -264,11 +264,6 @@ fn parse_jsonrpc_response(body: Value, skill_name: &str) -> Result<Value, SkillE
     body.get("result")
         .cloned()
         .ok_or_else(|| SkillError::Unknown("malformed JSON-RPC response (no result or error field)".to_string()))
-}
-
-fn free_local_port() -> std::io::Result<u16> {
-    let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
-    Ok(listener.local_addr()?.port())
 }
 
 /// The one real entry point for calling a Skill: Guardrails screen, then

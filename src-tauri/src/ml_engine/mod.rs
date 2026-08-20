@@ -27,7 +27,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::guardrails::{self, Violation};
-use crate::python_env::find_python;
+use crate::bridge_support::{find_python, free_local_port};
 use crate::storage::Storage;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -249,11 +249,6 @@ fn parse_jsonrpc_response(body: Value, capability_name: &str) -> Result<Value, M
     body.get("result")
         .cloned()
         .ok_or_else(|| MlEngineError::Unknown("malformed JSON-RPC response (no result or error field)".to_string()))
-}
-
-fn free_local_port() -> std::io::Result<u16> {
-    let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
-    Ok(listener.local_addr()?.port())
 }
 
 /// The one real entry point for calling an ML capability: Guardrails

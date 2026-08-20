@@ -24,7 +24,7 @@ use enigo::{Button, Coordinate, Direction, Enigo, Keyboard, Mouse, Settings};
 use serde::{Deserialize, Serialize};
 use xcap::Monitor;
 
-use crate::python_env::find_python;
+use crate::bridge_support::find_python;
 
 use crate::agent_manager::providers::ollama;
 

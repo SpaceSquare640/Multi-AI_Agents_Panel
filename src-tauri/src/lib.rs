@@ -1,4 +1,5 @@
 mod agent_manager;
+mod bridge_support;
 mod commands;
 mod fallback;
 mod file_access;
@@ -7,7 +8,6 @@ mod guardrails;
 mod key_vault;
 mod ml_engine;
 mod orchestrator;
-mod python_env;
 mod session_manager;
 mod skill_manager;
 mod storage;
