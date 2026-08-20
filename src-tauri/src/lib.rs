@@ -62,19 +62,24 @@ fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
-/// Resolves the unified data folder: `data.sqlite3`, the ML model cache,
-/// and user-imported custom Skills all live under here. Deliberately a
-/// fixed, cross-platform-consistent folder under the user's home
-/// directory (`~/MultiAIAgentsPanel-Data/`) rather than Tauri's default
-/// `app_data_dir()` (which scatters across `%APPDATA%`, `~/Library/...`,
+/// Resolves the unified data root: `Data/data.sqlite3`, `LocalAIModel/`
+/// (ML model cache), and `skill/` (user-imported custom Skills) all live
+/// under here as named subfolders. Deliberately a fixed,
+/// cross-platform-consistent folder under the user's home directory
+/// (`~/MultiAIAgentsPanel/`) rather than Tauri's default `app_data_dir()`
+/// (which scatters across `%APPDATA%`, `~/Library/...`,
 /// `~/.local/share/...` depending on OS) or the install directory itself
 /// (installer upgrade/reinstall behavior touching that path has never
 /// been verified, and deb/AppImage have no equivalent writable "install
 /// directory" concept at all). See ADR 0004 and
 /// `Unified Data Folder & Custom Skills Design.md` in the vault for the
 /// full reasoning.
+///
+/// **Renamed from `~/MultiAIAgentsPanel-Data/` with no migration** (see
+/// Backlog): alpha stage, no known real installs depending on the old
+/// path, so this is a clean breaking rename rather than a migration path.
 fn resolve_data_dir(home_dir: std::path::PathBuf) -> std::path::PathBuf {
-    home_dir.join("MultiAIAgentsPanel-Data")
+    home_dir.join("MultiAIAgentsPanel")
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -84,15 +89,16 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let data_dir = resolve_data_dir(app.path().home_dir()?);
-            std::fs::create_dir_all(&data_dir)?;
-            let db_path = data_dir.join("data.sqlite3");
+            let db_dir = data_dir.join("Data");
+            std::fs::create_dir_all(&db_dir)?;
+            let db_path = db_dir.join("data.sqlite3");
             let storage = Storage::open(&db_path)
                 .map_err(|e| format!("failed to open storage at {:?}: {e}", db_path))?;
             app.manage(storage);
 
             let resource_dir = app.path().resource_dir().ok();
             let builtin_skills_dir = skill_manager::resolve_skills_dir(resource_dir.clone());
-            let custom_skills_dir = data_dir.join("skills");
+            let custom_skills_dir = data_dir.join("skill");
             std::fs::create_dir_all(&custom_skills_dir)?;
             // Windows-only for now (see `bridge_support::find_bundled_python`);
             // `None` elsewhere falls back to searching `PATH`.
@@ -113,7 +119,7 @@ pub fn run() {
             app.manage(SkillDirs { builtin: builtin_skills_dir, custom: custom_skills_dir });
 
             let ml_dir = ml_engine::resolve_ml_dir(app.path().resource_dir().ok());
-            let ml_cache_dir = data_dir.join("ml-cache");
+            let ml_cache_dir = data_dir.join("LocalAIModel");
             std::fs::create_dir_all(&ml_cache_dir)?;
             // Same best-effort policy as the Skills bridge: a missing
             // Python/sentence-transformers install shouldn't stop the
@@ -216,6 +222,6 @@ mod tests {
     fn resolve_data_dir_is_a_fixed_subfolder_of_home_not_an_os_default_app_data_path() {
         let home = std::path::PathBuf::from("/home/someone");
         let data_dir = resolve_data_dir(home.clone());
-        assert_eq!(data_dir, home.join("MultiAIAgentsPanel-Data"));
+        assert_eq!(data_dir, home.join("MultiAIAgentsPanel"));
     }
 }
