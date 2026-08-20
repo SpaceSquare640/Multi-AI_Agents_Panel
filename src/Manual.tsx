@@ -1,12 +1,23 @@
 import { useMemo, useState } from "react";
 import "./Manual.css";
 
-interface Article {
+export interface Article {
   id: string;
   title: string;
   category: string;
   minutes: number;
   paragraphs: string[];
+}
+
+/** Case-insensitive substring match against an article's title or any
+ *  paragraph. Extracted from the component's `useMemo` so the matching
+ *  rule (what counts as a hit) is testable independent of React state. */
+export function filterArticles(articles: Article[], query: string): Article[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return articles;
+  return articles.filter(
+    (a) => a.title.toLowerCase().includes(q) || a.paragraphs.some((p) => p.toLowerCase().includes(q)),
+  );
 }
 
 /** The in-app User Manual's initial content — per Design Principles'
@@ -79,13 +90,7 @@ export default function Manual() {
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState(ARTICLES[0].id);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return ARTICLES;
-    return ARTICLES.filter(
-      (a) => a.title.toLowerCase().includes(q) || a.paragraphs.some((p) => p.toLowerCase().includes(q)),
-    );
-  }, [query]);
+  const filtered = useMemo(() => filterArticles(ARTICLES, query), [query]);
 
   const selected = ARTICLES.find((a) => a.id === selectedId) ?? filtered[0] ?? ARTICLES[0];
 
