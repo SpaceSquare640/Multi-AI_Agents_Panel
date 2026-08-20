@@ -37,6 +37,19 @@ body,
   --card-fg-muted: rgba(15, 15, 15, 0.7);
   --overlay-bg: rgba(0, 0, 0, 0.4);
 
+  /* Semantic status tokens — same idea, for error/warning banners
+     (Chat.css's .chat-error, Usage.css's .usage-budget-warning) that
+     previously hardcoded a single dark-mode palette regardless of
+     theme. Light-theme pair here is a light red/amber tint with dark
+     text; dark-theme pair (below) is the original dark red/amber. */
+  --error-bg: #fdecec;
+  --error-fg: #8a1f1f;
+  --error-border: #e08a8a;
+  --error-chip-bg: #8a1f1f1a;
+  --warn-bg: #fdf3e2;
+  --warn-fg: #7a5210;
+  --warn-border: #e0b95c;
+
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -121,6 +134,14 @@ select {
     --card-fg: #e6e6ea;
     --card-fg-muted: rgba(230, 230, 234, 0.75);
     --overlay-bg: rgba(0, 0, 0, 0.6);
+
+    --error-bg: #4a1414;
+    --error-fg: #ffb4b4;
+    --error-border: #a33;
+    --error-chip-bg: #ffb4b422;
+    --warn-bg: #241f14;
+    --warn-fg: #f2b84b;
+    --warn-border: #4a3a1c;
   }
 
   :root:not([data-theme="light"]) a:hover {
@@ -148,6 +169,14 @@ select {
   --card-fg: #e6e6ea;
   --card-fg-muted: rgba(230, 230, 234, 0.75);
   --overlay-bg: rgba(0, 0, 0, 0.6);
+
+  --error-bg: #4a1414;
+  --error-fg: #ffb4b4;
+  --error-border: #a33;
+  --error-chip-bg: #ffb4b422;
+  --warn-bg: #241f14;
+  --warn-fg: #f2b84b;
+  --warn-border: #4a3a1c;
 }
 
 :root[data-theme="dark"] a:hover {

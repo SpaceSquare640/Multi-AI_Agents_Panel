@@ -26,9 +26,9 @@
 }
 
 .usage-budget-warning {
-  background: #241f14;
-  color: #f2b84b;
-  border: 1px solid #4a3a1c;
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+  border: 1px solid var(--warn-border);
   border-radius: 8px;
   padding: 0.6rem 1rem;
   font-size: 0.85rem;

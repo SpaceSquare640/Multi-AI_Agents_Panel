@@ -326,9 +326,9 @@
 }
 
 .chat-error {
-  background: #4a1414;
-  color: #ffb4b4;
-  border: 1px solid #a33;
+  background: var(--error-bg);
+  color: var(--error-fg);
+  border: 1px solid var(--error-border);
   border-radius: 8px;
   padding: 0.6rem 1rem;
   margin-bottom: 1rem;
@@ -351,7 +351,7 @@
   font-weight: 700;
   padding: 0.1rem 0.5rem;
   border-radius: 6px;
-  background: #ffb4b422;
+  background: var(--error-chip-bg);
   flex: 0 0 auto;
 }
 
@@ -366,9 +366,9 @@
   font-size: 0.75rem;
   padding: 0.25rem 0.6rem;
   border-radius: 6px;
-  background: #2a1f1f;
-  color: #f0c4bc;
-  border: 1px solid #a33;
+  background: var(--card-bg-alt);
+  color: var(--error-fg);
+  border: 1px solid var(--error-border);
   box-shadow: none;
   cursor: pointer;
 }
