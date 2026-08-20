@@ -29,5 +29,12 @@ __pycache__/
 .venv/
 venv/
 
-# Bundled/vendored Python runtime (downloaded at build time, not committed)
-src-tauri/vendor/
+# Bundled/vendored Python runtime (downloaded at build time, not committed).
+# The per-platform subfolders themselves must exist even when empty — see
+# the .gitkeep files there — because Tauri's build.rs checks bundle.resources
+# paths for existence during a plain `cargo check`/`build`, not just an
+# actual `tauri build`, so CI/local dev breaks without them.
+src-tauri/vendor/*
+!src-tauri/vendor/*/
+src-tauri/vendor/*/*
+!src-tauri/vendor/*/.gitkeep
