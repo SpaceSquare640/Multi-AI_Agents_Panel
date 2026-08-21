@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import { applyStoredTheme } from "./Settings";
+import "./i18n";
 
 // Apply the user's saved theme choice before first paint, not just after
 // Settings mounts — otherwise every launch flashes the OS-default theme

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { getVersion } from "@tauri-apps/api/app";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import "./Settings.css";
@@ -63,6 +64,7 @@ export default function Settings({
   onShowGuardrailsSummary?: () => void;
   onOpenManual?: () => void;
 }) {
+  const { t } = useTranslation();
   const [theme, setThemeState] = useState<ThemeChoice>("system");
   const [version, setVersion] = useState<string | null>(null);
 
@@ -87,11 +89,11 @@ export default function Settings({
   return (
     <div className="settings-screen">
       <section className="acc-section">
-        <h2>Appearance</h2>
+        <h2>{t("settings.appearance.heading")}</h2>
         <div className="settings-row">
           <div>
-            <div className="settings-row-label">Theme</div>
-            <div className="acc-hint">Dark is the default aesthetic; Light is fully supported too.</div>
+            <div className="settings-row-label">{t("settings.appearance.theme")}</div>
+            <div className="acc-hint">{t("settings.appearance.themeHint")}</div>
           </div>
           <div className="theme-toggle">
             {(["system", "dark", "light"] as const).map((choice) => (
@@ -100,7 +102,11 @@ export default function Settings({
                 className={theme === choice ? "theme-opt active" : "theme-opt"}
                 onClick={() => chooseTheme(choice)}
               >
-                {choice === "system" ? "System" : choice === "dark" ? "Dark" : "Light"}
+                {choice === "system"
+                  ? t("settings.appearance.themeSystem")
+                  : choice === "dark"
+                    ? t("settings.appearance.themeDark")
+                    : t("settings.appearance.themeLight")}
               </button>
             ))}
           </div>
@@ -108,20 +114,16 @@ export default function Settings({
       </section>
 
       <section className="acc-section">
-        <h2>Language</h2>
+        <h2>{t("settings.language.heading")}</h2>
         <div className="settings-row">
           <div>
-            <div className="settings-row-label">Interface language</div>
+            <div className="settings-row-label">{t("settings.language.interfaceLanguage")}</div>
             <div className="acc-hint">
-              Default: English. Missing translations fall back to English — see{" "}
-              <a
-                href="https://github.com/SpaceSquare640/Multi-AI_Agents_Panel"
-                target="_blank"
-                rel="noreferrer"
-              >
-                CONTRIBUTING
+              {t("settings.language.hintBeforeLink")}{" "}
+              <a href="https://github.com/SpaceSquare640/Multi-AI_Agents_Panel" target="_blank" rel="noreferrer">
+                {t("settings.language.contributingLink")}
               </a>{" "}
-              to help translate.
+              {t("settings.language.hintAfterLink")}
             </div>
           </div>
         </div>
@@ -130,9 +132,9 @@ export default function Settings({
             <li key={lang.code}>
               <span>{lang.label}</span>
               {lang.ready ? (
-                <span className="lang-tag active">selected</span>
+                <span className="lang-tag active">{t("settings.language.statusSelected")}</span>
               ) : (
-                <span className="lang-tag">coming soon</span>
+                <span className="lang-tag">{t("settings.language.statusComingSoon")}</span>
               )}
             </li>
           ))}
@@ -140,27 +142,25 @@ export default function Settings({
       </section>
 
       <section className="acc-section">
-        <h2>Safety</h2>
+        <h2>{t("settings.safety.heading")}</h2>
         <div className="settings-row">
           <div>
-            <div className="settings-row-label">AI Guardrails</div>
-            <div className="acc-hint">
-              The non-negotiable rules every Agent always follows — shown once at first launch.
-            </div>
+            <div className="settings-row-label">{t("settings.safety.guardrails")}</div>
+            <div className="acc-hint">{t("settings.safety.guardrailsHint")}</div>
           </div>
-          <button onClick={() => onShowGuardrailsSummary?.()}>View summary again</button>
+          <button onClick={() => onShowGuardrailsSummary?.()}>{t("settings.safety.viewSummaryAgain")}</button>
         </div>
       </section>
 
       <section className="acc-section">
-        <h2>About</h2>
+        <h2>{t("settings.about.heading")}</h2>
         <div className="settings-row">
-          <span className="settings-row-label">Version</span>
+          <span className="settings-row-label">{t("settings.about.version")}</span>
           <span className="acc-mono">{version ?? "—"}</span>
         </div>
         <div className="settings-row">
-          <span className="settings-row-label">User Manual</span>
-          <button onClick={() => onOpenManual?.()}>Open →</button>
+          <span className="settings-row-label">{t("settings.about.userManual")}</span>
+          <button onClick={() => onOpenManual?.()}>{t("settings.about.open")}</button>
         </div>
       </section>
     </div>

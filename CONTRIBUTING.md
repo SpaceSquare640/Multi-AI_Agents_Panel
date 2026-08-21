@@ -5,7 +5,7 @@ Thanks for considering a contribution to Multi-AI Agents Panel.
 ## Project structure
 
 - `src-tauri/` — Rust core (Tauri backend): agent dispatch, storage, guardrails, file access, skills bridge, session/group-chat logic.
-- `src/` — React/TypeScript UI.
+- `src/` — React/TypeScript UI. `src/locales/` holds i18n translation files (see "Translations" below).
 - `skills/` — Python skills, run out-of-process via the JSON-RPC bridge (`skills/_bridge.py`).
 
 Design documents (architecture, error codes, session types, orchestration design, etc.) live in the Obsidian vault next to this repo, not in `Source_Code`. If you're proposing a design change, check there first — several decisions (Fallback ordering, Guardrails enforcement points, Session Types' conflict-resolution rules, etc.) were made deliberately and are documented with their reasoning.
@@ -40,6 +40,29 @@ cargo test -- --ignored
 Never commit real API keys, even in test code — set them via environment variables (e.g. `OPENROUTER_TEST_KEY`) when running ignored tests locally.
 
 The `ml_engine::live` tests additionally need `sentence-transformers` installed for whichever Python interpreter is on `PATH`: `pip install -r ml/requirements.txt`.
+
+## Translations (i18n)
+
+The platform is decided — [Weblate](https://weblate.org/) — but community
+translation hasn't started yet (no Weblate project has been set up; it needs
+this repo to be public first, and the maintainer's own research recommends
+waiting until UI text is relatively stable to avoid translator churn, see the
+i18n research note in the Obsidian vault). This is a deliberately narrow
+first slice, not full coverage:
+
+- `src/i18n.ts` wires up [react-i18next](https://react.i18next.com/).
+- `src/locales/en/translation.json` is the only real locale — the source of
+  truth. **Only `Settings.tsx`** has actually been converted to
+  `useTranslation()`/`t(...)` so far, as a proof that the plumbing works
+  end-to-end; every other screen is still plain hardcoded English strings.
+  Don't assume `t(...)` is wired up anywhere it isn't just because the
+  infra exists — check whether the specific screen you're touching has
+  been converted yet.
+- When Weblate setup does happen, it'll point at the `src/locales/*/translation.json` file-mask pattern (no repo-committed Weblate config file is needed for this — component setup happens in Weblate's own dashboard).
+- The `LANGUAGES` list in `Settings.tsx` intentionally shows non-English
+  languages as "coming soon" rather than offering them — picking one would
+  silently show untranslated English UI, which is worse than not offering
+  the choice at all.
 
 ## Guidelines
 

@@ -1,0 +1,33 @@
+{
+  "settings": {
+    "appearance": {
+      "heading": "Appearance",
+      "theme": "Theme",
+      "themeHint": "Dark is the default aesthetic; Light is fully supported too.",
+      "themeSystem": "System",
+      "themeDark": "Dark",
+      "themeLight": "Light"
+    },
+    "language": {
+      "heading": "Language",
+      "interfaceLanguage": "Interface language",
+      "hintBeforeLink": "Default: English. Missing translations fall back to English — see",
+      "hintAfterLink": "to help translate.",
+      "contributingLink": "CONTRIBUTING",
+      "statusSelected": "selected",
+      "statusComingSoon": "coming soon"
+    },
+    "safety": {
+      "heading": "Safety",
+      "guardrails": "AI Guardrails",
+      "guardrailsHint": "The non-negotiable rules every Agent always follows — shown once at first launch.",
+      "viewSummaryAgain": "View summary again"
+    },
+    "about": {
+      "heading": "About",
+      "version": "Version",
+      "userManual": "User Manual",
+      "open": "Open →"
+    }
+  }
+}
