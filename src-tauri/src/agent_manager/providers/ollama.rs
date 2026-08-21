@@ -1,7 +1,7 @@
 //! Ollama adapter — both a chat provider (local models, no API key) and the
 //! local-model management operations (list/pull/delete) used by the AI
 //! Control Center's "Local AI Model" section.
-//! https://github.com/ollama/ollama/blob/main/docs/api.md
+//! <https://github.com/ollama/ollama/blob/main/docs/api.md>
 
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};

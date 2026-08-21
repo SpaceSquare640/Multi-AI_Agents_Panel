@@ -1,5 +1,5 @@
 //! OpenRouter adapter — OpenAI-compatible chat completions API.
-//! https://openrouter.ai/docs/api-reference/chat-completion
+//! <https://openrouter.ai/docs/api-reference/chat-completion>
 
 use serde_json::{json, Value};
 

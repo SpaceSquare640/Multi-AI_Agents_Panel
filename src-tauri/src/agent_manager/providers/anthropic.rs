@@ -1,6 +1,6 @@
 //! Anthropic Messages API adapter — the first cloud provider, per the
 //! agreed dev order (Storage → Key Vault → Agent Manager/one provider → ...).
-//! https://docs.anthropic.com/en/api/messages
+//! <https://docs.anthropic.com/en/api/messages>
 
 use serde_json::{json, Value};
 

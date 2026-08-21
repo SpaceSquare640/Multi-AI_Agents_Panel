@@ -1,5 +1,5 @@
 //! OpenAI adapter — the Chat Completions API.
-//! https://platform.openai.com/docs/api-reference/chat
+//! <https://platform.openai.com/docs/api-reference/chat>
 //!
 //! Same request/response shape as `openrouter` (OpenRouter is itself
 //! OpenAI-compatible) — only the base URL differs. Kept as a separate
