@@ -76,3 +76,63 @@ pub(crate) fn free_local_port() -> std::io::Result<u16> {
     let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
     Ok(listener.local_addr()?.port())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    /// The relative path `find_bundled_python` looks for under a resource
+    /// dir, for whichever platform these tests are actually compiled and
+    /// run on — mirrors the per-OS branch under test rather than
+    /// hardcoding one platform, so this suite is meaningful in CI on all
+    /// three OSes, not just whichever one a developer happens to be on.
+    fn expected_relative_path() -> PathBuf {
+        if cfg!(target_os = "windows") {
+            PathBuf::from("python-windows").join("python.exe")
+        } else if cfg!(target_os = "macos") {
+            PathBuf::from("python-macos").join("bin").join("python3")
+        } else {
+            PathBuf::from("python-linux").join("bin").join("python3")
+        }
+    }
+
+    fn temp_dir(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("bridge-support-test-{name}-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    #[test]
+    fn find_bundled_python_returns_none_when_no_resource_dir_is_given() {
+        assert_eq!(find_bundled_python(None), None);
+    }
+
+    #[test]
+    fn find_bundled_python_returns_none_when_the_expected_file_is_missing() {
+        let dir = temp_dir("missing");
+        assert_eq!(find_bundled_python(Some(&dir)), None);
+    }
+
+    #[test]
+    fn find_bundled_python_finds_the_interpreter_when_it_exists() {
+        let dir = temp_dir("present");
+        let relative = expected_relative_path();
+        let full_path = dir.join(&relative);
+        std::fs::create_dir_all(full_path.parent().unwrap()).unwrap();
+        std::fs::write(&full_path, b"").unwrap();
+
+        let found = find_bundled_python(Some(&dir)).expect("should find the interpreter that's actually there");
+        assert_eq!(PathBuf::from(found), full_path);
+    }
+
+    #[test]
+    fn free_local_port_returns_a_port_that_is_actually_bindable() {
+        let port = free_local_port().expect("OS should hand back a free port");
+        // If the port weren't actually free, this second bind would fail —
+        // proves free_local_port() doesn't just return a hardcoded/stale
+        // value, it round-trips through the OS.
+        let listener = std::net::TcpListener::bind(("127.0.0.1", port));
+        assert!(listener.is_ok());
+    }
+}
