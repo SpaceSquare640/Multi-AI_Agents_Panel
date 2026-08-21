@@ -10,6 +10,25 @@ on:
     branches: [main]
 
 jobs:
+  lint-workflows:
+    # Validates the workflow YAML files themselves (ci.yml, release.yml) —
+    # schema errors, invalid action inputs, shellcheck issues in `run:`
+    # blocks, etc. Added after discovering Swatinem/rust-cache@v2 had been
+    # silently ignoring an invalid `workingDirectories` input (should have
+    # been `workspaces`) for an unknown amount of time — this class of
+    # mistake doesn't fail the build, it just silently degrades CI (e.g.
+    # broken caching), so a plain `cargo build`/`npm run build` passing
+    # doesn't catch it; only checking the workflow file's own correctness
+    # does.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download actionlint
+        id: get_actionlint
+        run: bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+      - name: Check workflow files
+        run: ${{ steps.get_actionlint.outputs.executable }} -color
+
   frontend:
     runs-on: ubuntu-latest
     steps:
