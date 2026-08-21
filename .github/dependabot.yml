@@ -1,0 +1,24 @@
+version: 2
+updates:
+  # Rust dependencies (src-tauri/Cargo.toml). cargo-audit (see ci.yml)
+  # only fails the build on a real known vulnerability; Dependabot is
+  # the proactive half — opens a PR when a newer version exists at all,
+  # not just when the old one turns out to be vulnerable.
+  - package-ecosystem: "cargo"
+    directory: "/src-tauri"
+    schedule:
+      interval: "weekly"
+
+  # Frontend dependencies (package.json).
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # The workflow files themselves (actions/checkout, tauri-action, etc.)
+  # — pinned action versions go stale the same way any other dependency
+  # does.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
