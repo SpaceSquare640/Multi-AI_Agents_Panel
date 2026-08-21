@@ -92,6 +92,18 @@ jobs:
             fs.writeFileSync("checksums-windows-latest.sha256.txt", lines.join("\n") + "\n");
           '
           gh release upload "${{ github.ref_name }}" "checksums-windows-latest.sha256.txt" --clobber
+      - name: Generate this version's changelog section for the Release notes
+        # Runs BEFORE the full-CHANGELOG.md step below, deliberately — `git
+        # cliff --current` needs HEAD to still be exactly the tagged commit
+        # to resolve "the current tag" at all; committing CHANGELOG.md back
+        # to main first would move HEAD past the tag and break this with
+        # `ChangelogError("No tag exists for the current commit")` (hit
+        # this for real in v0.1.84-alpha before reordering — see Backlog).
+        id: git-cliff-current
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: cliff.toml
+          args: --verbose --current --strip header
       - name: Generate full CHANGELOG.md
         # See cliff.toml for why this includes the project's whole history
         # (not just Conventional-Commits-formatted commits) — the repo's
@@ -119,12 +131,6 @@ jobs:
           git add CHANGELOG.md
           git diff --staged --quiet || git commit -m "chore: update CHANGELOG.md for ${{ github.ref_name }} [skip ci]"
           git push origin HEAD:main
-      - name: Generate this version's changelog section for the Release notes
-        id: git-cliff-current
-        uses: orhun/git-cliff-action@v4
-        with:
-          config: cliff.toml
-          args: --verbose --current --strip header
       - name: Set the GitHub Release notes to this version's changelog section
         # Deliberately routed through an env var + --notes-file rather than
         # `--notes "${{ steps.git-cliff-current.outputs.content }}"` — the
