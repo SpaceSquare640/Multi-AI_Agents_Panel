@@ -46,7 +46,7 @@ The `ml_engine::live` tests additionally need `sentence-transformers` installed 
 - **Tests are not optional.** New logic should ship with unit tests; anything hitting a real network call or subprocess should get a `#[ignore]`d live test in addition, not instead of, fast unit tests on the pure logic underneath it.
 - **Don't fake enforcement.** This project has a hard rule (see the Guardrails design doc) against implementing a safety/consent check that looks like it works but doesn't reliably do what it claims. If you can't implement something honestly, document the limitation instead of stubbing it out silently.
 - **camelCase at the Rust/TypeScript boundary.** Rust structs exposed to the frontend use `#[serde(rename_all = "camelCase")]`; keep new ones consistent.
-- **Small, reviewable changes.** Prefer a focused PR over a broad one — this makes the maintainers' job (and the automated 3-platform release pipeline) easier to reason about.
+- **Small, reviewable changes.** Prefer a focused PR over a broad one — this makes the maintainers' job (and the automated release pipeline) easier to reason about.
 
 ## Submitting changes
 

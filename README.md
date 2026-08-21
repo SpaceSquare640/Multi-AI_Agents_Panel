@@ -1,8 +1,15 @@
 # Multi-AI Agents Panel
 
-A desktop app (Windows / Linux / macOS) for running multiple local and
-cloud AI agents side by side, letting them collaborate, and orchestrating
-them through independent sessions or group chats.
+A desktop app for running multiple local and cloud AI agents side by
+side, letting them collaborate, and orchestrating them through
+independent sessions or group chats.
+
+Currently ships **Windows-only** installers — the maintainer has no way
+to verify Linux/macOS builds on real hardware, so the Release pipeline
+was scoped down to Windows for now (see the Backlog in the vault for the
+full history, including an unresolved upstream Tauri Linux AppImage
+bundling bug). The codebase itself is still cross-platform (Tauri +
+Rust), and the macOS/Linux-specific config isn't deleted, just unused.
 
 Full project planning lives in the Obsidian vault at
 `../Multi-AI Agent Panel Document/` — start at `00 Dashboard/Dashboard.md`.
