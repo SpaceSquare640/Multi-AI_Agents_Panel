@@ -10,6 +10,28 @@ on:
     branches: [main]
 
 jobs:
+  secret-scan:
+    # Automated secret scanning — closes a real gap in Vision & Goals.md's
+    # open-source-governance checklist ("confirm the repo never leaks API
+    # keys/local paths/personal accounts"). Until now the only defense was
+    # a manual `grep` for a few known key-prefix patterns before each
+    # commit, run by whoever's committing — that's a human-reliability
+    # single point of failure, and once this repo is public it also needs
+    # to protect against secrets introduced by outside contributors' PRs,
+    # which a personal pre-commit habit can't do at all. gitleaks scans
+    # the whole diff with a much broader rule set than a few grep patterns.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GITLEAKS_LICENSE is only required for GitHub Organizations, not
+          # personal accounts (confirmed this repo's owner is a personal
+          # account via `gh api users/SpaceSquare640`) — omitted on purpose.
+
   lint-workflows:
     # Validates the workflow YAML files themselves (ci.yml, release.yml) —
     # schema errors, invalid action inputs, shellcheck issues in `run:`
