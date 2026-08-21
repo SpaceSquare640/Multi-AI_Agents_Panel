@@ -1,6 +1,6 @@
 [package]
 name = "multi-ai-agents-panel"
-version = "0.1.77-alpha"
+version = "0.1.78-alpha"
 description = "A desktop panel for running and orchestrating multiple local and cloud AI agents"
 authors = []
 license = "MIT"
