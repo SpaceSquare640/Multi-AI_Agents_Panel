@@ -9,13 +9,14 @@
 //! - A prompt/tool-injection screen (category 1) applied to every Skill
 //!   payload before it reaches the Python bridge.
 //!
+//! - A role-identity / impersonation screen (category 3, E9004), applied
+//!   to every Group Chat agent reply before it's saved — see
+//!   `screen_agent_reply_for_impersonation`.
+//!
 //! It does NOT yet implement:
 //! - Destructive-operation confirmation (category 1) — no destructive
 //!   operations exist yet (no file writes, no git actions); add this when
 //!   `file_access` or an Orchestrator action can mutate something.
-//! - Role-identity / impersonation checks (category 3, E9004) — Group Chat
-//!   itself exists now (`session_manager`/`orchestrator`), but the
-//!   impersonation-detection logic hasn't been written; add it there.
 //!
 //! Pretending to enforce checks with no real enforcement point would be
 //! worse than not having them: it would make the app *look* safe without
@@ -119,6 +120,49 @@ pub fn screen_skill_payload(payload: &str) -> Result<(), Violation> {
     Ok(())
 }
 
+/// Screens a Group Chat agent's own reply for the Error Code Registry's
+/// E9004 ("Agent 嘗試假冒其他 Agent 角色或偽裝成使用者/真實第三方"):
+/// deliberately simple, deliberately over-documented (see the module-level
+/// caveat above) — a keyword screen for the blunt, unambiguous cases
+/// ("I am {other agent's name}", "as the user, I ...", etc.), not a real
+/// identity-consistency classifier. It will miss impersonation phrased
+/// around it.
+///
+/// Per the registry's defined handling for E9004 ("記錄事件，維持原本角色
+/// 身份繼續對話" — log the event, keep the agent's real identity, let the
+/// conversation continue), this deliberately does NOT block or replace the
+/// reply the way `screen_outgoing_message`/`screen_skill_payload` do for
+/// their categories — those are "no exceptions, refuse outright" per the
+/// Guardrails doc; role impersonation in a multi-agent chat is a lower-
+/// stakes drift to catch and note, not a hard stop. Returns `Some` (for
+/// the caller to log) instead of `Err`, on purpose — it's advisory, not
+/// blocking.
+pub fn screen_agent_reply_for_impersonation(reply: &str, other_participant_names: &[String]) -> Option<Violation> {
+    let lower = reply.to_lowercase();
+    for name in other_participant_names {
+        if name.trim().is_empty() {
+            continue;
+        }
+        let name_lower = name.to_lowercase();
+        let claims = [format!("i am {name_lower}"), format!("i'm {name_lower}"), format!("as {name_lower}, i")];
+        if claims.iter().any(|claim| lower.contains(claim.as_str())) {
+            return Some(Violation {
+                error_code: "E9004",
+                reason: format!("this reply claims to be a different participant (\"{name}\") instead of its own identity"),
+            });
+        }
+    }
+    const USER_IMPERSONATION_PATTERNS: &[&str] =
+        &["i am the user", "i'm the user", "as the user, i", "speaking as the user", "pretending to be the user"];
+    if USER_IMPERSONATION_PATTERNS.iter().any(|p| lower.contains(p)) {
+        return Some(Violation {
+            error_code: "E9004",
+            reason: "this reply claims to speak as the human user instead of its own identity".to_string(),
+        });
+    }
+    None
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -176,5 +220,42 @@ mod tests {
     #[test]
     fn does_not_flag_an_ordinary_skill_payload() {
         assert!(screen_skill_payload("{\"text\": \"hello world\"}").is_ok());
+    }
+
+    #[test]
+    fn flags_a_reply_claiming_to_be_another_participant() {
+        let others = vec!["Product Lead".to_string(), "Alice".to_string()];
+        let violation = screen_agent_reply_for_impersonation("Sure, I am Product Lead and I approve this.", &others)
+            .expect("should flag impersonation of another named participant");
+        assert_eq!(violation.error_code, "E9004");
+    }
+
+    #[test]
+    fn flags_a_reply_claiming_to_speak_as_the_user() {
+        let violation = screen_agent_reply_for_impersonation("As the user, I want to change the plan.", &[])
+            .expect("should flag claiming to be the user");
+        assert_eq!(violation.error_code, "E9004");
+    }
+
+    #[test]
+    fn does_not_flag_an_ordinary_group_chat_reply() {
+        let others = vec!["Product Lead".to_string(), "Alice".to_string()];
+        assert!(screen_agent_reply_for_impersonation("I think we should ship this next week.", &others).is_none());
+    }
+
+    #[test]
+    fn does_not_flag_merely_mentioning_another_participant_by_name() {
+        // Talking *about* another member isn't impersonation — only
+        // claiming to *be* them is.
+        let others = vec!["Product Lead".to_string()];
+        assert!(
+            screen_agent_reply_for_impersonation("I agree with what Product Lead said earlier.", &others).is_none()
+        );
+    }
+
+    #[test]
+    fn is_case_insensitive_for_impersonation() {
+        let others = vec!["Alice".to_string()];
+        assert!(screen_agent_reply_for_impersonation("I AM ALICE and I disagree.", &others).is_some());
     }
 }

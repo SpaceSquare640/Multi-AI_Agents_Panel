@@ -8,6 +8,7 @@ use crate::agent_manager::curated_models::{self, CuratedModel};
 use crate::agent_manager::openrouter_catalog::{self, OpenRouterCatalogState, OpenRouterModelsResult};
 use crate::agent_manager::providers::{ollama, ChatMessage};
 use crate::game_agent::{self, GameAgentState, RecordingState};
+use crate::guardrails;
 use crate::agent_manager::role_templates::{self, RoleTemplate};
 use crate::agent_manager::{self};
 use crate::file_access;
@@ -583,6 +584,19 @@ fn run_one_group_turn(storage: &Storage, session_id: &str, mention: Option<&str>
     }
 
     let reply = agent_manager::send_message(storage, &agent, &history).map_err(|e| e.to_string())?;
+
+    // E9004 (see guardrails::screen_agent_reply_for_impersonation): advisory
+    // only, per the Error Code Registry's defined handling for this code —
+    // log and keep the agent's real identity, don't block the reply.
+    let other_names: Vec<String> = member_ids
+        .iter()
+        .filter(|id| **id != speaker_id)
+        .filter_map(|id| storage.get_agent(id).ok().flatten())
+        .map(|a| a.name)
+        .collect();
+    if let Some(violation) = guardrails::screen_agent_reply_for_impersonation(&reply, &other_names) {
+        eprintln!("guardrails: {violation} (agent {} in session {session_id})", agent.name);
+    }
 
     let saved = storage
         .add_message(session_id, Some(&speaker_id), "assistant", &reply)
