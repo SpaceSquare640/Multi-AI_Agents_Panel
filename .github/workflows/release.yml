@@ -140,6 +140,16 @@ jobs:
         # directly into a `run:` script body (breaks quoting at best, is a
         # script-injection vector at worst). An env var is expanded by the
         # shell, not substituted into the script text before it's parsed.
+        # v0.1.85-alpha ran this "successfully" but produced an EMPTY
+        # release body — the runner's default shell for a `run:` step on
+        # windows-latest is PowerShell, where `$RELEASE_NOTES` is an
+        # uninitialized local variable, not the env var (that's
+        # `$env:RELEASE_NOTES` in PowerShell); `printf` isn't a native
+        # pwsh command either. `gh release edit --notes-file` on an empty
+        # file doesn't error, so this failed silently. Forcing `shell:
+        # bash` (as the checksum step above already does) makes the
+        # bash-flavored script actually run as bash.
+        shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_NOTES: ${{ steps.git-cliff-current.outputs.content }}
