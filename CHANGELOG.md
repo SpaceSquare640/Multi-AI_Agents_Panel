@@ -2,6 +2,16 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.1.86-alpha] - 2026-08-21
+
+### Changes
+
+- Chore: update CHANGELOG.md for v0.1.85-alpha [skip ci]
+
+### Fixed
+
+- Fix release notes step running as PowerShell instead of bash
+
 ## [0.1.85-alpha] - 2026-08-21
 
 ### Changes
