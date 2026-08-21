@@ -84,6 +84,9 @@ jobs:
         # starts a real (if not very secret) Secret Service on it, which
         # is all `key_vault::tests::set_get_delete_round_trip` needs.
         run: |
+          # shellcheck disable=SC2016 -- single quotes are intentional: this
+          # is a literal script string handed to the nested `bash -c`,
+          # which is what should expand $(...)/$VAR, not the outer shell.
           dbus-run-session -- bash -c '
             eval "$(printf "\n" | gnome-keyring-daemon --unlock)"
             eval "$(printf "\n" | gnome-keyring-daemon --start --components=secrets)"

@@ -70,6 +70,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ARTIFACT_PATHS: ${{ steps.tauri_build.outputs.artifactPaths }}
         run: |
+          # shellcheck disable=SC2016 -- single quotes are intentional: this
+          # is a literal JS source string handed to `node -e`, which is
+          # what should interpret it, not the outer shell.
           node -e '
             const fs = require("fs");
             const crypto = require("crypto");
