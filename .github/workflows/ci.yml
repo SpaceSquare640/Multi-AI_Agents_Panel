@@ -46,6 +46,17 @@ jobs:
         run: cargo doc --manifest-path src-tauri/Cargo.toml --no-deps
         env:
           RUSTDOCFLAGS: "-D warnings"
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
+      - name: Check dependencies for known vulnerabilities
+        # `cargo audit`'s default behavior (verified locally against this
+        # exact Cargo.lock) only fails on real RUSTSEC "vulnerability"
+        # advisories — the current lockfile has ~19 "unmaintained"/
+        # "unsound" warnings (all in Tauri's own transitive GTK/glib
+        # dependencies on Linux, nothing this project can fix directly)
+        # and those don't fail the build, only real CVEs would.
+        run: cargo audit --file src-tauri/Cargo.lock
       - name: Run tests under a real D-Bus Secret Service
         # `key_vault` uses the OS credential store — on Linux that's the
         # D-Bus Secret Service, which a bare GitHub runner doesn't have
