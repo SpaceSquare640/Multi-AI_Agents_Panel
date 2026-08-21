@@ -31,7 +31,7 @@ jobs:
           components: clippy
       - uses: Swatinem/rust-cache@v2
         with:
-          workingDirectories: src-tauri
+          workspaces: src-tauri
       - name: Install Linux Tauri + keyring build deps
         run: |
           sudo apt-get update
