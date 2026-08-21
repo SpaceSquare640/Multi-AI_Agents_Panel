@@ -26,7 +26,7 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # Full history, not the default shallow clone — git-cliff (below)
           # needs it to walk every commit back to the project's start.
