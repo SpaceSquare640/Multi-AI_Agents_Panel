@@ -47,6 +47,7 @@ The `ml_engine::live` tests additionally need `sentence-transformers` installed 
 - **Don't fake enforcement.** This project has a hard rule (see the Guardrails design doc) against implementing a safety/consent check that looks like it works but doesn't reliably do what it claims. If you can't implement something honestly, document the limitation instead of stubbing it out silently.
 - **camelCase at the Rust/TypeScript boundary.** Rust structs exposed to the frontend use `#[serde(rename_all = "camelCase")]`; keep new ones consistent.
 - **Small, reviewable changes.** Prefer a focused PR over a broad one — this makes the maintainers' job (and the automated release pipeline) easier to reason about.
+- **`CHANGELOG.md` is auto-generated, don't hand-edit it.** Every tag push regenerates it from the git log via [git-cliff](https://git-cliff.org/) (config: `cliff.toml`) and commits it back to `main`. Commit *subject lines* end up in it verbatim, so write them for a changelog reader, not just for `git log` — a subject like "Add X" or "Fix Y" reads fine; something like "wip" or "more fixes" doesn't. There's no enforced Conventional Commits prefix requirement (`feat:`/`fix:`/etc.) — `cliff.toml` buckets unprefixed commits into a generic "Changes" section rather than dropping them, so it's a nice-to-have, not a lint rule.
 
 ## Submitting changes
 

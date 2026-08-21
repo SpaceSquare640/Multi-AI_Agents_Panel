@@ -1,0 +1,48 @@
+[changelog]
+header = """
+# Changelog
+
+All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
+"""
+body = """
+
+{% if version %}\
+    ## [{{ version | trim_start_matches(pat="v") }}]{% if timestamp %} - {{ timestamp | date(format="%Y-%m-%d") }}{% endif %}
+{% else %}\
+    ## [Unreleased]
+{% endif %}\
+{% for group, commits in commits | group_by(attribute="group") %}
+    ### {{ group | upper_first }}
+    {% for commit in commits %}
+        - {{ commit.message | split(pat="\n") | first | upper_first }}\
+    {% endfor %}
+{% endfor %}
+"""
+trim = true
+footer = ""
+
+[git]
+# This project's commit history predates any Conventional Commits
+# convention (~100+ commits before 2026-08-21 use free-form messages like
+# "Add X"/"Fix Y"/"Implement Z"). Per the project's research into this
+# (see Multi-AI Agent Panel Document/05 Research/Changelog Automation
+# Options.md), rewriting that history is not recommended and not
+# necessary — instead of filtering unconventional commits out (git-cliff's
+# default), everything that doesn't match a recognized prefix falls
+# through to a single "Changes" bucket below, so the changelog stays
+# complete from the project's actual start rather than silently starting
+# partway through history.
+conventional_commits = false
+filter_unconventional = false
+commit_parsers = [
+    { message = "^Bump version to", skip = true },
+    { message = "^(feat|Add|Implement)", group = "Added" },
+    { message = "^(fix|Fix)", group = "Fixed" },
+    { message = "^(docs|Doc)", group = "Documentation" },
+    { message = "^(refactor|Refactor|Rename|Clean)", group = "Changed" },
+    { message = ".*", group = "Changes" },
+]
+filter_commits = false
+tag_pattern = "v[0-9]*"
+topo_order = false
+sort_commits = "oldest"
