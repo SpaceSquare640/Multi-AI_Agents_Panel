@@ -2,6 +2,16 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.1.85-alpha] - 2026-08-21
+
+### Changes
+
+- Chore: update CHANGELOG.md for v0.1.84-alpha [skip ci]
+
+### Fixed
+
+- Fix release notes step: run before committing CHANGELOG.md, not after
+
 ## [0.1.84-alpha] - 2026-08-21
 
 ### Fixed
