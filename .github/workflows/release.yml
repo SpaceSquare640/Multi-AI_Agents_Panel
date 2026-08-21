@@ -126,6 +126,17 @@ jobs:
           config: cliff.toml
           args: --verbose --current --strip header
       - name: Set the GitHub Release notes to this version's changelog section
+        # Deliberately routed through an env var + --notes-file rather than
+        # `--notes "${{ steps.git-cliff-current.outputs.content }}"` — the
+        # changelog content is multi-line and can contain quotes/backticks
+        # from commit messages, which is exactly the shape of input GitHub
+        # Actions' own security guidance warns against interpolating
+        # directly into a `run:` script body (breaks quoting at best, is a
+        # script-injection vector at worst). An env var is expanded by the
+        # shell, not substituted into the script text before it's parsed.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release edit "${{ github.ref_name }}" --notes "${{ steps.git-cliff-current.outputs.content }}"
+          RELEASE_NOTES: ${{ steps.git-cliff-current.outputs.content }}
+        run: |
+          printf '%s' "$RELEASE_NOTES" > release-notes.md
+          gh release edit "${{ github.ref_name }}" --notes-file release-notes.md
