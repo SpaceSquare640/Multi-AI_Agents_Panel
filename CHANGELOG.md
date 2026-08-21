@@ -2,6 +2,18 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.1.84-alpha] - 2026-08-21
+
+### Fixed
+
+- Fix unsafe interpolation of changelog content into gh release edit
+
+## [0.1.83-alpha] - 2026-08-21
+
+### Added
+
+- Add automated CHANGELOG.md generation via git-cliff
+
 ## [0.1.82-alpha] - 2026-08-21
 
 ### Added
