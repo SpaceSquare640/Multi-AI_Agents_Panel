@@ -95,5 +95,72 @@
         ]
       }
     ]
+  },
+  "manual": {
+    "searchPlaceholder": "Search the manual…",
+    "noMatch": "No articles match \"{{query}}\".",
+    "minRead": "{{minutes}} min read",
+    "categoryLabels": {
+      "gettingStarted": "Getting Started",
+      "agents": "Agents",
+      "safety": "Safety"
+    },
+    "articles": [
+      {
+        "id": "independent-vs-group",
+        "title": "Independent Sessions vs Group Chat",
+        "category": "gettingStarted",
+        "minutes": 2,
+        "paragraphs": [
+          "An Independent Session is one Agent, one conversation — like a normal chat window. Use it when you just need one model working on one task.",
+          "A Group Chat has multiple Agents talking in the same session, in a single timeline, taking turns round-robin in the order they joined. You can type @AgentName to let a specific Agent jump in out of turn without disrupting whose turn is next.",
+          "Group Chats have a loop safety-net: after several consecutive Agent turns with no new message from you, the conversation pauses so you always stay in control. \"Let them continue\" advances one more turn manually; \"End meeting\" asks a summarizer Agent to wrap up the discussion."
+        ]
+      },
+      {
+        "id": "local-vs-cloud",
+        "title": "Setting up a local model (Ollama)",
+        "category": "gettingStarted",
+        "minutes": 3,
+        "paragraphs": [
+          "Local Agents run entirely on your own device through Ollama — nothing you send them leaves your machine, and there's no per-call cost.",
+          "Install Ollama itself first (this app doesn't bundle it). Once it's running, the AI Control Center's \"Local AI Models (Ollama)\" section shows what's installed and lets you pull new models by name — no terminal needed.",
+          "When creating an Agent, pick \"local\" as its provider kind and choose an installed model. Larger models need more RAM/VRAM; if a model is too large for your hardware it will simply run very slowly or fail to load."
+        ]
+      },
+      {
+        "id": "cloud-api-keys",
+        "title": "Adding a cloud API key",
+        "category": "gettingStarted",
+        "minutes": 2,
+        "paragraphs": [
+          "Cloud Agents call a provider — Anthropic, OpenAI, or OpenRouter — using an API key you provide yourself. This app never provides its own shared keys or bills you directly.",
+          "Add a key under the AI Control Center's \"Cloud AI Models\" section. Keys are stored locally through your OS credential store, never sent anywhere except the provider you're calling.",
+          "You can add multiple keys per provider and optionally pin a specific Agent to a specific key. Without a pin, the most-recently-added key for that provider is tried first, falling back to older ones if a call fails."
+        ]
+      },
+      {
+        "id": "role-templates",
+        "title": "Using Role Templates",
+        "category": "agents",
+        "minutes": 2,
+        "paragraphs": [
+          "A Role Template is a pre-written system prompt that gives an Agent a specific job — Product Lead, Lead Architect, Full-Stack Developer, and others modeled on a small one-person company.",
+          "Default templates ship with the app and reset to the latest version on every update — don't edit them directly. To customize one, duplicate it into User Custom first; anything in User Custom is yours permanently and survives app updates.",
+          "Each template can suggest a provider kind (e.g. \"Full-Stack Developer\" suggests cloud, \"Issue Manager\" suggests local) — this is only a default suggestion when creating an Agent, never a hard requirement."
+        ]
+      },
+      {
+        "id": "guardrails",
+        "title": "What Guardrails are",
+        "category": "safety",
+        "minutes": 2,
+        "paragraphs": [
+          "Guardrails are a fixed set of rules every Agent follows — local or cloud, whatever role template it's using. They can't be turned off, overridden by a role template, or bypassed by any instruction, including yours.",
+          "They cover things like: never reading your files without explicit authorization, always confirming before an irreversible action, refusing to help with attacks or illegal activity, and not looping forever in a Group Chat.",
+          "You saw a summary of these on first launch (Settings → Safety → \"View summary again\" if you want to re-read it). If an Agent refuses part of a request, it's because of one of these rules — it will tell you which one."
+        ]
+      }
+    ]
   }
 }
