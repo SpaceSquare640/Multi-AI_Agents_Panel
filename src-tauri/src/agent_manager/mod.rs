@@ -43,7 +43,15 @@ pub fn send_message(
     messages: &[ChatMessage],
 ) -> Result<String, ProviderError> {
     if let Some(last_user_message) = messages.iter().rev().find(|m| m.role == "user") {
-        if let Err(violation) = guardrails::screen_outgoing_message(&last_user_message.content) {
+        // Keyword screen first (mandatory, always runs), then the
+        // optional Llama Guard 3 second pass (no-op unless
+        // LLAMA_GUARD_MODEL is set — see that function's doc comment).
+        // Either one blocking has identical fallout: same usage-logging
+        // and error-return path, so both funnel through one `violation`.
+        let violation = guardrails::screen_outgoing_message(&last_user_message.content)
+            .err()
+            .or_else(|| guardrails::screen_with_llama_guard(&last_user_message.content).err());
+        if let Some(violation) = violation {
             let blocked = ProviderError::GuardrailBlocked {
                 error_code: violation.error_code,
                 reason: violation.reason,

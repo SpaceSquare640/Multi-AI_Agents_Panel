@@ -150,6 +150,12 @@ export default function Settings({
           </div>
           <button onClick={() => onShowGuardrailsSummary?.()}>{t("settings.safety.viewSummaryAgain")}</button>
         </div>
+        <div className="settings-row">
+          <div>
+            <div className="settings-row-label">{t("settings.safety.llamaGuardTitle")}</div>
+            <div className="acc-hint">{t("settings.safety.llamaGuardHint")}</div>
+          </div>
+        </div>
       </section>
 
       <section className="acc-section">

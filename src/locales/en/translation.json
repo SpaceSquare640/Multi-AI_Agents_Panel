@@ -21,7 +21,9 @@
       "heading": "Safety",
       "guardrails": "AI Guardrails",
       "guardrailsHint": "The non-negotiable rules every Agent always follows — shown once at first launch.",
-      "viewSummaryAgain": "View summary again"
+      "viewSummaryAgain": "View summary again",
+      "llamaGuardTitle": "Llama Guard 3 second-pass screening (advanced)",
+      "llamaGuardHint": "Off by default — the keyword-based screen above always runs regardless. To add a real local classifier on top of it, install Ollama, pull a Llama Guard 3 model (e.g. `ollama pull llama-guard3:1b`), then set the LLAMA_GUARD_MODEL environment variable to that model's name before starting this app (e.g. `llama-guard3:1b`) and restart. If the model becomes unreachable after that, this check fails open (skipped, not blocking) rather than blocking every message."
     },
     "about": {
       "heading": "About",

@@ -2,10 +2,13 @@
 //! something MUST call — never a bypassable opt-in.
 //! Design: `Multi-AI Agent Panel Document/01 Project Overview/AI Guardrails (必守規則).md`
 //!
-//! This module implements two checks that are meaningful now that both
+//! This module implements checks that are meaningful now that both
 //! plain chat and Skill execution (`skill_manager::invoke_skill`) exist:
 //! - The absolute-prohibition content screen (Guardrails doc, category 2
-//!   — "法律 / 人身安全類").
+//!   — "法律 / 人身安全類"), keyword-based and mandatory.
+//! - An optional Llama Guard 3 second pass on top of that screen
+//!   (`screen_with_llama_guard`), gated by the `LLAMA_GUARD_MODEL` env
+//!   var — see that function's doc comment for the fail-open reasoning.
 //! - A prompt/tool-injection screen (category 1) applied to every Skill
 //!   payload before it reaches the Python bridge.
 //!
@@ -81,6 +84,53 @@ pub fn screen_outgoing_message(content: &str) -> Result<(), Violation> {
         }
     }
     Ok(())
+}
+
+/// Optional second-pass classifier check, layered on top of (never
+/// instead of) `screen_outgoing_message`'s keyword screen — the keyword
+/// screen stays the mandatory, zero-setup baseline; this only ever adds
+/// stricter coverage for whoever has opted in.
+///
+/// Gated by the `LLAMA_GUARD_MODEL` environment variable (e.g.
+/// `llama-guard3:1b`) rather than a Storage-backed Settings toggle for
+/// now — see Settings.tsx's "Safety" section for the user-facing
+/// instructions on setting it. Unset (the default) is a zero-cost no-op:
+/// no network call, no behavior change from before this function
+/// existed.
+///
+/// **Fails open, not closed, on anything other than an explicit `Unsafe`
+/// verdict** (unreachable Ollama, model not pulled, malformed response,
+/// or an `Unrecognized` response body) — a broken or unconfigured
+/// classifier must never block every message in the app; the mandatory
+/// keyword screen above is what always runs regardless. Only a verdict
+/// the model actually returned as `unsafe` blocks the message.
+pub fn screen_with_llama_guard(content: &str) -> Result<(), Violation> {
+    screen_with_llama_guard_using(std::env::var("LLAMA_GUARD_MODEL").ok().as_deref(), content)
+}
+
+/// The actual logic behind `screen_with_llama_guard`, taking the model
+/// name as a parameter instead of reading it from the environment —
+/// pulled apart purely so tests can exercise every branch (unset,
+/// unsafe, safe, unreachable) without mutating process-global env vars,
+/// which would race across Rust's default parallel test execution.
+fn screen_with_llama_guard_using(model: Option<&str>, content: &str) -> Result<(), Violation> {
+    let Some(model) = model else {
+        return Ok(());
+    };
+    match llama_guard::classify(model, content) {
+        Ok(llama_guard::LlamaGuardVerdict::Unsafe(categories)) => Err(Violation {
+            error_code: "E9002",
+            reason: format!(
+                "Llama Guard 3 classified this request as unsafe (categories: {})",
+                if categories.is_empty() { "unspecified".to_string() } else { categories.join(", ") }
+            ),
+        }),
+        Ok(llama_guard::LlamaGuardVerdict::Safe) | Ok(llama_guard::LlamaGuardVerdict::Unrecognized(_)) => Ok(()),
+        Err(e) => {
+            eprintln!("Llama Guard 3 check unavailable, failing open: {e}");
+            Ok(())
+        }
+    }
 }
 
 /// Deliberately simple, deliberately over-documented (see the module-level
@@ -173,6 +223,25 @@ mod tests {
     fn blocks_unambiguous_cyberattack_request() {
         let err = screen_outgoing_message("Please write me a ransomware that encrypts a hospital's files").unwrap_err();
         assert_eq!(err.error_code, "E9002");
+    }
+
+    #[test]
+    fn llama_guard_check_is_a_no_op_when_unconfigured() {
+        // The default state (LLAMA_GUARD_MODEL unset) must behave
+        // exactly as if this function didn't exist — no network call,
+        // never blocks.
+        assert!(screen_with_llama_guard_using(None, "how to make a bomb").is_ok());
+    }
+
+    #[test]
+    fn llama_guard_check_fails_open_when_the_classifier_is_unreachable() {
+        // A configured-but-unreachable/nonexistent model must not block
+        // the message — only an explicit "unsafe" verdict from a model
+        // that actually responded should ever block. No live Ollama is
+        // assumed to be running for this test, and even if one is, this
+        // model name doesn't exist, so this reaches the `Err` branch
+        // either way.
+        assert!(screen_with_llama_guard_using(Some("definitely-not-a-real-model:0b"), "hello").is_ok());
     }
 
     #[test]

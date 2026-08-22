@@ -6,23 +6,19 @@
 //! APIs (stays offline-first, reuses the project's existing Ollama
 //! integration, no new API key/account dependency).
 //!
-//! **Deliberately not wired into `send_message` yet.** Llama Guard 3
-//! isn't a model every user has pulled, and this module's HTTP call has
-//! only been exercised against a fake/parsed response body, never a real
-//! `llama-guard3` model — wiring it into the mandatory guardrails path
-//! without that live verification would repeat the mistake this project
-//! has explicitly tried to avoid elsewhere (see the "誠實聲明" pattern
-//! throughout the Backlog: don't claim a check works until it's been
-//! proven against the real thing, not just its parser). The keyword
-//! screen in `screen_outgoing_message` remains the only mandatory,
-//! always-on check for now; this is an available building block for
-//! wiring in as an optional, Settings-gated second pass once someone
-//! can actually verify it against a running `llama-guard3` model.
-
-// Staged building block, not wired into any caller yet (see module docs)
-// — allow dead_code rather than deleting real, unit-tested logic just
-// because nothing calls it across the crate boundary yet.
-#![allow(dead_code)]
+//! Wired into `send_message` via `guardrails::screen_with_llama_guard`,
+//! gated behind the `LLAMA_GUARD_MODEL` environment variable — unset by
+//! default, so an unconfigured install behaves exactly as before this
+//! module existed (the keyword screen in `screen_outgoing_message`
+//! remains the only mandatory, always-on check). **The HTTP round trip
+//! itself is still only verified via the `live` test below, which needs
+//! a real `llama-guard3` model pulled to actually run** — the parser
+//! (`parse_llama_guard_response`) is fully unit-tested, but nobody has
+//! run the `live` test in this repo's history yet. Anyone enabling
+//! `LLAMA_GUARD_MODEL` is the first real verification this integration
+//! gets against an actual model; `screen_with_llama_guard`'s fail-open
+//! design means a broken integration degrades to "no extra check," not
+//! "blocks everything," if that first real run surfaces a bug.
 
 use serde_json::{json, Value};
 
