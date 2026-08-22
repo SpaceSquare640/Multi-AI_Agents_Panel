@@ -2,6 +2,17 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.5.0-alpha] - 2026-08-22
+
+### Added
+
+- Feat: full MCP wiring — storage, grants, Guardrails, UI (Beta queue 2/8)
+
+### Changes
+
+- Chore: update CHANGELOG.md for v0.4.0-alpha [skip ci]
+- Chore: bump to 0.5.0-alpha (MCP full wiring)
+
 ## [0.4.0-alpha] - 2026-08-22
 
 ### Added
