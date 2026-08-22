@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
@@ -38,6 +39,7 @@ function formatBytes(bytes: number | null): string {
 }
 
 export default function AIControlCenter() {
+  const { t } = useTranslation();
   const [keys, setKeys] = useState<ProviderKeyView[]>([]);
   const [usage, setUsage] = useState<UsageSummary[]>([]);
   const [modelProvider, setModelProvider] = useState<string>("openrouter");
@@ -176,7 +178,7 @@ export default function AIControlCenter() {
     setError(null);
     const entries = parseBatchInput(batchText);
     if (entries.length === 0) {
-      setError("No valid lines found. Format: provider,secret[,label[,modelHint]] — one per line.");
+      setError(t("acc.apiKeys.bulkNoValidLines"));
       return;
     }
     try {
@@ -307,19 +309,19 @@ export default function AIControlCenter() {
 
   return (
     <div className="ai-control-center">
-      <h1>AI Control Center</h1>
+      <h1>{t("acc.title")}</h1>
       {error && (
         <div className="acc-error" role="alert">
           {error}
-          <button onClick={() => setError(null)} aria-label="Dismiss error">×</button>
+          <button onClick={() => setError(null)} aria-label={t("acc.dismissError")}>×</button>
         </div>
       )}
 
       <section className="acc-section">
-        <h2>API Keys</h2>
+        <h2>{t("acc.apiKeys.heading")}</h2>
 
         <form className="acc-form" onSubmit={handleAddSingle}>
-          <h3>Add one</h3>
+          <h3>{t("acc.apiKeys.addOne")}</h3>
           <div className="acc-form-row">
             <select value={singleProvider} onChange={(e) => setSingleProvider(e.target.value)}>
               {CLOUD_PROVIDERS.map((p) => (
@@ -330,32 +332,33 @@ export default function AIControlCenter() {
             </select>
             <input
               type="password"
-              placeholder="API key"
+              placeholder={t("acc.apiKeys.apiKeyPlaceholder")}
               value={singleSecret}
               onChange={(e) => setSingleSecret(e.target.value)}
               required
             />
             <input
               type="text"
-              placeholder="Label (optional)"
+              placeholder={t("acc.apiKeys.labelOptionalPlaceholder")}
               value={singleLabel}
               onChange={(e) => setSingleLabel(e.target.value)}
             />
             <input
               type="text"
-              placeholder="Model hint (optional)"
+              placeholder={t("acc.apiKeys.modelHintOptionalPlaceholder")}
               value={singleModelHint}
               onChange={(e) => setSingleModelHint(e.target.value)}
             />
-            <button type="submit">Add</button>
+            <button type="submit">{t("acc.apiKeys.add")}</button>
           </div>
         </form>
 
         <form className="acc-form" onSubmit={handleBatchAdd}>
-          <h3>Add in bulk</h3>
+          <h3>{t("acc.apiKeys.addInBulk")}</h3>
           <p className="acc-hint">
-            One key per line: <code>provider,secret,label,modelHint</code> — label and modelHint
-            are optional.
+            {t("acc.apiKeys.bulkHintBeforeCode")}
+            <code>provider,secret,label,modelHint</code>
+            {t("acc.apiKeys.bulkHintAfterCode")}
           </p>
           <textarea
             rows={5}
@@ -363,15 +366,12 @@ export default function AIControlCenter() {
             value={batchText}
             onChange={(e) => setBatchText(e.target.value)}
           />
-          <button type="submit">Import all</button>
+          <button type="submit">{t("acc.apiKeys.importAll")}</button>
         </form>
 
         <div className="acc-form">
-          <h3>Import from files</h3>
-          <p className="acc-hint">
-            Pick multiple files: each file's name becomes the label, its full content (trimmed)
-            becomes the key. All files use the same provider.
-          </p>
+          <h3>{t("acc.apiKeys.importFromFiles")}</h3>
+          <p className="acc-hint">{t("acc.apiKeys.importFromFilesHint")}</p>
           <div className="acc-form-row">
             <select value={fileImportProvider} onChange={(e) => setFileImportProvider(e.target.value)}>
               {CLOUD_PROVIDERS.map((p) => (
@@ -381,7 +381,7 @@ export default function AIControlCenter() {
               ))}
             </select>
             <button type="button" disabled={fileImportBusy} onClick={() => handleImportFromFiles()}>
-              {fileImportBusy ? "Importing…" : "Choose files…"}
+              {fileImportBusy ? t("acc.apiKeys.importing") : t("acc.apiKeys.chooseFiles")}
             </button>
           </div>
         </div>
@@ -389,11 +389,11 @@ export default function AIControlCenter() {
         <table className="acc-table">
           <thead>
             <tr>
-              <th>Provider</th>
-              <th>Label</th>
-              <th>Model hint</th>
-              <th>Key</th>
-              <th>Last used</th>
+              <th>{t("acc.apiKeys.tableProvider")}</th>
+              <th>{t("acc.apiKeys.tableLabel")}</th>
+              <th>{t("acc.apiKeys.tableModelHint")}</th>
+              <th>{t("acc.apiKeys.tableKey")}</th>
+              <th>{t("acc.apiKeys.tableLastUsed")}</th>
               <th></th>
             </tr>
           </thead>
@@ -401,7 +401,7 @@ export default function AIControlCenter() {
             {keys.length === 0 && (
               <tr>
                 <td colSpan={6} className="acc-empty">
-                  No API keys yet.
+                  {t("acc.apiKeys.noKeysYet")}
                 </td>
               </tr>
             )}
@@ -411,9 +411,9 @@ export default function AIControlCenter() {
                 <td>{k.label ?? "—"}</td>
                 <td>{k.modelHint ?? "—"}</td>
                 <td className="acc-mono">{k.maskedSecret}</td>
-                <td>{k.lastUsedAt ?? "never"}</td>
+                <td>{k.lastUsedAt ?? t("acc.apiKeys.never")}</td>
                 <td>
-                  <button onClick={() => handleDeleteKey(k.id)}>Delete</button>
+                  <button onClick={() => handleDeleteKey(k.id)}>{t("acc.apiKeys.delete")}</button>
                 </td>
               </tr>
             ))}
@@ -422,7 +422,7 @@ export default function AIControlCenter() {
       </section>
 
       <section className="acc-section">
-        <h2>Cloud AI Models</h2>
+        <h2>{t("acc.cloudModels.heading")}</h2>
         <select value={modelProvider} onChange={(e) => setModelProvider(e.target.value)}>
           {CLOUD_PROVIDERS.map((p) => (
             <option key={p} value={p}>
@@ -435,20 +435,15 @@ export default function AIControlCenter() {
             <div className="acc-form-row">
               <input
                 type="text"
-                placeholder="Search all OpenRouter models…"
+                placeholder={t("acc.cloudModels.searchPlaceholder")}
                 value={openRouterQuery}
                 onChange={(e) => setOpenRouterQuery(e.target.value)}
               />
               <button disabled={openRouterLoading} onClick={() => refreshOpenRouterModels(true).catch((e) => setError(String(e)))}>
-                {openRouterLoading ? "Refreshing…" : "Refresh from OpenRouter"}
+                {openRouterLoading ? t("acc.cloudModels.refreshing") : t("acc.cloudModels.refreshFromOpenRouter")}
               </button>
             </div>
-            {!openRouterLive && (
-              <p className="acc-hint">
-                ⚠ Couldn't reach OpenRouter's live catalog — showing the built-in default list instead. Prices and
-                availability shown here may not be current; check your network connection.
-              </p>
-            )}
+            {!openRouterLive && <p className="acc-hint">{t("acc.cloudModels.liveCatalogUnavailable")}</p>}
             <ul className="acc-model-list">
               {openRouterModels
                 .filter((m) => {
@@ -460,9 +455,10 @@ export default function AIControlCenter() {
                     <span className="acc-mono">{m.id}</span> — {m.name}
                     {(m.promptPricePerMillion !== null || m.completionPricePerMillion !== null) && (
                       <span className="acc-hint">
-                        {" "}
-                        (${m.promptPricePerMillion?.toFixed(2) ?? "?"} in / $
-                        {m.completionPricePerMillion?.toFixed(2) ?? "?"} out per 1M tokens)
+                        {t("acc.cloudModels.pricing", {
+                          promptPrice: m.promptPricePerMillion?.toFixed(2) ?? "?",
+                          completionPrice: m.completionPricePerMillion?.toFixed(2) ?? "?",
+                        })}
                       </span>
                     )}
                   </li>
@@ -481,52 +477,45 @@ export default function AIControlCenter() {
       </section>
 
       <section className="acc-section">
-        <h2>Local AI Models (Ollama)</h2>
+        <h2>{t("acc.localModels.heading")}</h2>
         <p>
-          Status:{" "}
-          {ollamaRunning === null ? "checking…" : ollamaRunning ? "running" : "not running"}{" "}
-          <button onClick={() => refreshOllama().catch((e) => setError(String(e)))}>Refresh</button>
+          {t("acc.localModels.statusLabel")}{" "}
+          {ollamaRunning === null
+            ? t("acc.localModels.statusChecking")
+            : ollamaRunning
+              ? t("acc.localModels.statusRunning")
+              : t("acc.localModels.statusNotRunning")}{" "}
+          <button onClick={() => refreshOllama().catch((e) => setError(String(e)))}>
+            {t("acc.localModels.refresh")}
+          </button>
         </p>
 
         <details className="acc-ollama-storage-hint">
-          <summary>Where are Ollama's models stored?</summary>
+          <summary>{t("acc.localModels.storageHintSummary")}</summary>
           <p className="acc-hint">
-            Ollama is a separate program this app doesn't control or install — it's only called over
-            {" "}
-            <code>localhost:11434</code>. This app does not move or manage Ollama's model files itself.
+            {t("acc.localModels.storageHintIntro", { endpoint: "localhost:11434" })}
           </p>
           {ollamaModelsEnvHint === undefined ? null : ollamaModelsEnvHint ? (
             <p className="acc-hint">
-              This app's own process sees <code>OLLAMA_MODELS={ollamaModelsEnvHint}</code>. This may or may not
-              match what the actual Ollama service uses, if it was started from a different environment.
+              {t("acc.localModels.storageHintEnvSet", { path: ollamaModelsEnvHint })}
             </p>
           ) : (
-            <p className="acc-hint">
-              No <code>OLLAMA_MODELS</code> override is visible to this app (Ollama is likely using its own
-              default location). To change where Ollama stores models, set the <code>OLLAMA_MODELS</code>{" "}
-              environment variable yourself and restart the Ollama service:
-            </p>
+            <p className="acc-hint">{t("acc.localModels.storageHintEnvUnset")}</p>
           )}
           <ul className="acc-hint">
-            <li>
-              Windows (PowerShell, as your user):{" "}
-              <code>setx OLLAMA_MODELS "C:\path\to\folder"</code>, then restart Ollama
-            </li>
-            <li>
-              macOS/Linux: add <code>export OLLAMA_MODELS=/path/to/folder</code> to your shell profile, then
-              restart Ollama
-            </li>
+            <li>{t("acc.localModels.storageHintWindows", { command: 'setx OLLAMA_MODELS "C:\\path\\to\\folder"' })}</li>
+            <li>{t("acc.localModels.storageHintUnix", { command: "export OLLAMA_MODELS=/path/to/folder" })}</li>
           </ul>
         </details>
 
         {ollamaRunning && (
           <>
-            <h3>Installed</h3>
+            <h3>{t("acc.localModels.installedHeading")}</h3>
             <table className="acc-table">
               <thead>
                 <tr>
-                  <th>Model</th>
-                  <th>Size</th>
+                  <th>{t("acc.localModels.tableModel")}</th>
+                  <th>{t("acc.localModels.tableSize")}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -534,7 +523,7 @@ export default function AIControlCenter() {
                 {ollamaInstalled.length === 0 && (
                   <tr>
                     <td colSpan={3} className="acc-empty">
-                      No models installed yet.
+                      {t("acc.localModels.noModelsInstalled")}
                     </td>
                   </tr>
                 )}
@@ -543,14 +532,14 @@ export default function AIControlCenter() {
                     <td className="acc-mono">{m.name}</td>
                     <td>{formatBytes(m.size)}</td>
                     <td>
-                      <button onClick={() => handleDeleteOllamaModel(m.name)}>Remove</button>
+                      <button onClick={() => handleDeleteOllamaModel(m.name)}>{t("acc.localModels.remove")}</button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
 
-            <h3>Available to install</h3>
+            <h3>{t("acc.localModels.availableHeading")}</h3>
             <ul className="acc-model-list">
               {notYetInstalled.map((m) => (
                 <li key={m.id}>
@@ -559,8 +548,8 @@ export default function AIControlCenter() {
                     {pullingModel === m.id
                       ? pullProgress?.percent !== null && pullProgress?.percent !== undefined
                         ? `${pullProgress.percent.toFixed(0)}%`
-                        : pullProgress?.status ?? "Installing…"
-                      : "Install"}
+                        : pullProgress?.status ?? t("acc.localModels.installing")
+                      : t("acc.localModels.install")}
                   </button>
                 </li>
               ))}
@@ -570,22 +559,22 @@ export default function AIControlCenter() {
       </section>
 
       <section className="acc-section">
-        <h2>Usage</h2>
+        <h2>{t("acc.usage.heading")}</h2>
         <table className="acc-table">
           <thead>
             <tr>
-              <th>Provider</th>
-              <th>Label</th>
-              <th>Success</th>
-              <th>Failure</th>
-              <th>Last used</th>
+              <th>{t("acc.usage.tableProvider")}</th>
+              <th>{t("acc.usage.tableLabel")}</th>
+              <th>{t("acc.usage.tableSuccess")}</th>
+              <th>{t("acc.usage.tableFailure")}</th>
+              <th>{t("acc.usage.tableLastUsed")}</th>
             </tr>
           </thead>
           <tbody>
             {usage.length === 0 && (
               <tr>
                 <td colSpan={5} className="acc-empty">
-                  No usage recorded yet.
+                  {t("acc.usage.noUsageYet")}
                 </td>
               </tr>
             )}
@@ -595,7 +584,7 @@ export default function AIControlCenter() {
                 <td>{u.label ?? "—"}</td>
                 <td>{u.successCount}</td>
                 <td>{u.failureCount}</td>
-                <td>{u.lastUsedAt ?? "never"}</td>
+                <td>{u.lastUsedAt ?? t("acc.usage.never")}</td>
               </tr>
             ))}
           </tbody>
@@ -603,16 +592,12 @@ export default function AIControlCenter() {
       </section>
 
       <section className="acc-section">
-        <h2>Game-Playing Agent (experimental)</h2>
-        <p className="acc-hint">
-          ⚠ Starting this makes the app take real screenshots and simulate real mouse/keyboard input on this
-          computer, on a loop, until you click Stop. It only ever starts when you click "Start" below — nothing
-          triggers it automatically. Requires a vision-capable model already pulled in Ollama (e.g. <code>llava</code>).
-        </p>
+        <h2>{t("acc.gameAgent.heading")}</h2>
+        <p className="acc-hint">{t("acc.gameAgent.warning")}</p>
         <div className="acc-form-row">
           <input
             type="text"
-            placeholder="Ollama vision model (e.g. llava)"
+            placeholder={t("acc.gameAgent.modelPlaceholder")}
             value={gameAgentModel}
             onChange={(e) => setGameAgentModel(e.target.value)}
             disabled={gameAgentRunning}
@@ -625,47 +610,45 @@ export default function AIControlCenter() {
           disabled={gameAgentRunning}
         />
         <p>
-          Status: {gameAgentRunning ? "running" : "stopped"}{" "}
+          {t("acc.gameAgent.statusLabel")}{" "}
+          {gameAgentRunning ? t("acc.gameAgent.statusRunning") : t("acc.gameAgent.statusStopped")}{" "}
           {gameAgentRunning ? (
-            <button onClick={() => handleStopGameAgent()}>Stop</button>
+            <button onClick={() => handleStopGameAgent()}>{t("acc.gameAgent.stop")}</button>
           ) : (
             <button disabled={gameAgentBusy} onClick={() => handleStartGameAgent()}>
-              {gameAgentBusy ? "Starting…" : "Start"}
+              {gameAgentBusy ? t("acc.gameAgent.starting") : t("acc.gameAgent.start")}
             </button>
           )}
         </p>
       </section>
 
       <section className="acc-section">
-        <h2>Deep RL: Record Demonstration (experimental)</h2>
-        <p className="acc-hint">
-          Track B (see the Game-Playing Agent design doc) — only the "record" pipeline stage exists so far. This
-          captures screenshots + your mouse/keyboard input to a folder for later training; it does not itself
-          automate anything. Requires Python with <code>game_agent_rl/requirements.txt</code> installed.
-        </p>
+        <h2>{t("acc.recording.heading")}</h2>
+        <p className="acc-hint">{t("acc.recording.hint")}</p>
         <div className="acc-form-row">
           <input
             type="text"
-            placeholder="Session name"
+            placeholder={t("acc.recording.sessionNamePlaceholder")}
             value={recordingSession}
             onChange={(e) => setRecordingSession(e.target.value)}
             disabled={recording}
           />
           <input
             type="text"
-            placeholder="Output directory"
+            placeholder={t("acc.recording.outputDirectoryPlaceholder")}
             value={recordingOutputDir}
             onChange={(e) => setRecordingOutputDir(e.target.value)}
             disabled={recording}
           />
         </div>
         <p>
-          Status: {recording ? "recording" : "stopped"}{" "}
+          {t("acc.recording.statusLabel")}{" "}
+          {recording ? t("acc.recording.statusRecording") : t("acc.recording.statusStopped")}{" "}
           {recording ? (
-            <button onClick={() => handleStopRecording()}>Stop</button>
+            <button onClick={() => handleStopRecording()}>{t("acc.recording.stop")}</button>
           ) : (
             <button disabled={recordingBusy || !recordingOutputDir.trim()} onClick={() => handleStartRecording()}>
-              {recordingBusy ? "Starting…" : "Start recording"}
+              {recordingBusy ? t("acc.recording.starting") : t("acc.recording.startRecording")}
             </button>
           )}
         </p>
