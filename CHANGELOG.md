@@ -2,6 +2,17 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.9.0-alpha] - 2026-08-22
+
+### Added
+
+- Add Orchestrator DAG task-decomposition pipeline (Beta queue 5/8)
+
+### Changes
+
+- Chore: update CHANGELOG.md for v0.8.0-alpha [skip ci]
+- Chore: bump version to 0.9.0-alpha
+
 ## [0.8.0-alpha] - 2026-08-22
 
 ### Added
