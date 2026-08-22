@@ -18,38 +18,50 @@
   font-weight: 600;
 }
 
+/* An angular segmented control (not the pill/rounded-capsule shape) —
+   matches the 2px-radius button language established everywhere else
+   in the eDEX-UI redesign; a fully-rounded toggle was the one leftover
+   "chat-app" shape in this screen. */
 .theme-toggle {
   display: flex;
-  gap: 0.3rem;
-  border: 1px solid var(--card-border);
-  border-radius: 999px;
-  padding: 0.2rem;
+  gap: 0;
+  border: 1px solid var(--edex-cyan-dim);
+  border-radius: 2px;
+  padding: 0;
 }
 
 .theme-opt {
   border: none;
   box-shadow: none;
-  border-radius: 999px;
+  border-radius: 0;
   padding: 0.35rem 0.9rem;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   background: transparent;
+  border-right: 1px solid var(--edex-cyan-dim);
+}
+
+.theme-opt:last-child {
+  border-right: none;
 }
 
 .theme-opt.active {
-  background: var(--edex-cyan);
-  color: white;
+  background: var(--edex-cyan-dim);
+  color: var(--edex-cyan);
+  box-shadow: var(--edex-glow);
 }
 
 .lang-tag {
   font-size: 0.75rem;
   padding: 0.15rem 0.6rem;
-  border-radius: 999px;
-  background: var(--edex-cyan-dim);
+  border-radius: 2px;
+  border: 1px solid var(--edex-cyan-dim);
+  background: var(--card-bg-alt);
   opacity: 0.75;
 }
 
 .lang-tag.active {
   background: rgba(0, 217, 255, 0.13);
+  border-color: var(--edex-cyan);
   color: var(--edex-cyan);
   opacity: 1;
 }

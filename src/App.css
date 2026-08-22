@@ -44,8 +44,14 @@ body,
   color: #0a2a30;
   background-color: #f2f7f8;
 
-  --edex-glow: none;
-  --edex-glow-strong: none;
+  /* A zero-spread transparent shadow, not the `none` keyword — `none`
+     can't be combined with another shadow in a comma-separated
+     box-shadow list (e.g. `box-shadow: var(--edex-glow-strong), 0 20px
+     60px rgba(...)`), which would make the whole declaration invalid
+     and silently drop shadows that don't use this variable at all.
+     This composes safely either standalone or alongside another shadow. */
+  --edex-glow: 0 0 0 transparent;
+  --edex-glow-strong: 0 0 0 transparent;
   --edex-scanline-opacity: 0;
 
   --card-bg: #ffffff;

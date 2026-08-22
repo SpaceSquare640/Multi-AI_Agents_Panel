@@ -14,6 +14,8 @@
 
 .skills-head h1 {
   margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .skills-grid {
@@ -24,9 +26,16 @@
 }
 
 .skill-card {
-  border: 1px solid var(--card-border);
+  border: 1px solid var(--edex-cyan-dim);
   border-radius: 2px;
   padding: 0.9rem 1rem;
+  background: var(--card-bg);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.skill-card:hover {
+  border-color: var(--edex-cyan);
+  box-shadow: var(--edex-glow);
 }
 
 .skill-card-top {
@@ -45,7 +54,9 @@
 .source-tag {
   font-size: 0.7rem;
   padding: 0.1rem 0.5rem;
-  border-radius: 999px;
+  border-radius: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   background: var(--edex-cyan-dim);
 }
 

@@ -16,15 +16,18 @@
   overflow-y: auto;
   background: var(--card-bg);
   color: var(--card-fg);
-  border: 1px solid var(--card-border);
+  border: 1px solid var(--edex-cyan);
   border-radius: 2px;
   padding: 1.75rem 2rem;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--edex-glow-strong), 0 20px 60px rgba(0, 0, 0, 0.35);
 }
 
 .onboarding-modal h1 {
   margin: 0 0 0.5rem;
   font-size: 1.3rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--edex-cyan);
 }
 
 .onboarding-lead {

@@ -3,14 +3,19 @@
   height: 100%;
   min-height: 0;
   text-align: left;
+  gap: 1px;
+  background: var(--edex-cyan-dim);
 }
 
+/* Same panel-seam split as Chat.tsx's sidebar/main — a 1px gap on the
+   shared cyan-dim background stands in for a divider between the two
+   bordered "windows" instead of a single border rule. */
 .manual-toc {
   width: 260px;
   flex: 0 0 auto;
-  border-right: 1px solid var(--card-border);
   padding: 1.25rem 0.9rem;
   overflow-y: auto;
+  background: var(--card-bg);
 }
 
 .manual-search {
@@ -41,8 +46,10 @@
 }
 
 .manual-toc-item.active {
-  background: rgba(57, 108, 216, 0.18);
+  background: var(--edex-cyan-dim);
+  color: var(--edex-cyan);
   font-weight: 600;
+  border-left: 3px solid var(--edex-cyan);
 }
 
 .manual-content {
@@ -51,11 +58,15 @@
   padding: 2rem 3rem;
   max-width: 720px;
   overflow-y: auto;
+  background: var(--card-bg);
 }
 
 .manual-content h1 {
   margin: 0 0 0.3rem;
   font-size: 1.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--edex-cyan);
 }
 
 .manual-meta {
