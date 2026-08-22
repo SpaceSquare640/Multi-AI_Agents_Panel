@@ -2,6 +2,13 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.1.89-alpha] - 2026-08-22
+
+### Changes
+
+- Chore: update CHANGELOG.md for v0.1.88-alpha [skip ci]
+- Convert Usage.tsx to i18n as the third slice
+
 ## [0.1.88-alpha] - 2026-08-22
 
 ### Changes
