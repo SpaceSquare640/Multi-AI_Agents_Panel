@@ -22,6 +22,8 @@
 //! worse than not having them: it would make the app *look* safe without
 //! being safe. Only what's below is real.
 
+pub mod llama_guard;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
