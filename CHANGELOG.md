@@ -2,6 +2,17 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.11.0-alpha] - 2026-08-22
+
+### Added
+
+- Add Track B (Deep RL) label pipeline stage (Beta queue 7/8)
+
+### Changes
+
+- Chore: update CHANGELOG.md for v0.10.0-alpha [skip ci]
+- Chore: bump version to 0.11.0-alpha
+
 ## [0.10.0-alpha] - 2026-08-22
 
 ### Added
