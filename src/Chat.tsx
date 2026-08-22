@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import { open as openFolderPicker, save as saveFilePicker } from "@tauri-apps/plugin-dialog";
 import type {
@@ -87,6 +88,7 @@ export function parseErrorCode(message: string): { code: string | null; rest: st
 }
 
 export default function Chat() {
+  const { t } = useTranslation();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [openTabIds, setOpenTabIds] = useState<string[]>([]);
@@ -372,12 +374,12 @@ export default function Chat() {
     e.preventDefault();
     setError(null);
     if (!newSessionAgentId) {
-      setError("Create an agent first.");
+      setError(t("chat.createAnAgentFirst"));
       return;
     }
     try {
       const agent = agents.find((a) => a.id === newSessionAgentId);
-      const title = newSessionTitle || `Chat with ${agent?.name ?? "agent"}`;
+      const title = newSessionTitle || t("chat.defaultSessionTitle", { agentName: agent?.name ?? t("chat.defaultAgentName") });
       const session = await invoke<Session>("create_independent_session", {
         title,
         agentId: newSessionAgentId,
@@ -398,11 +400,11 @@ export default function Chat() {
     e.preventDefault();
     setError(null);
     if (newGroupAgentIds.length === 0) {
-      setError("Pick at least one agent for the Group Chat.");
+      setError(t("chat.pickAtLeastOneAgent"));
       return;
     }
     try {
-      const title = newGroupTitle || "Group Chat";
+      const title = newGroupTitle || t("chat.defaultGroupChatTitle");
       const session = await invoke<Session>("create_group_session", {
         title,
         agentIds: newGroupAgentIds,
@@ -596,7 +598,7 @@ export default function Chat() {
     try {
       payload = JSON.parse(runSkillPayload || "{}");
     } catch {
-      setError("Skill payload must be valid JSON.");
+      setError(t("chat.skillPayloadMustBeJson"));
       return;
     }
     setRunningSkill(true);
@@ -918,22 +920,22 @@ export default function Chat() {
     return (
       <>
         <div className="chat-file-access">
-          <span>Semantic search:</span>
-          {tab.mlGrants.length === 0 && <span className="chat-empty">not granted</span>}
+          <span>{t("chat.semanticSearchLabel")}</span>
+          {tab.mlGrants.length === 0 && <span className="chat-empty">{t("chat.notGranted")}</span>}
           {tab.mlGrants.map((g) => (
             <span key={g.id} className="chat-file-chip">
               {g.capabilityName}
               <button
                 onClick={() => handleRevokeMlCapability(sessionId, g.id)}
-                title="Revoke access"
-                aria-label={`Revoke access to ${g.capabilityName}`}
+                title={t("chat.revokeAccess")}
+                aria-label={t("chat.revokeAccessToCapability", { capabilityName: g.capabilityName })}
               >
                 ×
               </button>
             </span>
           ))}
           <select value={mlCapabilityToGrant} onChange={(e) => setMlCapabilityToGrant(e.target.value)}>
-            <option value="">Grant an ML capability…</option>
+            <option value="">{t("chat.grantMlCapability")}</option>
             {availableMlCapabilities
               .filter((c) => !tab.mlGrants.some((g) => g.capabilityName === c.name))
               .map((c) => (
@@ -943,7 +945,7 @@ export default function Chat() {
               ))}
           </select>
           <button className="chat-link-button" disabled={!mlCapabilityToGrant} onClick={() => handleGrantMlCapability(sessionId)}>
-            + Grant
+            {t("chat.grant")}
           </button>
         </div>
         {tab.mlGrants.some((g) => g.capabilityName === "semantic_search") && (
@@ -952,13 +954,13 @@ export default function Chat() {
               className="chat-link-button"
               disabled={indexing}
               onClick={() => handleBuildIndex(sessionId)}
-              title="Re-scan the granted folders and rebuild the search index"
+              title={t("chat.rebuildIndexTitle")}
             >
-              {indexing ? "Indexing…" : "Rebuild index"}
+              {indexing ? t("chat.indexing") : t("chat.rebuildIndex")}
             </button>
             <input
               type="text"
-              placeholder="Search granted files by meaning…"
+              placeholder={t("chat.searchFilesPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -967,13 +969,13 @@ export default function Chat() {
               disabled={!searchQuery.trim() || searching}
               onClick={() => handleSemanticSearch(sessionId)}
             >
-              {searching ? "Searching…" : "Search"}
+              {searching ? t("chat.searching") : t("chat.search")}
             </button>
           </div>
         )}
         {tab.searchResults && (
           <ul className="chat-search-results">
-            {tab.searchResults.length === 0 && <li className="chat-empty">No results.</li>}
+            {tab.searchResults.length === 0 && <li className="chat-empty">{t("chat.noResults")}</li>}
             {tab.searchResults.map((r) => (
               <li key={r.path}>
                 <div className="chat-search-result-head">
@@ -992,7 +994,7 @@ export default function Chat() {
   return (
     <div className="chat-page">
       <aside className="chat-sidebar">
-        <h2>Independent Sessions</h2>
+        <h2>{t("chat.independentSessions")}</h2>
         <ul className="chat-session-list">
           {independentSessions.map((s) => (
             <li key={s.id}>
@@ -1002,10 +1004,10 @@ export default function Chat() {
               </button>
             </li>
           ))}
-          {independentSessions.length === 0 && <li className="chat-empty">No sessions yet.</li>}
+          {independentSessions.length === 0 && <li className="chat-empty">{t("chat.noSessions")}</li>}
         </ul>
 
-        <h2>Group Chats</h2>
+        <h2>{t("chat.groupChats")}</h2>
         <ul className="chat-session-list">
           {groupSessions.map((s) => (
             <li key={s.id}>
@@ -1015,22 +1017,22 @@ export default function Chat() {
               </button>
             </li>
           ))}
-          {groupSessions.length === 0 && <li className="chat-empty">No group chats yet.</li>}
+          {groupSessions.length === 0 && <li className="chat-empty">{t("chat.noGroupChats")}</li>}
         </ul>
 
         <button className="chat-link-button" onClick={() => setShowNewGroup((v) => !v)}>
-          {showNewGroup ? "Cancel" : "+ New group chat"}
+          {showNewGroup ? t("chat.cancel") : t("chat.newGroupChat")}
         </button>
         {showNewGroup && (
           <form className="chat-form" onSubmit={handleCreateGroupSession}>
             <input
               type="text"
-              placeholder="Meeting title (optional)"
+              placeholder={t("chat.meetingTitlePlaceholder")}
               value={newGroupTitle}
               onChange={(e) => setNewGroupTitle(e.target.value)}
             />
             <div className="chat-group-agent-picker">
-              {agents.length === 0 && <span className="chat-empty">No agents yet.</span>}
+              {agents.length === 0 && <span className="chat-empty">{t("chat.noAgentsYet")}</span>}
               {agents.map((a) => (
                 <label key={a.id} className="chat-group-agent-option">
                   <input
@@ -1043,15 +1045,15 @@ export default function Chat() {
               ))}
             </div>
             <button type="submit" disabled={agents.length === 0}>
-              Start meeting
+              {t("chat.startMeeting")}
             </button>
           </form>
         )}
 
-        <h3>New session</h3>
+        <h3>{t("chat.newSession")}</h3>
         <form className="chat-form" onSubmit={handleCreateSession}>
           <select value={newSessionAgentId} onChange={(e) => setNewSessionAgentId(e.target.value)}>
-            {agents.length === 0 && <option value="">No agents yet</option>}
+            {agents.length === 0 && <option value="">{t("chat.noAgentsYetOption")}</option>}
             {agents.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.name} ({a.providerName}/{a.model})
@@ -1060,12 +1062,12 @@ export default function Chat() {
           </select>
           <input
             type="text"
-            placeholder="Session title (optional)"
+            placeholder={t("chat.sessionTitlePlaceholder")}
             value={newSessionTitle}
             onChange={(e) => setNewSessionTitle(e.target.value)}
           />
           <button type="submit" disabled={agents.length === 0}>
-            Start
+            {t("chat.start")}
           </button>
         </form>
 
@@ -1076,21 +1078,21 @@ export default function Chat() {
             setNewAgentProviderTouched(false);
           }}
         >
-          {showNewAgent ? "Cancel" : "+ New agent"}
+          {showNewAgent ? t("chat.cancel") : t("chat.newAgent")}
         </button>
         {showNewAgent && (
           <form className="chat-form" onSubmit={handleCreateAgent}>
             <select value={newAgentTemplateId} onChange={(e) => handleSelectTemplate(e.target.value)}>
-              <option value="">No role template (write your own prompt)</option>
-              {roleTemplates.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name} {t.source === "custom" ? "(custom)" : ""}
+              <option value="">{t("chat.noRoleTemplate")}</option>
+              {roleTemplates.map((rt) => (
+                <option key={rt.id} value={rt.id}>
+                  {rt.name} {rt.source === "custom" ? t("chat.custom") : ""}
                 </option>
               ))}
             </select>
             <input
               type="text"
-              placeholder="Agent name"
+              placeholder={t("chat.agentNamePlaceholder")}
               value={newAgentName}
               onChange={(e) => setNewAgentName(e.target.value)}
               required
@@ -1109,12 +1111,12 @@ export default function Chat() {
               ))}
             </select>
             {(() => {
-              const selectedTemplate = roleTemplates.find((t) => t.id === newAgentTemplateId);
+              const selectedTemplate = roleTemplates.find((rt) => rt.id === newAgentTemplateId);
               const suggested = selectedTemplate?.suggestedProviderName;
               if (!suggested || suggested === newAgentProvider) return null;
               return (
                 <button type="button" className="chat-link-button" onClick={handleApplyTemplateSuggestion}>
-                  Apply suggested provider ({suggested})
+                  {t("chat.applySuggestedProvider", { provider: suggested })}
                 </button>
               );
             })()}
@@ -1127,32 +1129,32 @@ export default function Chat() {
             </select>
             <textarea
               rows={3}
-              placeholder="System prompt (optional — filled in automatically by a role template)"
+              placeholder={t("chat.systemPromptPlaceholder")}
               value={newAgentSystemPrompt}
               onChange={(e) => setNewAgentSystemPrompt(e.target.value)}
             />
             {newAgentProvider !== "ollama" && (
               <select value={newAgentPinnedKeyId} onChange={(e) => setNewAgentPinnedKeyId(e.target.value)}>
-                <option value="">Use latest {newAgentProvider} key automatically (default)</option>
+                <option value="">{t("chat.useLatestKeyDefault", { provider: newAgentProvider })}</option>
                 {newAgentProviderKeys.map((k) => (
                   <option key={k.id} value={k.id}>
-                    Pin to: {k.label ?? k.maskedSecret}
+                    {t("chat.pinTo", { label: k.label ?? k.maskedSecret })}
                   </option>
                 ))}
               </select>
             )}
 
             <div className="chat-fallback-chain">
-              <span>Fallback (tried in order, only if the primary provider fails):</span>
-              {fallbackChain.length === 0 && <span className="chat-empty">none configured</span>}
+              <span>{t("chat.fallbackLabel")}</span>
+              {fallbackChain.length === 0 && <span className="chat-empty">{t("chat.noneConfigured")}</span>}
               {fallbackChain.map((step, i) => (
                 <span key={i} className="chat-file-chip">
                   {i + 1}. {step.providerName}/{step.model}
                   <button
                     type="button"
                     onClick={() => handleRemoveFallbackStep(i)}
-                    title="Remove"
-                    aria-label={`Remove fallback step ${step.providerName}/${step.model}`}
+                    title={t("chat.remove")}
+                    aria-label={t("chat.removeFallbackStep", { step: `${step.providerName}/${step.model}` })}
                   >
                     ×
                   </button>
@@ -1168,42 +1170,42 @@ export default function Chat() {
                 </select>
                 <input
                   type="text"
-                  placeholder="Model id"
+                  placeholder={t("chat.modelIdPlaceholder")}
                   value={fallbackModel}
                   onChange={(e) => setFallbackModel(e.target.value)}
                 />
                 <button type="button" disabled={!fallbackModel.trim()} onClick={() => handleAddFallbackStep()}>
-                  + Add fallback
+                  {t("chat.addFallback")}
                 </button>
               </div>
             </div>
 
-            <button type="submit">Create agent</button>
+            <button type="submit">{t("chat.createAgent")}</button>
           </form>
         )}
 
-        <h3>Custom role templates</h3>
+        <h3>{t("chat.customRoleTemplates")}</h3>
         <ul className="chat-session-list">
           {roleTemplates
-            .filter((t) => t.source === "custom")
-            .map((t) => (
-              <li key={t.id} className="chat-template-row">
-                <span title={t.description}>{t.name}</span>
+            .filter((rt) => rt.source === "custom")
+            .map((rt) => (
+              <li key={rt.id} className="chat-template-row">
+                <span title={rt.description}>{rt.name}</span>
                 <span className="chat-template-row-actions">
-                  <button className="chat-link-button" onClick={() => handleStartEditTemplate(t)}>
-                    Edit
+                  <button className="chat-link-button" onClick={() => handleStartEditTemplate(rt)}>
+                    {t("chat.edit")}
                   </button>
-                  <button className="chat-link-button" onClick={() => handleExportTemplate(t)}>
-                    Export
+                  <button className="chat-link-button" onClick={() => handleExportTemplate(rt)}>
+                    {t("chat.export")}
                   </button>
-                  <button className="chat-link-button" onClick={() => handleDeleteTemplate(t.id)}>
-                    Delete
+                  <button className="chat-link-button" onClick={() => handleDeleteTemplate(rt.id)}>
+                    {t("chat.delete")}
                   </button>
                 </span>
               </li>
             ))}
-          {roleTemplates.filter((t) => t.source === "custom").length === 0 && (
-            <li className="chat-empty">No custom templates yet.</li>
+          {roleTemplates.filter((rt) => rt.source === "custom").length === 0 && (
+            <li className="chat-empty">{t("chat.noCustomTemplates")}</li>
           )}
         </ul>
 
@@ -1211,35 +1213,35 @@ export default function Chat() {
           className="chat-link-button"
           onClick={() => (showNewTemplate ? handleCancelTemplateForm() : setShowNewTemplate(true))}
         >
-          {showNewTemplate ? "Cancel" : "+ New role template"}
+          {showNewTemplate ? t("chat.cancel") : t("chat.newRoleTemplate")}
         </button>
         <button className="chat-link-button" onClick={() => handleImportTemplate()}>
-          + Import template…
+          {t("chat.importTemplate")}
         </button>
         {showNewTemplate && (
           <form className="chat-form" onSubmit={handleSaveTemplate}>
             <input
               type="text"
-              placeholder="Template name"
+              placeholder={t("chat.templateNamePlaceholder")}
               value={templateName}
               onChange={(e) => setTemplateName(e.target.value)}
               required
             />
             <input
               type="text"
-              placeholder="Short description"
+              placeholder={t("chat.shortDescriptionPlaceholder")}
               value={templateDescription}
               onChange={(e) => setTemplateDescription(e.target.value)}
               required
             />
             <textarea
               rows={3}
-              placeholder="System prompt"
+              placeholder={t("chat.systemPromptPlainPlaceholder")}
               value={templatePrompt}
               onChange={(e) => setTemplatePrompt(e.target.value)}
               required
             />
-            <button type="submit">{editingTemplateId ? "Save changes" : "Save template"}</button>
+            <button type="submit">{editingTemplateId ? t("chat.saveChanges") : t("chat.saveTemplate")}</button>
           </form>
         )}
       </aside>
@@ -1260,10 +1262,10 @@ export default function Chat() {
                       className="chat-error-copy"
                       onClick={() => void navigator.clipboard.writeText(error)}
                     >
-                      Copy error details
+                      {t("chat.copyErrorDetails")}
                     </button>
                   )}
-                  <button onClick={() => setError(null)} aria-label="Dismiss error">×</button>
+                  <button onClick={() => setError(null)} aria-label={t("chat.dismissError")}>×</button>
                 </div>
               </div>
             );
@@ -1284,8 +1286,8 @@ export default function Chat() {
                   <button
                     className="chat-tab-close"
                     onClick={() => closeTab(id)}
-                    title="Close tab"
-                    aria-label={`Close tab ${title}`}
+                    title={t("chat.closeTabTitle")}
+                    aria-label={t("chat.closeTab", { title })}
                   >
                     ×
                   </button>
@@ -1295,84 +1297,76 @@ export default function Chat() {
           </div>
         )}
 
-        {!activeSessionId && (
-          <p className="chat-empty">
-            Pick or start a session on the left. You can open several at once — each keeps chatting
-            independently, even in the background.
-          </p>
-        )}
+        {!activeSessionId && <p className="chat-empty">{t("chat.pickOrStartSession")}</p>}
 
         {activeSessionId && activeTab && (
           <>
             {activeTab.agent && (
               <div className="chat-header">
                 <div>
-                  Chatting with <strong>{activeTab.agent.name}</strong> ({activeTab.agent.providerName}/
+                  {t("chat.chattingWith")} <strong>{activeTab.agent.name}</strong> ({activeTab.agent.providerName}/
                   {activeTab.agent.model})
                 </div>
                 <div className="chat-file-access">
-                  <span>Files:</span>
+                  <span>{t("chat.files")}</span>
                   {activeTab.fileGrants.length === 0 && (
-                    <span className="chat-empty">no folders granted</span>
+                    <span className="chat-empty">{t("chat.noFoldersGranted")}</span>
                   )}
                   {activeTab.fileGrants.map((g) => (
                     <span key={g.id} className="chat-file-chip">
                       {g.folderPath}
                       <button
                         onClick={() => handleRevokeGrant(activeSessionId, g.id)}
-                        title="Revoke access"
-                        aria-label={`Revoke access to folder ${g.folderPath}`}
+                        title={t("chat.revokeAccess")}
+                        aria-label={t("chat.revokeAccessToFolder", { folderPath: g.folderPath })}
                       >
                         ×
                       </button>
                     </span>
                   ))}
                   <button className="chat-link-button" onClick={() => handleGrantFolder(activeSessionId)}>
-                    + Grant folder…
+                    {t("chat.grantFolder")}
                   </button>
                 </div>
                 <div className="chat-file-access">
-                  <span>Skills:</span>
+                  <span>{t("chat.skills")}</span>
                   {activeTab.skillGrants.length === 0 && (
-                    <span className="chat-empty">none granted</span>
+                    <span className="chat-empty">{t("chat.noneGranted")}</span>
                   )}
                   {activeTab.skillGrants.map((g) => (
                     <span key={g.id} className="chat-file-chip">
                       {g.skillName}
                       <button
                         onClick={() => handleRevokeSkill(activeSessionId, g.id)}
-                        title="Revoke access"
-                        aria-label={`Revoke access to Skill ${g.skillName}`}
+                        title={t("chat.revokeAccess")}
+                        aria-label={t("chat.revokeAccessToSkill", { skillName: g.skillName })}
                       >
                         ×
                       </button>
                     </span>
                   ))}
                   <select value={skillToGrant} onChange={(e) => setSkillToGrant(e.target.value)}>
-                    <option value="">Grant a skill…</option>
+                    <option value="">{t("chat.grantASkill")}</option>
                     {availableSkills
                       .filter((s) => !activeTab.skillGrants.some((g) => g.skillName === s.name))
                       .map((s) => (
                         <option key={s.name} value={s.name}>
-                          {s.name} {s.source === "custom" ? "(custom)" : ""}
+                          {s.name} {s.source === "custom" ? t("chat.custom") : ""}
                         </option>
                       ))}
                   </select>
                   <button className="chat-link-button" disabled={!skillToGrant} onClick={() => handleGrantSkill(activeSessionId)}>
-                    + Grant
+                    {t("chat.grant")}
                   </button>
                   <button className="chat-link-button" disabled={importingSkill} onClick={() => handleImportSkill()}>
-                    {importingSkill ? "Importing…" : "+ Import custom skill…"}
+                    {importingSkill ? t("chat.importingSkill") : t("chat.importCustomSkill")}
                   </button>
                 </div>
-                <p className="chat-skill-import-warning">
-                  ⚠ Importing a Skill runs its Python code with the same trust level as a built-in Skill — there is
-                  no per-skill sandbox yet. Only import Skills from sources you trust.
-                </p>
+                <p className="chat-skill-import-warning">{t("chat.skillImportWarning")}</p>
                 {activeTab.skillGrants.length > 0 && (
                   <div className="chat-run-skill">
                     <select value={runSkillName} onChange={(e) => setRunSkillName(e.target.value)}>
-                      <option value="">Run a skill…</option>
+                      <option value="">{t("chat.runASkill")}</option>
                       {activeTab.skillGrants.map((g) => (
                         <option key={g.id} value={g.skillName}>
                           {g.skillName}
@@ -1381,7 +1375,7 @@ export default function Chat() {
                     </select>
                     <input
                       type="text"
-                      placeholder='JSON payload, e.g. {"action":"search","indexName":"notes","query":"..."}'
+                      placeholder={t("chat.jsonPayloadPlaceholder")}
                       value={runSkillPayload}
                       onChange={(e) => setRunSkillPayload(e.target.value)}
                     />
@@ -1390,7 +1384,7 @@ export default function Chat() {
                       disabled={!runSkillName || runningSkill}
                       onClick={() => handleRunSkill(activeSessionId)}
                     >
-                      {runningSkill ? "Running…" : "Run"}
+                      {runningSkill ? t("chat.running") : t("chat.run")}
                     </button>
                   </div>
                 )}
@@ -1400,7 +1394,7 @@ export default function Chat() {
             {activeTab.kind === "group" && (
               <div className="chat-header">
                 <div>
-                  Group Chat: {activeTab.members.map((m) => m.name).join(", ") || "(no members)"}
+                  {t("chat.groupChatLabel", { members: activeTab.members.map((m) => m.name).join(", ") || t("chat.noMembers") })}
                 </div>
                 <div className="chat-group-actions">
                   <button
@@ -1408,7 +1402,7 @@ export default function Chat() {
                     disabled={activeTab.sending}
                     onClick={() => handleAdvanceTurn(activeSessionId)}
                   >
-                    Let them continue →
+                    {t("chat.letThemContinue")}
                   </button>
                   <input
                     type="number"
@@ -1418,30 +1412,28 @@ export default function Chat() {
                     disabled={activeTab.sending}
                     onChange={(e) => setAutoContinueTurns(Math.max(1, Math.min(6, Number(e.target.value) || 1)))}
                     className="chat-auto-continue-count"
-                    title="How many turns to run before stopping"
+                    title={t("chat.autoContinueTitle")}
                   />
                   <button
                     className="chat-link-button"
                     disabled={activeTab.sending}
                     onClick={() => handleAutoContinue(activeSessionId, autoContinueTurns)}
-                    title="Runs up to this many turns in a row — the backend's E6001 loop cap (6 turns without you weighing in) still applies and stops it early if hit"
+                    title={t("chat.continueTurnsTitle")}
                   >
-                    Continue {autoContinueTurns} turns →→
+                    {t("chat.continueTurns", { turns: autoContinueTurns })}
                   </button>
                   <button
                     className="chat-link-button"
                     disabled={activeTab.sending}
                     onClick={() => handleEndMeeting(activeSessionId)}
                   >
-                    End meeting (summarize)
+                    {t("chat.endMeeting")}
                   </button>
                 </div>
                 {activeTab.pendingBoundary && (
                   <div className="chat-boundary-confirm">
                     <div>
-                      <strong>E6004 — Confirm before sending to a cloud provider:</strong> a local
-                      Agent's reply in this Group Chat would be sent to a cloud Agent. Local content
-                      preview:
+                      <strong>{t("chat.boundaryConfirmTitle")}</strong> {t("chat.boundaryConfirmBody")}
                     </div>
                     <pre className="chat-boundary-preview">{activeTab.pendingBoundary}</pre>
                     <div className="chat-group-actions">
@@ -1449,29 +1441,29 @@ export default function Chat() {
                         className="chat-link-button"
                         onClick={() => handleConfirmBoundary(activeSessionId)}
                       >
-                        Send to cloud provider
+                        {t("chat.sendToCloud")}
                       </button>
                       <button
                         className="chat-link-button"
                         onClick={() => handleCancelBoundary(activeSessionId)}
                       >
-                        Cancel
+                        {t("chat.cancel")}
                       </button>
                     </div>
                   </div>
                 )}
                 <div className="chat-file-access">
-                  <span>Files (shared with this meeting):</span>
+                  <span>{t("chat.filesSharedWithMeeting")}</span>
                   {activeTab.fileGrants.length === 0 && (
-                    <span className="chat-empty">no folders granted</span>
+                    <span className="chat-empty">{t("chat.noFoldersGranted")}</span>
                   )}
                   {activeTab.fileGrants.map((g) => (
                     <span key={g.id} className="chat-file-chip">
                       {g.folderPath}
                       <button
                         onClick={() => handleRevokeGrant(activeSessionId, g.id)}
-                        title="Revoke access"
-                        aria-label={`Revoke access to folder ${g.folderPath}`}
+                        title={t("chat.revokeAccess")}
+                        aria-label={t("chat.revokeAccessToFolder", { folderPath: g.folderPath })}
                       >
                         ×
                       </button>
@@ -1482,7 +1474,7 @@ export default function Chat() {
                     disabled={activeTab.members.length === 0}
                     onClick={() => handleGrantFolder(activeSessionId)}
                   >
-                    + Grant folder…
+                    {t("chat.grantFolder")}
                   </button>
                 </div>
                 {renderSemanticSearchSection(activeSessionId, activeTab)}
@@ -1490,7 +1482,7 @@ export default function Chat() {
             )}
             <div className="chat-thread">
               {activeTab.messages.length === 0 && (
-                <p className="chat-empty">No messages yet — say hello.</p>
+                <p className="chat-empty">{t("chat.noMessagesYet")}</p>
               )}
               {activeTab.messages.map((m) => {
                 const speakerName =
@@ -1517,14 +1509,14 @@ export default function Chat() {
                 type="text"
                 placeholder={
                   activeTab.kind === "group"
-                    ? "Type a message… (use @AgentName to call on someone specific)"
-                    : "Type a message… (use @file:C:\\path\\to\\file.txt to attach a granted file)"
+                    ? t("chat.messagePlaceholderGroup")
+                    : t("chat.messagePlaceholderIndependent")
                 }
                 value={activeTab.draft}
                 onChange={(e) => patchTab(activeSessionId, { draft: e.target.value })}
               />
               <button type="submit" disabled={!activeTab.draft.trim()}>
-                {activeTab.sending ? "Sending…" : "Send"}
+                {activeTab.sending ? t("chat.sending") : t("chat.send")}
               </button>
             </form>
           </>
