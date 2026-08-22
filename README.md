@@ -1,5 +1,10 @@
 # Multi-AI Agents Panel
 
+[![CI](https://github.com/SpaceSquare640/Multi-AI_Agents_Panel/actions/workflows/ci.yml/badge.svg)](https://github.com/SpaceSquare640/Multi-AI_Agents_Panel/actions/workflows/ci.yml)
+[![Release](https://github.com/SpaceSquare640/Multi-AI_Agents_Panel/actions/workflows/release.yml/badge.svg)](https://github.com/SpaceSquare640/Multi-AI_Agents_Panel/actions/workflows/release.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Latest release](https://img.shields.io/github/v/release/SpaceSquare640/Multi-AI_Agents_Panel?include_prereleases)](https://github.com/SpaceSquare640/Multi-AI_Agents_Panel/releases)
+
 A desktop app for running multiple local and cloud AI agents side by
 side, letting them collaborate, and orchestrating them through
 independent sessions or group chats.
@@ -28,9 +33,10 @@ covered by tests, but interfaces and storage formats may still change
 without a migration path. Implemented so far:
 
 - Independent Sessions with multiple providers (Anthropic, OpenAI,
-  OpenRouter, Ollama), each with real fallback across multiple keys per
-  provider, plus cross-provider fallback chains (e.g. Anthropic fails →
-  fall through to OpenRouter)
+  OpenRouter, Ollama, [colibrì](https://github.com/JustVugg/colibri)),
+  each with real fallback across multiple keys per provider, plus
+  cross-provider fallback chains (e.g. Anthropic fails → fall through to
+  OpenRouter)
 - Multiple Independent Sessions open and chatting in parallel
 - Group Chat: round-robin turn-taking, `@mention` interruption, a loop
   safety-net, meeting summarization, and an explicit confirmation step

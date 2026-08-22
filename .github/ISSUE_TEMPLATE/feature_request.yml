@@ -1,0 +1,26 @@
+name: Feature request
+description: Suggest an idea or improvement for Multi-AI Agents Panel.
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is an alpha, actively-developed hobby project — see the Backlog in the
+        project's Obsidian vault for what's already planned before filing, to avoid duplicates.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: What are you trying to do that the app doesn't support today?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: What would you want the app to do instead? Sketches, mockups, or references to similar tools are welcome.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
