@@ -50,6 +50,15 @@ tracked as design follow-ups, not vulnerabilities:
   is a known limitation, documented in the `guardrails` module itself.
 - There is no sandboxing between Skills — any installed Skill runs with the
   same privileges as the Python bridge process.
+- MCP (Model Context Protocol) client support (`mcp_manager`, currently a
+  connect/list-tools/call-tool building block not yet wired into any
+  Agent-facing path) shares that same threat model: an MCP server, like a
+  Skill, runs as a local subprocess with the full privileges of the user.
+  It is not yet exposed to end users (no config UI, no per-agent
+  authorization, no Guardrails screening of tool call payloads or the
+  tool descriptions/metadata an MCP server returns), so this note is here
+  to be upfront about what "MCP support" will mean once it is: no
+  sandboxing, same as Skills.
 
 If you're unsure whether something is in scope, report it anyway — we'd
 rather triage a false positive than miss a real issue.
