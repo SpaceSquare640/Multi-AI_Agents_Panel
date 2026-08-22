@@ -2,15 +2,17 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
-## [0.1.94-alpha] - 2026-08-22
+## [0.1.95-alpha] - 2026-08-22
+
+### Changes
+
+- Chore: bump version to 0.1.95-alpha
 
 ### Fixed
 
-- Fix(ci): retry CHANGELOG.md push with rebase on race against main
+- Fix(ci): run CHANGELOG.md commit step under bash, not the default pwsh
 
-### Documentation
-
-- Docs: mark i18n conversion complete across all 7 screens
+## [0.1.94-alpha] - 2026-08-22
 
 ### Changes
 
@@ -18,16 +20,24 @@ All notable changes to this project. Generated with [git-cliff](https://git-clif
 - Guardrails: add Llama Guard 3 classifier building block (staged, unwired)
 - Chore: bump version to 0.1.94-alpha
 
-## [0.1.93-alpha] - 2026-08-22
-
 ### Documentation
 
-- Docs: update CONTRIBUTING.md i18n status for Chat.tsx conversion
+- Docs: mark i18n conversion complete across all 7 screens
+
+### Fixed
+
+- Fix(ci): retry CHANGELOG.md push with rebase on race against main
+
+## [0.1.93-alpha] - 2026-08-22
 
 ### Changes
 
 - I18n: convert AIControlCenter.tsx to react-i18next (7th, final slice)
 - Chore: bump version to 0.1.93-alpha
+
+### Documentation
+
+- Docs: update CONTRIBUTING.md i18n status for Chat.tsx conversion
 
 ## [0.1.92-alpha] - 2026-08-22
 
