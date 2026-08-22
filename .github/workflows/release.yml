@@ -125,6 +125,11 @@ jobs:
         # there's no risk of it re-triggering itself in a loop (ci.yml
         # picking up the push is expected and fine, it's just the normal
         # fast-checks job).
+        # windows-latest's default `run:` shell is PowerShell, where a
+        # bash `for X in ...; do ... done` loop is a parser error (see
+        # v0.1.94-alpha's Release failure) — explicit `shell: bash`
+        # needed, same fix as the release-notes step below.
+        shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

@@ -2,6 +2,22 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.1.94-alpha] - 2026-08-22
+
+### Fixed
+
+- Fix(ci): retry CHANGELOG.md push with rebase on race against main
+
+### Documentation
+
+- Docs: mark i18n conversion complete across all 7 screens
+
+### Changes
+
+- Chore: manually backfill CHANGELOG.md for v0.1.92-alpha and v0.1.93-alpha
+- Guardrails: add Llama Guard 3 classifier building block (staged, unwired)
+- Chore: bump version to 0.1.94-alpha
+
 ## [0.1.93-alpha] - 2026-08-22
 
 ### Documentation
