@@ -2,6 +2,17 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.3.1-alpha] - 2026-08-22
+
+### Fixed
+
+- Fix: upgrade rmcp 0.17 -> 3.1.4, fixes RUSTSEC-2026-0189
+
+### Changes
+
+- Chore: update CHANGELOG.md for v0.3.0-alpha [skip ci]
+- Chore: bump to 0.3.1-alpha (rmcp vulnerability fix)
+
 ## [0.3.0-alpha] - 2026-08-22
 
 ### Added

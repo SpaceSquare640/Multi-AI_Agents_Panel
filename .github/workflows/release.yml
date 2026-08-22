@@ -142,6 +142,15 @@ jobs:
             fi
             echo "Push rejected (attempt $attempt) — rebasing onto origin/main and retrying"
             git fetch origin main
+            # The build step(s) before this one can leave the working
+            # tree dirty (e.g. Cargo.lock touched by the tauri-action
+            # build, or CRLF-normalization noise on checkout) — none of
+            # that is meant to be committed here, only CHANGELOG.md is,
+            # and it's already committed above. An unstaged change of
+            # any kind blocks `git rebase` outright ("You have unstaged
+            # changes"), which is what actually broke v0.3.1-alpha's
+            # Release — discard it before rebasing.
+            git checkout -- .
             git rebase origin/main
           done
           echo "::error::Failed to push CHANGELOG.md commit to main after 5 attempts"
