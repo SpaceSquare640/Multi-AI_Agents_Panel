@@ -40,4 +40,11 @@ image = { version = "0.25", default-features = false, features = ["png"] }
 # for the semantic-search embeddings the Python ml_engine bridge produces —
 # see that module's doc comment for what's wired in vs. staged.
 turbovec = "1"
+# mcp_manager: MCP (Model Context Protocol) client support — the official
+# Rust SDK, spawns/talks to local MCP servers over stdio (same shape as
+# the existing Python Skills bridge). See mcp_manager's doc comment for
+# what's wired in vs. staged; see the vault's "MCP Integration Options.md"
+# research for why rmcp was chosen over the community alternatives.
+rmcp = { version = "0", features = ["client", "transport-child-process"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "process", "io-util"] }
 

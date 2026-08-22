@@ -6,6 +6,7 @@ mod file_access;
 mod game_agent;
 mod guardrails;
 mod key_vault;
+mod mcp_manager;
 mod ml_engine;
 mod orchestrator;
 mod session_manager;
