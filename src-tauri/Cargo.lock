@@ -2610,7 +2610,7 @@ dependencies = [
 
 [[package]]
 name = "multi-ai-agents-panel"
-version = "0.1.100-alpha"
+version = "0.1.101-alpha"
 dependencies = [
  "base64 0.22.1",
  "chrono",
