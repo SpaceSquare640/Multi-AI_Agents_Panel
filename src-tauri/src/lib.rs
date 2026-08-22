@@ -12,6 +12,7 @@ mod orchestrator;
 mod session_manager;
 mod skill_manager;
 mod storage;
+mod update_check;
 mod usage_tracker;
 
 use std::sync::Mutex;
@@ -201,6 +202,7 @@ pub fn run() {
             commands::list_mcp_access_grants,
             commands::revoke_mcp_access,
             commands::list_mcp_server_tools,
+            commands::check_for_update,
             commands::call_mcp_tool,
             commands::run_mcp_tool_in_session,
             commands::create_group_session,

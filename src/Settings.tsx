@@ -2,7 +2,16 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getVersion } from "@tauri-apps/api/app";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { invoke } from "@tauri-apps/api/core";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import "./Settings.css";
+
+type UpdateCheckResult = {
+  currentVersion: string;
+  latestVersion: string;
+  updateAvailable: boolean;
+  releaseUrl: string;
+};
 
 export type ThemeChoice = "system" | "dark" | "light";
 
@@ -67,6 +76,9 @@ export default function Settings({
   const { t } = useTranslation();
   const [theme, setThemeState] = useState<ThemeChoice>("system");
   const [version, setVersion] = useState<string | null>(null);
+  const [updateCheck, setUpdateCheck] = useState<UpdateCheckResult | null>(null);
+  const [updateCheckError, setUpdateCheckError] = useState<string | null>(null);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
 
   useEffect(() => {
     setThemeState(applyStoredTheme());
@@ -84,6 +96,22 @@ export default function Settings({
     localStorage.setItem(THEME_STORAGE_KEY, choice);
     applyTheme(choice);
     setThemeState(choice);
+  }
+
+  async function checkForUpdate() {
+    setCheckingUpdate(true);
+    setUpdateCheckError(null);
+    try {
+      const result = await invoke<UpdateCheckResult>("check_for_update", {
+        currentVersion: version ?? (await getVersion()),
+      });
+      setUpdateCheck(result);
+    } catch (err) {
+      setUpdateCheckError(String(err));
+      setUpdateCheck(null);
+    } finally {
+      setCheckingUpdate(false);
+    }
   }
 
   return (
@@ -167,6 +195,29 @@ export default function Settings({
         <div className="settings-row">
           <span className="settings-row-label">{t("settings.about.userManual")}</span>
           <button onClick={() => onOpenManual?.()}>{t("settings.about.open")}</button>
+        </div>
+        <div className="settings-row">
+          <div>
+            <div className="settings-row-label">{t("settings.about.checkForUpdates")}</div>
+            {updateCheckError && <div className="acc-hint">{t("settings.about.checkFailed", { error: updateCheckError })}</div>}
+            {updateCheck && !updateCheckError && (
+              <div className="acc-hint">
+                {updateCheck.updateAvailable
+                  ? t("settings.about.updateAvailable", { version: updateCheck.latestVersion })
+                  : t("settings.about.upToDate")}
+              </div>
+            )}
+          </div>
+          <div className="theme-toggle">
+            <button onClick={checkForUpdate} disabled={checkingUpdate}>
+              {checkingUpdate ? t("settings.about.checking") : t("settings.about.checkForUpdates")}
+            </button>
+            {updateCheck?.updateAvailable && (
+              <button onClick={() => openUrl(updateCheck.releaseUrl).catch(() => {})}>
+                {t("settings.about.viewRelease")}
+              </button>
+            )}
+          </div>
         </div>
       </section>
     </div>

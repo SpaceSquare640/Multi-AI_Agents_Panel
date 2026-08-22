@@ -18,6 +18,7 @@ use crate::ml_engine::{self, MlCapabilityManifest};
 use crate::orchestrator::{self, GroupChatError};
 use crate::session_manager;
 use crate::skill_manager::{self, SkillManifest};
+use crate::update_check;
 use crate::storage::{
     Agent, AgentFallbackProvider, FileAccessGrant, McpAccessGrant, McpServer, MlAccessGrant, Message, ProviderKey,
     Session, SkillAccessGrant, Storage, UsageSummary,
@@ -1222,6 +1223,20 @@ pub fn semantic_search_query(
     });
     let guard = runtime.0.lock().unwrap();
     ml_engine::invoke(&storage, guard.as_ref(), &agent_id, "semantic_search", payload).map_err(|e| e.to_string())
+}
+
+/// Checks GitHub for a newer release than `current_version` (blocking
+/// HTTP call, run on a background thread by `spawn_blocking` since this
+/// is a plain `#[tauri::command]`, not `async fn`, and `reqwest::blocking`
+/// would otherwise stall the Tauri IPC executor). Never installs
+/// anything — the frontend links the user to `releaseUrl` to download
+/// manually, since code signing (needed for `tauri-plugin-updater`'s
+/// silent-update path) is deferred to the Beta stage.
+#[tauri::command]
+pub async fn check_for_update(current_version: String) -> Result<update_check::UpdateCheckResult, String> {
+    tauri::async_runtime::spawn_blocking(move || update_check::check_for_update(&current_version))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[cfg(test)]

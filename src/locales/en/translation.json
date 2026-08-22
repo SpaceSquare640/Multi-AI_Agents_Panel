@@ -29,7 +29,13 @@
       "heading": "About",
       "version": "Version",
       "userManual": "User Manual",
-      "open": "Open →"
+      "open": "Open →",
+      "checkForUpdates": "Check for Updates",
+      "checking": "Checking…",
+      "upToDate": "You're on the latest release.",
+      "updateAvailable": "A new version ({{version}}) is available.",
+      "viewRelease": "View Release →",
+      "checkFailed": "Couldn't check for updates: {{error}}"
     }
   },
   "skills": {
