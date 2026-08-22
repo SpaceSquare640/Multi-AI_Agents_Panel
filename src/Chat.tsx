@@ -31,6 +31,15 @@ function isLocalProvider(provider: string): boolean {
   return (LOCAL_PROVIDERS as readonly string[]).includes(provider);
 }
 
+/// `send_chat_message_with_tools` (agent_manager::function_calling) is
+/// only implemented for Anthropic agents so far (see that module's doc
+/// comment for why) — this mirrors that restriction in the UI so the
+/// toggle only appears where it would actually work, rather than
+/// offering it everywhere and surfacing "Unsupported" from the backend.
+function functionCallingEligible(tab: TabState): boolean {
+  return tab.kind === "independent" && tab.agent?.providerName === "anthropic" && tab.skillGrants.length > 0;
+}
+
 /// Per-session state, kept independently for every *open* tab so that
 /// sending a message in one session never blocks, resets, or loses state
 /// in another — this is what makes "multiple agents in parallel" real
@@ -70,6 +79,13 @@ interface TabState {
    *  a regular turn (`advance_group_turn`) or ending the meeting
    *  (`end_group_chat_meeting`), since both can trigger E6004. */
   pendingBoundaryRetry: "turn" | "endMeeting" | null;
+  /** Whether the next message in this tab should be sent through
+   *  `send_chat_message_with_tools` (agent_manager::function_calling)
+   *  instead of the plain `send_chat_message`. Only meaningful — and
+   *  only shown in the UI — for an independent-session Anthropic agent
+   *  with at least one granted Skill (see `functionCallingEligible`
+   *  below); function calling isn't implemented for other providers yet. */
+  useFunctionCalling: boolean;
 }
 
 function emptyTab(): TabState {
@@ -82,6 +98,7 @@ function emptyTab(): TabState {
     skillGrants: [],
     mcpGrants: [],
     mlGrants: [],
+    useFunctionCalling: false,
     searchResults: null,
     draft: "",
     sending: false,
@@ -879,6 +896,8 @@ export default function Chat() {
           });
           return;
         }
+      } else if (tab.useFunctionCalling) {
+        await invoke("send_chat_message_with_tools", { sessionId, content });
       } else {
         await invoke("send_chat_message", { sessionId, content });
       }
@@ -1476,6 +1495,16 @@ export default function Chat() {
                   </button>
                 </div>
                 <p className="chat-skill-import-warning">{t("chat.skillImportWarning")}</p>
+                {functionCallingEligible(activeTab) && (
+                  <label className="chat-function-calling-toggle">
+                    <input
+                      type="checkbox"
+                      checked={activeTab.useFunctionCalling}
+                      onChange={(e) => patchTab(activeSessionId, { useFunctionCalling: e.target.checked })}
+                    />
+                    {t("chat.letAgentCallSkills")}
+                  </label>
+                )}
                 {activeTab.skillGrants.length > 0 && (
                   <div className="chat-run-skill">
                     <select value={runSkillName} onChange={(e) => setRunSkillName(e.target.value)}>

@@ -176,6 +176,7 @@ pub fn run() {
             commands::list_messages,
             commands::get_session_agent_id,
             commands::send_chat_message,
+            commands::send_chat_message_with_tools,
             commands::grant_folder_access,
             commands::grant_folder_access_for_session,
             commands::list_file_access_grants,

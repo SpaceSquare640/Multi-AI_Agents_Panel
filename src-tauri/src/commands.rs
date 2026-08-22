@@ -431,6 +431,71 @@ pub fn send_chat_message(storage: State<Storage>, session_id: String, content: S
         .map_err(|e| e.to_string())
 }
 
+/// Same shape as `send_chat_message`, but runs the agent with tool
+/// calling enabled (see `agent_manager::function_calling` — Anthropic
+/// agents only, others return an error). The tools offered to the model
+/// are exactly this agent's *granted* skills (`list_skill_access_grants`),
+/// filtered against the discovered manifests — same allowlist a human
+/// would see, not an expanded set. Any tool call the model makes still
+/// goes through `skill_manager::invoke_skill`'s Guardrails-then-allowlist
+/// gate. Each tool call the model actually executes is also persisted as
+/// its own `role: "system"` message (mirrors `run_skill_in_session`), so
+/// the session transcript shows what the model did, not just its final
+/// reply.
+#[tauri::command]
+pub fn send_chat_message_with_tools(
+    storage: State<Storage>,
+    skill_dirs: State<SkillDirs>,
+    skill_runtime: State<SkillRuntimeState>,
+    session_id: String,
+    content: String,
+) -> Result<Message, String> {
+    storage
+        .add_message(&session_id, None, "user", &content)
+        .map_err(|e| e.to_string())?;
+
+    let agent_id = storage
+        .agents_for_session(&session_id)
+        .map_err(|e| e.to_string())?
+        .into_iter()
+        .next()
+        .ok_or_else(|| format!("session {session_id} has no agent"))?;
+    let agent = storage
+        .get_agent(&agent_id)
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| format!("agent {agent_id} not found"))?;
+
+    let mut manifests = skill_manager::discover_skills_tagged(&skill_dirs.builtin, "built-in");
+    manifests.extend(skill_manager::discover_skills_tagged(&skill_dirs.custom, "custom"));
+    let granted: std::collections::HashSet<String> = storage
+        .list_skill_access_grants(&agent_id)
+        .map_err(|e| e.to_string())?
+        .into_iter()
+        .map(|g| g.skill_name)
+        .collect();
+    let available_skills: Vec<SkillManifest> = manifests.into_iter().filter(|m| granted.contains(&m.name)).collect();
+
+    let expanded_content = expand_file_references(&storage, &agent_id, &content)?;
+
+    let guard = skill_runtime.0.lock().unwrap();
+    let result = agent_manager::function_calling::run(&storage, guard.as_ref(), &agent, &available_skills, &expanded_content)
+        .map_err(|e| e.to_string())?;
+
+    for call in &result.tool_calls {
+        let content = format!(
+            "[Tool call \"{}\" invoked by the model]\nInput: {}\nOutput: {}",
+            call.tool_name,
+            call.input,
+            call.output
+        );
+        storage.add_message(&session_id, Some(&agent_id), "system", &content).map_err(|e| e.to_string())?;
+    }
+
+    storage
+        .add_message(&session_id, Some(&agent_id), "assistant", &result.reply)
+        .map_err(|e| e.to_string())
+}
+
 // --- Group Chat ---
 //
 // Independent Session vs. Group Chat share the same `sessions` /
