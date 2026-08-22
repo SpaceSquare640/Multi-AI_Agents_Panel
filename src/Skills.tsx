@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import type { Agent, SkillAccessGrant, SkillManifest } from "./types";
 import "./Skills.css";
@@ -36,6 +37,7 @@ export function aggregateGrantsBySkill(
  *  "on" or "off" App-wide, only which Agents currently hold a grant for
  *  it. A toggle here would imply a control that doesn't actually exist. */
 export default function Skills() {
+  const { t } = useTranslation();
   const [skills, setSkills] = useState<SkillManifest[]>([]);
   const [grantsBySkill, setGrantsBySkill] = useState<Map<string, string[]>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -69,19 +71,16 @@ export default function Skills() {
   return (
     <div className="skills-screen">
       <div className="skills-head">
-        <h1>Skills</h1>
+        <h1>{t("skills.title")}</h1>
         <button onClick={() => void refresh()} disabled={loading}>
-          {loading ? "Refreshing…" : "Refresh"}
+          {loading ? t("skills.refreshing") : t("skills.refresh")}
         </button>
       </div>
-      <p className="acc-hint">
-        Skill access is granted per-Agent — open an Agent's session in Chat to grant or revoke a
-        Skill for it. This page just shows what's currently in use across every Agent.
-      </p>
+      <p className="acc-hint">{t("skills.hint")}</p>
 
       {error && <div className="acc-error">{error}</div>}
 
-      {!loading && skills.length === 0 && <p className="acc-empty">No Skills discovered.</p>}
+      {!loading && skills.length === 0 && <p className="acc-empty">{t("skills.noneDiscovered")}</p>}
 
       <div className="skills-grid">
         {skills.map((skill) => {
@@ -91,14 +90,14 @@ export default function Skills() {
               <div className="skill-card-top">
                 <span className="skill-name">{skill.name}</span>
                 <span className={skill.source === "custom" ? "source-tag custom" : "source-tag builtin"}>
-                  {skill.source === "custom" ? "Custom" : "Built-in"}
+                  {skill.source === "custom" ? t("skills.sourceCustom") : t("skills.sourceBuiltin")}
                 </span>
               </div>
               <p className="skill-desc">{skill.description}</p>
               <div className="skill-footer">
                 <span className="acc-mono">v{skill.version}</span>
                 <span className="agent-count" title={usedBy.length > 0 ? usedBy.join(", ") : undefined}>
-                  {usedBy.length === 0 ? "Not used by any Agent" : `Used by ${usedBy.length} Agent${usedBy.length === 1 ? "" : "s"}`}
+                  {usedBy.length === 0 ? t("skills.usedByNone") : t("skills.usedByCount", { count: usedBy.length })}
                 </span>
               </div>
             </div>

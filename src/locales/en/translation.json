@@ -29,5 +29,17 @@
       "userManual": "User Manual",
       "open": "Open →"
     }
+  },
+  "skills": {
+    "title": "Skills",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing…",
+    "hint": "Skill access is granted per-Agent — open an Agent's session in Chat to grant or revoke a Skill for it. This page just shows what's currently in use across every Agent.",
+    "noneDiscovered": "No Skills discovered.",
+    "sourceCustom": "Custom",
+    "sourceBuiltin": "Built-in",
+    "usedByNone": "Not used by any Agent",
+    "usedByCount_one": "Used by {{count}} Agent",
+    "usedByCount_other": "Used by {{count}} Agents"
   }
 }
