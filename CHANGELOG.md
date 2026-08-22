@@ -2,6 +2,17 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.3.0-alpha] - 2026-08-22
+
+### Added
+
+- Feat: add MCP client support via rmcp (first slice)
+
+### Changes
+
+- Chore: update CHANGELOG.md for v0.2.0-alpha [skip ci]
+- Chore: bump to 0.3.0-alpha (MCP client feature milestone)
+
 ## [0.2.0-alpha] - 2026-08-22
 
 ### Changes
