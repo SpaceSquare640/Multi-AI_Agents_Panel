@@ -52,9 +52,10 @@ first slice, not full coverage:
 
 - `src/i18n.ts` wires up [react-i18next](https://react.i18next.com/).
 - `src/locales/en/translation.json` is the only real locale — the source of
-  truth. **Only `Settings.tsx`** has actually been converted to
-  `useTranslation()`/`t(...)` so far, as a proof that the plumbing works
-  end-to-end; every other screen is still plain hardcoded English strings.
+  truth. `Settings.tsx`, `Skills.tsx`, `Usage.tsx`, `Onboarding.tsx`,
+  `Manual.tsx`, and `Chat.tsx` have been converted to
+  `useTranslation()`/`t(...)` so far. **`AIControlCenter.tsx` is the only
+  remaining screen** still using plain hardcoded English strings.
   Don't assume `t(...)` is wired up anywhere it isn't just because the
   infra exists — check whether the specific screen you're touching has
   been converted yet.
