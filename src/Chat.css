@@ -2,20 +2,32 @@
   display: flex;
   height: 100%;
   text-align: left;
+  gap: 1px;
+  background: var(--edex-cyan-dim);
 }
 
+/* Both panels read as separate bordered "windows" (eDEX-UI's terminal
+   panel look) rather than blending into the page background — a 1px
+   gap on the shared cyan-dim background between them stands in for a
+   seam/divider without adding an extra border that would double up
+   against .chat-main's own left border below. */
 .chat-sidebar {
   width: 260px;
   flex-shrink: 0;
-  border-right: 1px solid var(--card-border);
   padding: 1rem;
   overflow-y: auto;
   box-sizing: border-box;
+  background: var(--card-bg);
 }
 
 .chat-sidebar h2 {
   margin-top: 0;
   font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--edex-cyan);
+  border-bottom: 1px solid var(--edex-cyan-dim);
+  padding-bottom: 0.4rem;
 }
 
 .chat-sidebar h3 {
@@ -87,6 +99,7 @@
   padding: 1rem 1.5rem;
   box-sizing: border-box;
   min-width: 0;
+  background: var(--card-bg);
 }
 
 .chat-header {
@@ -210,28 +223,49 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-  padding-bottom: 1rem;
+  gap: 2px;
+  padding: 0.5rem 0 1rem;
+  border-top: 1px solid var(--edex-cyan-dim);
 }
 
+/* Terminal log lines, not chat bubbles — eDEX-UI is a terminal
+   emulator, and its panels never show rounded speech-bubble shapes;
+   every message reads as one prompt-prefixed log entry instead, always
+   full-width and left-aligned regardless of role. A colored left border
+   (not a filled background) marks whose line it is, matching the
+   "accent stripe on a dark readout" language used throughout eDEX-UI's
+   own panels rather than a messaging-app convention. */
 .chat-bubble {
-  max-width: 70%;
-  padding: 0.5rem 0.8rem;
-  border-radius: 2px;
-  background: var(--edex-cyan-dim);
+  padding: 0.4rem 0.8rem;
+  border-left: 3px solid var(--edex-cyan-dim);
+  background: var(--card-bg-alt);
+  font-family: var(--edex-font);
 }
 
 .chat-bubble-user {
-  align-self: flex-end;
-  background: var(--edex-cyan);
-  color: white;
+  border-left-color: var(--edex-cyan);
+}
+
+.chat-bubble-assistant {
+  border-left-color: var(--edex-orange);
 }
 
 .chat-bubble-role {
   font-size: 0.7rem;
-  opacity: 0.7;
+  opacity: 0.75;
   text-transform: uppercase;
+  letter-spacing: 0.08em;
   margin-bottom: 0.15rem;
+}
+
+/* "[role]>" prompt prefix, generated rather than typed into the DOM so
+   the underlying text (used for search/selection/copy) stays just the
+   role name. */
+.chat-bubble-role::before {
+  content: "[";
+}
+.chat-bubble-role::after {
+  content: "] >";
 }
 
 .chat-bubble-content {
@@ -258,13 +292,15 @@
 .chat-tab {
   display: flex;
   align-items: center;
-  border: 1px solid var(--card-border);
+  border: 1px solid var(--edex-cyan-dim);
   border-radius: 2px;
   overflow: hidden;
+  font-family: var(--edex-font);
 }
 
 .chat-tab.active {
   border-color: var(--edex-cyan);
+  box-shadow: var(--edex-glow);
 }
 
 .chat-tab-select {
@@ -396,8 +432,8 @@
 }
 
 .chat-search-results li {
-  background: var(--edex-cyan-dim);
-  border-radius: 2px;
+  border-left: 3px solid var(--edex-cyan-dim);
+  background: var(--card-bg-alt);
   padding: 0.4rem 0.6rem;
 }
 
