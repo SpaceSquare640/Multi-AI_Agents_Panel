@@ -2,6 +2,25 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.1.93-alpha] - 2026-08-22
+
+### Documentation
+
+- Docs: update CONTRIBUTING.md i18n status for Chat.tsx conversion
+
+### Changes
+
+- I18n: convert AIControlCenter.tsx to react-i18next (7th, final slice)
+- Chore: bump version to 0.1.93-alpha
+
+## [0.1.92-alpha] - 2026-08-22
+
+### Changes
+
+- Chore: update CHANGELOG.md for v0.1.91-alpha [skip ci]
+- I18n: convert Chat.tsx to react-i18next (6th slice)
+- Chore: bump version to 0.1.92-alpha
+
 ## [0.1.91-alpha] - 2026-08-22
 
 ### Changes
