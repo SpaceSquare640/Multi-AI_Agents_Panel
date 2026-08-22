@@ -2,6 +2,17 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.1.96-alpha] - 2026-08-22
+
+### Added
+
+- Feat: add colibri as a local provider (github.com/JustVugg/colibri)
+
+### Changes
+
+- Chore: update CHANGELOG.md for v0.1.95-alpha [skip ci]
+- Chore: bump version to 0.1.96-alpha
+
 ## [0.1.95-alpha] - 2026-08-22
 
 ### Changes
