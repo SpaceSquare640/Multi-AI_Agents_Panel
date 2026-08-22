@@ -2,6 +2,17 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.7.0-alpha] - 2026-08-22
+
+### Added
+
+- Add npm-style default-deny permission sandbox for Skills (Beta queue 3/8)
+
+### Changes
+
+- Chore: update CHANGELOG.md for v0.6.0-alpha [skip ci]
+- Chore: bump version to 0.7.0-alpha
+
 ## [0.6.0-alpha] - 2026-08-22
 
 ### Added
