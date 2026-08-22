@@ -33,7 +33,7 @@ reqwest = { version = "0.12", default-features = false, features = ["blocking", 
 # mouse/keyboard automation for the LLM vision loop, plus base64 for
 # encoding screenshots into Ollama's `images` field.
 xcap = "0.9"
-enigo = "0.2"
+enigo = "0.6"
 base64 = "0.22"
 image = { version = "0.25", default-features = false, features = ["png"] }
 # ml_engine::vector_index: a native-Rust ANN index (github.com/RyanCodrai/turbovec)
