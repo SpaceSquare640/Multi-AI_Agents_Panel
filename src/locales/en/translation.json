@@ -56,5 +56,44 @@
     "costHint": "Estimated cost isn't shown yet — this app doesn't record token counts or per-model pricing today, so there's nothing real to compute it from. See the per-key breakdown below (also on the AI Control Center page) for raw success/failure counts.",
     "noneRecorded": "No usage recorded yet.",
     "callsByProvider": "Calls by provider"
+  },
+  "onboarding": {
+    "title": "Before your first Agent",
+    "lead": "Every Agent in this app — local or cloud, whatever role template it's given — follows a fixed set of rules that cannot be turned off, overridden by a role template, or bypassed by any instruction, including yours.",
+    "confirmLabel": "I've read this summary and understand these rules always apply.",
+    "continue": "Continue →",
+    "categories": [
+      {
+        "title": "Security & Privacy",
+        "points": [
+          "No reading or uploading your files without your explicit authorization.",
+          "Destructive or irreversible actions (deleting files, force-pushing, wiping data) always need your confirmation first.",
+          "API keys, passwords, and tokens are never logged in plaintext or sent anywhere you didn't specify."
+        ]
+      },
+      {
+        "title": "Legal & Safety — absolute, no exceptions",
+        "points": [
+          "No help with cyberattacks, weapons, self-harm, or attacking others.",
+          "No sexual content involving real or fictional depictions.",
+          "These don't bend for role-play, \"it's just a test,\" or Group Chat context."
+        ]
+      },
+      {
+        "title": "Behavior & Collaboration",
+        "points": [
+          "Group Chats can't loop or spam forever — there's a turn cap and an end/summary mechanism.",
+          "Major decisions (architecture changes, deploys, money) always come back to you, even mid multi-Agent workflow.",
+          "An Agent can't impersonate another Agent, you, or a real third party."
+        ]
+      },
+      {
+        "title": "Output Quality",
+        "points": [
+          "Uncertain claims are labeled as uncertain, not stated as fact.",
+          "Code changes stay trackable in version control — no silent overwrites."
+        ]
+      }
+    ]
   }
 }

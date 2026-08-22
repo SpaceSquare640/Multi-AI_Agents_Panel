@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import "./Onboarding.css";
 
 const FOCUSABLE_SELECTOR =
@@ -10,43 +11,16 @@ export function hasAcknowledgedGuardrails(): boolean {
   return localStorage.getItem(ACK_STORAGE_KEY) === "true";
 }
 
-/** Summarized from `AI Guardrails (必守規則).md` — the four rule
- *  categories, each condensed to its non-negotiable core. This is a
- *  summary for onboarding, not the full rule text; the source document
- *  is the actual source of truth if the two ever diverge. */
-const RULE_CATEGORIES = [
-  {
-    title: "Security & Privacy",
-    points: [
-      "No reading or uploading your files without your explicit authorization.",
-      "Destructive or irreversible actions (deleting files, force-pushing, wiping data) always need your confirmation first.",
-      "API keys, passwords, and tokens are never logged in plaintext or sent anywhere you didn't specify.",
-    ],
-  },
-  {
-    title: "Legal & Safety — absolute, no exceptions",
-    points: [
-      "No help with cyberattacks, weapons, self-harm, or attacking others.",
-      "No sexual content involving real or fictional depictions.",
-      "These don't bend for role-play, \"it's just a test,\" or Group Chat context.",
-    ],
-  },
-  {
-    title: "Behavior & Collaboration",
-    points: [
-      "Group Chats can't loop or spam forever — there's a turn cap and an end/summary mechanism.",
-      "Major decisions (architecture changes, deploys, money) always come back to you, even mid multi-Agent workflow.",
-      "An Agent can't impersonate another Agent, you, or a real third party.",
-    ],
-  },
-  {
-    title: "Output Quality",
-    points: [
-      "Uncertain claims are labeled as uncertain, not stated as fact.",
-      "Code changes stay trackable in version control — no silent overwrites.",
-    ],
-  },
-];
+/** The four rule categories' shape — content itself now lives in
+ *  `src/locales/en/translation.json` under `onboarding.categories`
+ *  (summarized from `AI Guardrails (必守規則).md`; a summary for
+ *  onboarding, not the full rule text — the source document is the
+ *  actual source of truth if the two ever diverge), pulled via
+ *  `t("onboarding.categories", { returnObjects: true })` below. */
+interface RuleCategory {
+  title: string;
+  points: string[];
+}
 
 /** Onboarding's forced Guardrails step (see Screen Inventory's decided
  *  "是，強制" — Onboarding must force one pass over the Guardrails
@@ -55,6 +29,8 @@ const RULE_CATEGORIES = [
  *  re-opened later from Settings — the rules aren't optional, but
  *  re-reading them should always be possible. */
 export default function Onboarding({ onDismiss }: { onDismiss?: () => void }) {
+  const { t } = useTranslation();
+  const ruleCategories = t("onboarding.categories", { returnObjects: true }) as RuleCategory[];
   const [checked, setChecked] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -108,15 +84,11 @@ export default function Onboarding({ onDismiss }: { onDismiss?: () => void }) {
         aria-labelledby="onboarding-title"
         ref={modalRef}
       >
-        <h1 id="onboarding-title">Before your first Agent</h1>
-        <p className="onboarding-lead">
-          Every Agent in this app — local or cloud, whatever role template it's given — follows a
-          fixed set of rules that cannot be turned off, overridden by a role template, or bypassed
-          by any instruction, including yours.
-        </p>
+        <h1 id="onboarding-title">{t("onboarding.title")}</h1>
+        <p className="onboarding-lead">{t("onboarding.lead")}</p>
 
         <div className="onboarding-categories">
-          {RULE_CATEGORIES.map((cat) => (
+          {ruleCategories.map((cat) => (
             <div className="onboarding-category" key={cat.title}>
               <div className="onboarding-category-title">{cat.title}</div>
               <ul>
@@ -130,12 +102,12 @@ export default function Onboarding({ onDismiss }: { onDismiss?: () => void }) {
 
         <label className="onboarding-confirm">
           <input type="checkbox" checked={checked} onChange={(e) => setChecked(e.target.checked)} />
-          <span>I've read this summary and understand these rules always apply.</span>
+          <span>{t("onboarding.confirmLabel")}</span>
         </label>
 
         <div className="onboarding-actions">
           <button className="onboarding-continue" disabled={!checked} onClick={acknowledge}>
-            Continue →
+            {t("onboarding.continue")}
           </button>
         </div>
       </div>
