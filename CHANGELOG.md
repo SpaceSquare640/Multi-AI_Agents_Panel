@@ -2,6 +2,17 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.6.0-alpha] - 2026-08-22
+
+### Added
+
+- Add in-app update check (Settings > About)
+
+### Changes
+
+- Chore: update CHANGELOG.md for v0.5.0-alpha [skip ci]
+- Chore: bump version to 0.6.0-alpha
+
 ## [0.5.0-alpha] - 2026-08-22
 
 ### Added
