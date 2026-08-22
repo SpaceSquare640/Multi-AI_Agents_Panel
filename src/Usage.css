@@ -29,7 +29,7 @@
   background: var(--warn-bg);
   color: var(--warn-fg);
   border: 1px solid var(--warn-border);
-  border-radius: 8px;
+  border-radius: 2px;
   padding: 0.6rem 1rem;
   font-size: 0.85rem;
   margin-bottom: 1rem;
@@ -37,6 +37,8 @@
 
 .usage-head h1 {
   margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .usage-kpi-row {
@@ -45,18 +47,27 @@
   margin: 1rem 0;
 }
 
+.usage-kpi-card,
+.usage-provider-panel,
+.usage-status-panel {
+  border: 1px solid var(--card-border);
+  border-radius: 2px;
+  background: var(--card-bg);
+  box-shadow: var(--edex-glow);
+}
+
 .usage-kpi-card {
   flex: 1;
-  border: 1px solid rgba(128, 128, 128, 0.3);
-  border-radius: 10px;
   padding: 0.9rem 1.1rem;
 }
 
-.usage-kpi-label {
+.usage-kpi-label,
+.usage-panel-title {
   font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.4px;
-  opacity: 0.65;
+  letter-spacing: 0.08em;
+  color: var(--edex-cyan);
+  opacity: 0.85;
   margin-bottom: 0.35rem;
 }
 
@@ -66,18 +77,13 @@
   font-variant-numeric: tabular-nums;
 }
 
-.usage-provider-panel {
-  border: 1px solid rgba(128, 128, 128, 0.3);
-  border-radius: 10px;
+.usage-provider-panel,
+.usage-status-panel {
   padding: 1rem 1.1rem;
   margin-top: 1rem;
 }
 
 .usage-panel-title {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  opacity: 0.65;
   margin-bottom: 0.75rem;
 }
 
@@ -97,15 +103,16 @@
 .usage-bar-track {
   flex: 1;
   height: 8px;
-  border-radius: 4px;
-  background: rgba(128, 128, 128, 0.2);
+  border-radius: 0;
+  background: var(--edex-cyan-dim);
   overflow: hidden;
 }
 
 .usage-bar-fill {
   height: 100%;
-  border-radius: 4px;
-  background: #396cd8;
+  border-radius: 0;
+  background: var(--edex-cyan);
+  box-shadow: var(--edex-glow);
 }
 
 .usage-bar-value {
@@ -114,4 +121,36 @@
   text-align: right;
   font-variant-numeric: tabular-nums;
   opacity: 0.85;
+}
+
+/* Real system-status readout (agent/session/provider counts pulled from
+   list_agents/list_sessions/get_usage_summary — no fabricated CPU/RAM
+   numbers; see Usage.tsx's doc comment for why). Grid of small glowing
+   stat cells, the eDEX-UI system-monitor look applied to data this app
+   actually has. */
+.usage-status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 0.75rem;
+}
+
+.usage-status-cell {
+  border: 1px solid var(--edex-cyan-dim);
+  padding: 0.6rem 0.7rem;
+  text-align: center;
+}
+
+.usage-status-cell-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.7;
+  margin-bottom: 0.3rem;
+}
+
+.usage-status-cell-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--edex-cyan);
 }

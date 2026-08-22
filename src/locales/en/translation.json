@@ -55,7 +55,13 @@
     "budgetWarning": "⚠ You've reached your soft budget of {{cap}} calls ({{total}} so far). This is only a reminder — cloud Agents keep working.",
     "costHint": "Estimated cost isn't shown yet — this app doesn't record token counts or per-model pricing today, so there's nothing real to compute it from. See the per-key breakdown below (also on the AI Control Center page) for raw success/failure counts.",
     "noneRecorded": "No usage recorded yet.",
-    "callsByProvider": "Calls by provider"
+    "callsByProvider": "Calls by provider",
+    "systemStatus": "System status",
+    "agentsLocal": "Local agents",
+    "agentsCloud": "Cloud agents",
+    "sessionsIndependent": "Sessions",
+    "sessionsGroup": "Group chats",
+    "providersActive": "Providers used"
   },
   "onboarding": {
     "title": "Before your first Agent",

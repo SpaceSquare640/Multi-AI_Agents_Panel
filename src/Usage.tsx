@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
-import type { UsageSummary } from "./types";
+import type { Agent, Session, UsageSummary } from "./types";
 import "./Usage.css";
 
 const SOFT_CAP_STORAGE_KEY = "multi-ai-agents-panel:usage-soft-cap";
@@ -39,6 +39,8 @@ export function isOverSoftCap(totalCalls: number, rawCapInput: string): boolean 
 export default function Usage() {
   const { t } = useTranslation();
   const [usage, setUsage] = useState<UsageSummary[]>([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [softCapInput, setSoftCapInput] = useState(() => localStorage.getItem(SOFT_CAP_STORAGE_KEY) ?? "");
@@ -51,7 +53,14 @@ export default function Usage() {
     setLoading(true);
     setError(null);
     try {
-      setUsage(await invoke<UsageSummary[]>("get_usage_summary"));
+      const [usageResult, agentsResult, sessionsResult] = await Promise.all([
+        invoke<UsageSummary[]>("get_usage_summary"),
+        invoke<Agent[]>("list_agents"),
+        invoke<Session[]>("list_sessions"),
+      ]);
+      setUsage(usageResult);
+      setAgents(agentsResult);
+      setSessions(sessionsResult);
     } catch (err) {
       setError(String(err));
     } finally {
@@ -86,6 +95,12 @@ export default function Usage() {
   const providerRows = [...byProvider.entries()].sort((a, b) => b[1].success + b[1].failure - (a[1].success + a[1].failure));
   const maxProviderTotal = Math.max(1, ...providerRows.map(([, v]) => v.success + v.failure));
 
+  const localAgents = agents.filter((a) => a.providerKind === "local").length;
+  const cloudAgents = agents.length - localAgents;
+  const independentSessions = sessions.filter((s) => s.kind === "independent").length;
+  const groupChats = sessions.length - independentSessions;
+  const distinctProviders = byProvider.size;
+
   return (
     <div className="usage-screen">
       <div className="usage-head">
@@ -109,6 +124,32 @@ export default function Usage() {
         <div className="usage-kpi-card">
           <div className="usage-kpi-label">{t("usage.failureRate")}</div>
           <div className="usage-kpi-value">{failureRate.toFixed(1)}%</div>
+        </div>
+      </div>
+
+      <div className="usage-status-panel">
+        <div className="usage-panel-title">{t("usage.systemStatus")}</div>
+        <div className="usage-status-grid">
+          <div className="usage-status-cell">
+            <div className="usage-status-cell-label">{t("usage.agentsLocal")}</div>
+            <div className="usage-status-cell-value">{localAgents}</div>
+          </div>
+          <div className="usage-status-cell">
+            <div className="usage-status-cell-label">{t("usage.agentsCloud")}</div>
+            <div className="usage-status-cell-value">{cloudAgents}</div>
+          </div>
+          <div className="usage-status-cell">
+            <div className="usage-status-cell-label">{t("usage.sessionsIndependent")}</div>
+            <div className="usage-status-cell-value">{independentSessions}</div>
+          </div>
+          <div className="usage-status-cell">
+            <div className="usage-status-cell-label">{t("usage.sessionsGroup")}</div>
+            <div className="usage-status-cell-value">{groupChats}</div>
+          </div>
+          <div className="usage-status-cell">
+            <div className="usage-status-cell-label">{t("usage.providersActive")}</div>
+            <div className="usage-status-cell-value">{distinctProviders}</div>
+          </div>
         </div>
       </div>
 

@@ -9,6 +9,7 @@ body,
   display: flex;
   flex-direction: column;
   height: 100%;
+  position: relative;
 }
 
 .app-tab-content {
@@ -17,31 +18,43 @@ body,
   overflow: auto;
 }
 
+/* eDEX-UI-inspired visual language (github.com/GitSquared/eDEX-UI): a
+   terminal/sci-fi aesthetic — monospace type, neon cyan/orange accents,
+   glowing angular panel borders, a subtle CRT scanline overlay. Applied
+   as a full retheme of both existing Dark/Light states rather than a
+   third opt-in theme (explicit user decision) — "dark" is the flagship
+   look (near-black + full glow), "light" is a toned-down "daylight
+   terminal" variant so the feature isn't destroyed, just restyled: same
+   monospace type and cyan/orange accent identity, much less glow (a
+   glowing box-shadow reads as a design mistake on a white background,
+   not as the sci-fi effect it's supposed to be). */
 :root {
-  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+  --edex-font: "Cascadia Code", "Cascadia Mono", Consolas, "SF Mono", Menlo, "DejaVu Sans Mono", "Courier New",
+    ui-monospace, monospace;
+  --edex-cyan: #00d9ff;
+  --edex-cyan-dim: #0a4a56;
+  --edex-orange: #ff9900;
+
+  font-family: var(--edex-font);
   font-size: 16px;
   line-height: 24px;
   font-weight: 400;
+  letter-spacing: 0.01em;
 
-  color: #0f0f0f;
-  background-color: #f6f6f6;
+  color: #0a2a30;
+  background-color: #f2f7f8;
 
-  /* Shared tokens for cards/modals/overlays outside the base app shell
-     (e.g. Onboarding.tsx's modal) — same three-tier override pattern as
-     the rest of this file, so anything using these vars stays correct
-     in both themes without repeating the media-query dance per file. */
+  --edex-glow: none;
+  --edex-glow-strong: none;
+  --edex-scanline-opacity: 0;
+
   --card-bg: #ffffff;
-  --card-bg-alt: #f6f6f6;
-  --card-border: rgba(0, 0, 0, 0.15);
-  --card-fg: #0f0f0f;
-  --card-fg-muted: rgba(15, 15, 15, 0.7);
+  --card-bg-alt: #eaf4f5;
+  --card-border: var(--edex-cyan);
+  --card-fg: #0a2a30;
+  --card-fg-muted: rgba(10, 42, 48, 0.7);
   --overlay-bg: rgba(0, 0, 0, 0.4);
 
-  /* Semantic status tokens — same idea, for error/warning banners
-     (Chat.css's .chat-error, Usage.css's .usage-budget-warning) that
-     previously hardcoded a single dark-mode palette regardless of
-     theme. Light-theme pair here is a light red/amber tint with dark
-     text; dark-theme pair (below) is the original dark red/amber. */
   --error-bg: #fdecec;
   --error-fg: #8a1f1f;
   --error-border: #e08a8a;
@@ -57,59 +70,98 @@ body,
   -webkit-text-size-adjust: 100%;
 }
 
+/* CRT scanline overlay — a fixed, pointer-events-none full-viewport
+   pseudo-element on the shell rather than anything per-frame/JS-driven,
+   so it costs nothing beyond one composited layer. Opacity is a
+   variable so the light theme can (and does, below) turn it off rather
+   than fighting a repeating-gradient against a white background. */
+.app-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 217, 255, 0.06) 0px,
+    rgba(0, 217, 255, 0.06) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  opacity: var(--edex-scanline-opacity);
+}
+
 a {
   font-weight: 500;
-  color: #646cff;
+  color: var(--edex-cyan);
   text-decoration: inherit;
 }
 
 a:hover {
-  color: #535bf2;
+  color: var(--edex-orange);
 }
 
 .app-tabs {
   display: flex;
   gap: 0.4rem;
   padding: 0.5rem 1rem;
-  border-bottom: 1px solid rgba(128, 128, 128, 0.3);
+  border-bottom: 1px solid var(--edex-cyan-dim);
+  background: var(--card-bg-alt);
 }
 
 .app-tabs button {
   background: none;
   box-shadow: none;
   border: 1px solid transparent;
+  border-radius: 2px;
+  text-transform: uppercase;
+  font-size: 0.85em;
+  letter-spacing: 0.08em;
 }
 
 .app-tabs button.active {
-  border-color: #396cd8;
+  border-color: var(--edex-cyan);
+  color: var(--edex-cyan);
   font-weight: 600;
+  box-shadow: var(--edex-glow);
 }
 
 input,
 button,
 select {
-  border-radius: 8px;
-  border: 1px solid transparent;
+  border-radius: 2px;
+  border: 1px solid var(--edex-cyan-dim);
   padding: 0.6em 1.2em;
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  color: #0f0f0f;
-  background-color: #ffffff;
-  transition: border-color 0.25s;
-  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
+  color: var(--card-fg);
+  background-color: var(--card-bg);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+  box-shadow: none;
 }
 
 button {
   cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 button:hover {
-  border-color: #396cd8;
+  border-color: var(--edex-cyan);
+  box-shadow: var(--edex-glow);
 }
 button:active {
-  border-color: #396cd8;
-  background-color: #e8e8e8;
+  border-color: var(--edex-cyan);
+  background-color: var(--card-bg-alt);
+}
+
+input:focus,
+select:focus {
+  border-color: var(--edex-cyan);
+  box-shadow: var(--edex-glow);
 }
 
 input,
@@ -118,77 +170,87 @@ select {
   outline: none;
 }
 
-/* Two ways a dark palette can apply: the OS is set to dark and the user
-   hasn't overridden it in Settings (guarded so an explicit ":root[data-theme='light']"
-   choice always wins over the OS), or the user explicitly picked Dark in
-   Settings (which must win even on a light-OS system, hence the second,
-   un-media-gated block below). See Settings.tsx's applyTheme/ThemeChoice. */
+/* Two ways the dark variant can apply: the OS is set to dark and the
+   user hasn't overridden it in Settings (guarded so an explicit
+   ":root[data-theme='light']" choice always wins over the OS), or the
+   user explicitly picked Dark in Settings (which must win even on a
+   light-OS system, hence the second, un-media-gated block below). See
+   Settings.tsx's applyTheme/ThemeChoice. This is the flagship eDEX-UI
+   look: near-black background, full cyan glow, visible scanlines. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    color: #f6f6f6;
-    background-color: #2f2f2f;
+    color: #cdf7ff;
+    background-color: #05080a;
 
-    --card-bg: #16181f;
-    --card-bg-alt: #1a1d27;
-    --card-border: #3a3f52;
-    --card-fg: #e6e6ea;
-    --card-fg-muted: rgba(230, 230, 234, 0.75);
-    --overlay-bg: rgba(0, 0, 0, 0.6);
+    --edex-glow: 0 0 6px var(--edex-cyan), 0 0 2px var(--edex-cyan);
+    --edex-glow-strong: 0 0 14px var(--edex-cyan), 0 0 4px var(--edex-cyan);
+    --edex-scanline-opacity: 1;
 
-    --error-bg: #4a1414;
-    --error-fg: #ffb4b4;
+    --card-bg: #0a0f14;
+    --card-bg-alt: #0e151b;
+    --card-border: var(--edex-cyan);
+    --card-fg: #cdf7ff;
+    --card-fg-muted: rgba(205, 247, 255, 0.7);
+    --overlay-bg: rgba(0, 0, 0, 0.75);
+
+    --error-bg: #2a0e0e;
+    --error-fg: #ff6b6b;
     --error-border: #a33;
-    --error-chip-bg: #ffb4b422;
-    --warn-bg: #241f14;
-    --warn-fg: #f2b84b;
+    --error-chip-bg: #ff6b6b22;
+    --warn-bg: #241f0a;
+    --warn-fg: var(--edex-orange);
     --warn-border: #4a3a1c;
   }
 
   :root:not([data-theme="light"]) a:hover {
-    color: #24c8db;
+    color: var(--edex-orange);
   }
 
   :root:not([data-theme="light"]) input,
   :root:not([data-theme="light"]) button,
   :root:not([data-theme="light"]) select {
-    color: #ffffff;
-    background-color: #0f0f0f98;
+    color: #cdf7ff;
+    background-color: #0a0f14;
   }
   :root:not([data-theme="light"]) button:active {
-    background-color: #0f0f0f69;
+    background-color: #10181f;
   }
 }
 
 :root[data-theme="dark"] {
-  color: #f6f6f6;
-  background-color: #2f2f2f;
+  color: #cdf7ff;
+  background-color: #05080a;
 
-  --card-bg: #16181f;
-  --card-bg-alt: #1a1d27;
-  --card-border: #3a3f52;
-  --card-fg: #e6e6ea;
-  --card-fg-muted: rgba(230, 230, 234, 0.75);
-  --overlay-bg: rgba(0, 0, 0, 0.6);
+  --edex-glow: 0 0 6px var(--edex-cyan), 0 0 2px var(--edex-cyan);
+  --edex-glow-strong: 0 0 14px var(--edex-cyan), 0 0 4px var(--edex-cyan);
+  --edex-scanline-opacity: 1;
 
-  --error-bg: #4a1414;
-  --error-fg: #ffb4b4;
+  --card-bg: #0a0f14;
+  --card-bg-alt: #0e151b;
+  --card-border: var(--edex-cyan);
+  --card-fg: #cdf7ff;
+  --card-fg-muted: rgba(205, 247, 255, 0.7);
+  --overlay-bg: rgba(0, 0, 0, 0.75);
+
+  --error-bg: #2a0e0e;
+  --error-fg: #ff6b6b;
   --error-border: #a33;
-  --error-chip-bg: #ffb4b422;
-  --warn-bg: #241f14;
-  --warn-fg: #f2b84b;
+  --error-chip-bg: #ff6b6b22;
+  --warn-bg: #241f0a;
+  --warn-fg: var(--edex-orange);
   --warn-border: #4a3a1c;
 }
 
 :root[data-theme="dark"] a:hover {
-  color: #24c8db;
+  color: var(--edex-orange);
 }
 
 :root[data-theme="dark"] input,
 :root[data-theme="dark"] button,
 :root[data-theme="dark"] select {
-  color: #ffffff;
-  background-color: #0f0f0f98;
+  color: #cdf7ff;
+  background-color: #0a0f14;
 }
 :root[data-theme="dark"] button:active {
-  background-color: #0f0f0f69;
+  background-color: #10181f;
 }
