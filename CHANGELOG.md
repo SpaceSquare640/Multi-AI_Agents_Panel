@@ -2,6 +2,21 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.1.101-alpha] - 2026-08-22
+
+### Changes
+
+- Redesign(ui): eDEX-UI retheme phase 2 (remaining 6 screens' CSS)
+- Chore: bump version to 0.1.101-alpha
+
+## [0.1.100-alpha] - 2026-08-22
+
+### Changes
+
+- Chore: update CHANGELOG.md for v0.1.99-alpha [skip ci]
+- Redesign(ui): eDEX-UI-inspired retheme, phase 1 (global + Usage)
+- Chore: bump version to 0.1.100-alpha
+
 ## [0.1.99-alpha] - 2026-08-22
 
 ### Added
