@@ -113,3 +113,27 @@ pub fn ollama_models() -> Vec<CuratedModel> {
     })
     .collect()
 }
+
+/// The `--model-id` string sent to a locally running `coli serve`
+/// (github.com/JustVugg/colibri) is whatever the user chose when they
+/// started that process, not a value this app controls — these are just
+/// the six supported model families' example ids from colibrì's own
+/// README, listed as a starting point (same "just a starting point"
+/// caveat as every other curated list here, doubly true for a value the
+/// user must actually match against their own `coli serve` invocation).
+pub fn colibri_models() -> Vec<CuratedModel> {
+    [
+        ("glm-5.2-colibri", "GLM-5.2 (744B MoE)"),
+        ("inkling", "Inkling (975B)"),
+        ("kimi-k3", "Kimi K3 (2.8T)"),
+        ("deepseek-v4-flash", "DeepSeek V4 Flash (284B)"),
+        ("qwen3.6", "Qwen3.6 (35B-A3B)"),
+        ("olmoe", "OLMoE (7B)"),
+    ]
+    .into_iter()
+    .map(|(id, label)| CuratedModel {
+        id: id.to_string(),
+        label: label.to_string(),
+    })
+    .collect()
+}

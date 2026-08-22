@@ -19,7 +19,14 @@ import type {
 } from "./types";
 import "./Chat.css";
 
-const PROVIDER_OPTIONS = ["anthropic", "openai", "openrouter", "ollama"] as const;
+const PROVIDER_OPTIONS = ["anthropic", "openai", "openrouter", "ollama", "colibri"] as const;
+
+/// Providers that run as a local server the user starts themselves —
+/// no Key Vault entry to pick/pin, unlike the cloud providers above.
+const LOCAL_PROVIDERS = ["ollama", "colibri"] as const;
+function isLocalProvider(provider: string): boolean {
+  return (LOCAL_PROVIDERS as readonly string[]).includes(provider);
+}
 
 /// Per-session state, kept independently for every *open* tab so that
 /// sending a message in one session never blocks, resets, or loses state
@@ -220,7 +227,7 @@ export default function Chat() {
       })
       .catch((e) => setError(String(e)));
     setNewAgentPinnedKeyId("");
-    if (newAgentProvider === "ollama") {
+    if (isLocalProvider(newAgentProvider)) {
       setNewAgentProviderKeys([]);
     } else {
       invoke<ProviderKeyView[]>("list_provider_keys")
@@ -264,7 +271,7 @@ export default function Chat() {
         name: newAgentName,
         roleTemplate: selectedTemplate?.name ?? null,
         systemPrompt: newAgentSystemPrompt || null,
-        providerKind: newAgentProvider === "ollama" ? "local" : "cloud",
+        providerKind: isLocalProvider(newAgentProvider) ? "local" : "cloud",
         providerName: newAgentProvider,
         model: newAgentModel,
       });
@@ -302,7 +309,7 @@ export default function Chat() {
     setFallbackChain((prev) => [
       ...prev,
       {
-        providerKind: fallbackProvider === "ollama" ? "local" : "cloud",
+        providerKind: isLocalProvider(fallbackProvider) ? "local" : "cloud",
         providerName: fallbackProvider,
         model: fallbackModel.trim(),
       },
@@ -1133,7 +1140,7 @@ export default function Chat() {
               value={newAgentSystemPrompt}
               onChange={(e) => setNewAgentSystemPrompt(e.target.value)}
             />
-            {newAgentProvider !== "ollama" && (
+            {!isLocalProvider(newAgentProvider) && (
               <select value={newAgentPinnedKeyId} onChange={(e) => setNewAgentPinnedKeyId(e.target.value)}>
                 <option value="">{t("chat.useLatestKeyDefault", { provider: newAgentProvider })}</option>
                 {newAgentProviderKeys.map((k) => (

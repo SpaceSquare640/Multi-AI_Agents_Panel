@@ -122,6 +122,7 @@ enum Provider {
     OpenRouter,
     OpenAi,
     Ollama,
+    Colibri,
 }
 
 impl Provider {
@@ -131,6 +132,7 @@ impl Provider {
             "openrouter" => Some(Provider::OpenRouter),
             "openai" => Some(Provider::OpenAi),
             "ollama" => Some(Provider::Ollama),
+            "colibri" => Some(Provider::Colibri),
             _ => None,
         }
     }
@@ -197,6 +199,15 @@ fn dispatch_one(
             &[()],
             |_| "local Ollama".to_string(),
             |_| providers::ollama::send(model, messages),
+            |_, _| {},
+        ),
+        // Colibrì (github.com/JustVugg/colibri) is local like Ollama —
+        // the user runs their own `coli serve` process, so there's
+        // nothing in Key Vault to rotate across either.
+        Provider::Colibri => run_with_fallback(
+            &[()],
+            |_| "local colibrì".to_string(),
+            |_| providers::colibri::send(model, messages),
             |_, _| {},
         ),
     }
@@ -432,6 +443,7 @@ mod tests {
         assert_eq!(Provider::parse("openrouter"), Some(Provider::OpenRouter));
         assert_eq!(Provider::parse("openai"), Some(Provider::OpenAi));
         assert_eq!(Provider::parse("ollama"), Some(Provider::Ollama));
+        assert_eq!(Provider::parse("colibri"), Some(Provider::Colibri));
         assert_eq!(Provider::parse("Anthropic"), None); // case-sensitive, no typo tolerance
         assert_eq!(Provider::parse("not-a-real-provider"), None);
     }

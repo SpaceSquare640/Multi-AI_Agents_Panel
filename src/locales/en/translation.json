@@ -125,7 +125,8 @@
         "paragraphs": [
           "Local Agents run entirely on your own device through Ollama — nothing you send them leaves your machine, and there's no per-call cost.",
           "Install Ollama itself first (this app doesn't bundle it). Once it's running, the AI Control Center's \"Local AI Models (Ollama)\" section shows what's installed and lets you pull new models by name — no terminal needed.",
-          "When creating an Agent, pick \"local\" as its provider kind and choose an installed model. Larger models need more RAM/VRAM; if a model is too large for your hardware it will simply run very slowly or fail to load."
+          "When creating an Agent, pick \"local\" as its provider kind and choose an installed model. Larger models need more RAM/VRAM; if a model is too large for your hardware it will simply run very slowly or fail to load.",
+          "\"colibri\" is a second local provider option, for colibrì (github.com/JustVugg/colibri) — a separate, dependency-free inference engine for very large MoE models that stream weights across VRAM/RAM/disk. Same idea as Ollama: install and run it yourself (start it with `coli serve`), and this app talks to it over localhost — nothing bundled, nothing sent off your machine."
         ]
       },
       {
