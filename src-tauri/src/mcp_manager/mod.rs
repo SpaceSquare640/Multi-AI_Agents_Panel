@@ -115,15 +115,11 @@ pub async fn call_tool(
         TokioChildProcess::new(build_command(config)).map_err(|e| McpError::Connection(e.to_string()))?;
     let service = ().serve(transport).await.map_err(|e| McpError::Connection(e.to_string()))?;
 
-    let result = service
-        .call_tool(CallToolRequestParams {
-            meta: None,
-            name: tool_name.to_string().into(),
-            arguments: arguments.as_object().cloned(),
-            task: None,
-        })
-        .await
-        .map_err(|e| McpError::Protocol(e.to_string()))?;
+    let mut request = CallToolRequestParams::new(tool_name.to_string());
+    if let Some(args) = arguments.as_object().cloned() {
+        request = request.with_arguments(args);
+    }
+    let result = service.call_tool(request).await.map_err(|e| McpError::Protocol(e.to_string()))?;
 
     let _ = service.cancel().await;
 

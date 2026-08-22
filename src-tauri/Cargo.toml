@@ -45,6 +45,10 @@ turbovec = "1"
 # the existing Python Skills bridge). See mcp_manager's doc comment for
 # what's wired in vs. staged; see the vault's "MCP Integration Options.md"
 # research for why rmcp was chosen over the community alternatives.
-rmcp = { version = "0", features = ["client", "transport-child-process"] }
+# Pinned >=1.4.0 to avoid RUSTSEC-2026-0189 (DNS rebinding in rmcp's
+# Streamable HTTP *server* transport — a transport this app doesn't even
+# enable, since only the client/stdio features are used, but cargo-audit
+# flags the vulnerable version regardless of which features are on).
+rmcp = { version = "3", features = ["client", "transport-child-process"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "process", "io-util"] }
 
