@@ -2,6 +2,13 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.2.0-alpha] - 2026-08-22
+
+### Changes
+
+- Chore: update CHANGELOG.md for v0.1.104-alpha [skip ci]
+- Chore: bump to 0.2.0-alpha, adopt minor-version-per-milestone policy
+
 ## [0.1.104-alpha] - 2026-08-22
 
 ### Changes
