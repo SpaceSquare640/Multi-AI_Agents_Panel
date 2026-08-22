@@ -4,13 +4,14 @@
 //! meeting summarization).
 //!
 //! This module implements the part of `Orchestration Design.md` that has
-//! a real execution point today: Group Chat's loop safety-net and
-//! meeting-end summarizer selection. It deliberately does **not**
-//! implement the DAG task-decomposition Planner/Aggregator pipeline
-//! described in that doc — that needs a task-graph engine that doesn't
-//! exist yet (see Backlog). Building that scaffolding now, with nothing
-//! to run through it, would be the same mistake `guardrails` explicitly
-//! avoids: enforcement-shaped code with no real enforcement behind it.
+//! a real execution point today: Group Chat's loop safety-net,
+//! meeting-end summarizer selection, and (see `dag` submodule) the
+//! DAG task-decomposition Planner/Aggregator pipeline described in that
+//! doc — added once there was something real to run through it (queue
+//! item 5/8, see Backlog): `dag::run` actually dispatches every task
+//! node through `agent_manager::send_message`, the same Guardrails-gated
+//! path any other message takes.
+
 //!
 //! ## Why a turn cap instead of real disagreement detection
 //! `Session Types.md` asks for "3 rounds of disagreement, then hand back
@@ -22,6 +23,8 @@
 //! satisfies the actual safety goal — no unbounded Agent↔Agent loop
 //! without the user able to step in — without pretending to detect
 //! disagreement it doesn't detect.
+
+pub mod dag;
 
 use crate::session_manager;
 use crate::storage::{Agent, GroupSessionState};

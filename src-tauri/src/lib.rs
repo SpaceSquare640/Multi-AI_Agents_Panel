@@ -204,6 +204,7 @@ pub fn run() {
             commands::revoke_mcp_access,
             commands::list_mcp_server_tools,
             commands::check_for_update,
+            commands::run_task_dag,
             commands::call_mcp_tool,
             commands::run_mcp_tool_in_session,
             commands::create_group_session,

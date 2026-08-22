@@ -1304,6 +1304,46 @@ pub async fn check_for_update(current_version: String) -> Result<update_check::U
         .map_err(|e| e.to_string())?
 }
 
+/// One node of a task DAG as submitted over Tauri IPC — see
+/// `orchestrator::dag`. `agent_id` is looked up against `Storage` here
+/// (not resolved by the frontend) so a stale/deleted agent id surfaces
+/// as the same `DagError::UnknownAgent` the module already handles,
+/// rather than a separate frontend-side failure mode.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskNodeInput {
+    pub id: String,
+    pub agent_id: String,
+    pub prompt: String,
+    pub depends_on: Vec<String>,
+}
+
+/// Runs a task DAG (`orchestrator::dag`) end to end: validates the graph
+/// shape, resolves every referenced `agent_id` against `Storage` up
+/// front, then dispatches each node in dependency order through
+/// `agent_manager::send_message` — the same Guardrails-gated path every
+/// other message takes. Returns every node's output keyed by node id;
+/// the frontend decides what to do with a multi-node result (e.g. show
+/// each node's output in its own card).
+#[tauri::command]
+pub fn run_task_dag(storage: State<Storage>, nodes: Vec<TaskNodeInput>) -> Result<std::collections::HashMap<String, String>, String> {
+    let dag = orchestrator::dag::TaskDag {
+        nodes: nodes
+            .into_iter()
+            .map(|n| orchestrator::dag::TaskNode { id: n.id, agent_id: n.agent_id, prompt: n.prompt, depends_on: n.depends_on })
+            .collect(),
+    };
+
+    let agent_ids: std::collections::HashSet<&str> = dag.nodes.iter().map(|n| n.agent_id.as_str()).collect();
+    let mut agents = std::collections::HashMap::new();
+    for id in agent_ids {
+        let agent = storage.get_agent(id).map_err(|e| e.to_string())?.ok_or_else(|| format!("agent {id} not found"))?;
+        agents.insert(id.to_string(), agent);
+    }
+
+    orchestrator::dag::run(&storage, &dag, &agents).map_err(|e| e.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
