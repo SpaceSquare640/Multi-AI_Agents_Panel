@@ -17,7 +17,7 @@
   background: var(--card-bg);
   color: var(--card-fg);
   border: 1px solid var(--card-border);
-  border-radius: 16px;
+  border-radius: 2px;
   padding: 1.75rem 2rem;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
 }
@@ -44,7 +44,7 @@
 .onboarding-category {
   background: var(--card-bg-alt);
   border: 1px solid var(--card-border);
-  border-radius: 10px;
+  border-radius: 2px;
   padding: 0.75rem 1rem;
 }
 
@@ -88,7 +88,7 @@
   padding: 0.5rem 1.3rem;
   background: #4b5eea;
   color: white;
-  border-radius: 8px;
+  border-radius: 2px;
 }
 
 .onboarding-continue:disabled {

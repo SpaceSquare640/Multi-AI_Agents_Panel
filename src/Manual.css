@@ -8,7 +8,7 @@
 .manual-toc {
   width: 260px;
   flex: 0 0 auto;
-  border-right: 1px solid rgba(128, 128, 128, 0.3);
+  border-right: 1px solid var(--card-border);
   padding: 1.25rem 0.9rem;
   overflow-y: auto;
 }
@@ -34,7 +34,7 @@
   background: none;
   box-shadow: none;
   border: none;
-  border-radius: 8px;
+  border-radius: 2px;
   padding: 0.45rem 0.6rem;
   font-size: 0.85rem;
   margin-bottom: 2px;

@@ -21,7 +21,7 @@
 .theme-toggle {
   display: flex;
   gap: 0.3rem;
-  border: 1px solid rgba(128, 128, 128, 0.3);
+  border: 1px solid var(--card-border);
   border-radius: 999px;
   padding: 0.2rem;
 }
@@ -36,7 +36,7 @@
 }
 
 .theme-opt.active {
-  background: #396cd8;
+  background: var(--edex-cyan);
   color: white;
 }
 
@@ -44,12 +44,12 @@
   font-size: 0.75rem;
   padding: 0.15rem 0.6rem;
   border-radius: 999px;
-  background: rgba(128, 128, 128, 0.2);
+  background: var(--edex-cyan-dim);
   opacity: 0.75;
 }
 
 .lang-tag.active {
-  background: #396cd822;
-  color: #396cd8;
+  background: rgba(0, 217, 255, 0.13);
+  color: var(--edex-cyan);
   opacity: 1;
 }

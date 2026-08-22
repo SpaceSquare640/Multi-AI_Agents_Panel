@@ -10,7 +10,7 @@
 }
 
 .acc-section h2 {
-  border-bottom: 1px solid rgba(128, 128, 128, 0.3);
+  border-bottom: 1px solid var(--card-border);
   padding-bottom: 0.4rem;
 }
 
@@ -18,7 +18,7 @@
   background: var(--error-bg);
   color: var(--error-fg);
   border: 1px solid var(--error-border);
-  border-radius: 8px;
+  border-radius: 2px;
   padding: 0.6rem 1rem;
   margin-bottom: 1rem;
   display: flex;
@@ -65,7 +65,7 @@ textarea {
   width: 100%;
   font-family: monospace;
   font-size: 0.85rem;
-  border-radius: 8px;
+  border-radius: 2px;
   padding: 0.6rem;
   box-sizing: border-box;
 }
@@ -80,7 +80,7 @@ textarea {
 .acc-table td {
   text-align: left;
   padding: 0.4rem 0.6rem;
-  border-bottom: 1px solid rgba(128, 128, 128, 0.2);
+  border-bottom: 1px solid var(--edex-cyan-dim);
   font-size: 0.9rem;
 }
 
@@ -102,7 +102,7 @@ textarea {
 
 .acc-model-list li {
   padding: 0.3rem 0;
-  border-bottom: 1px solid rgba(128, 128, 128, 0.15);
+  border-bottom: 1px solid var(--edex-cyan-dim);
   display: flex;
   align-items: center;
   gap: 0.5rem;
