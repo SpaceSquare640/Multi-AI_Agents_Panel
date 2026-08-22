@@ -2,6 +2,13 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.1.88-alpha] - 2026-08-22
+
+### Changes
+
+- Chore: update CHANGELOG.md for v0.1.87-alpha [skip ci]
+- Convert Skills.tsx to i18n as the second slice
+
 ## [0.1.87-alpha] - 2026-08-21
 
 ### Added
