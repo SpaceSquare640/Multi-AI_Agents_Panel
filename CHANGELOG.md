@@ -2,6 +2,14 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.1.102-alpha] - 2026-08-22
+
+### Changes
+
+- Chore: update CHANGELOG.md for v0.1.101-alpha [skip ci]
+- Redesign(ui): Chat.tsx deep layout redesign, eDEX-UI terminal panels
+- Chore: bump version to 0.1.102-alpha
+
 ## [0.1.101-alpha] - 2026-08-22
 
 ### Changes
