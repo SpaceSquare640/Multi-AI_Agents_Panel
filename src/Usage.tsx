@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import type { UsageSummary } from "./types";
 import "./Usage.css";
@@ -36,6 +37,7 @@ export function isOverSoftCap(totalCalls: number, rawCapInput: string): boolean 
  *  entry to log against — see `dispatch_one`), so `totalCalls` here is
  *  already cloud-only, which is the number that actually costs money. */
 export default function Usage() {
+  const { t } = useTranslation();
   const [usage, setUsage] = useState<UsageSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -87,9 +89,9 @@ export default function Usage() {
   return (
     <div className="usage-screen">
       <div className="usage-head">
-        <h1>Usage</h1>
+        <h1>{t("usage.title")}</h1>
         <button onClick={() => void refresh()} disabled={loading}>
-          {loading ? "Refreshing…" : "Refresh"}
+          {loading ? t("usage.refreshing") : t("usage.refresh")}
         </button>
       </div>
 
@@ -97,50 +99,45 @@ export default function Usage() {
 
       <div className="usage-kpi-row">
         <div className="usage-kpi-card">
-          <div className="usage-kpi-label">Total calls</div>
+          <div className="usage-kpi-label">{t("usage.totalCalls")}</div>
           <div className="usage-kpi-value">{totalCalls.toLocaleString()}</div>
         </div>
         <div className="usage-kpi-card">
-          <div className="usage-kpi-label">Failed calls</div>
+          <div className="usage-kpi-label">{t("usage.failedCalls")}</div>
           <div className="usage-kpi-value">{totalFailure.toLocaleString()}</div>
         </div>
         <div className="usage-kpi-card">
-          <div className="usage-kpi-label">Failure rate</div>
+          <div className="usage-kpi-label">{t("usage.failureRate")}</div>
           <div className="usage-kpi-value">{failureRate.toFixed(1)}%</div>
         </div>
       </div>
 
       <div className="usage-budget-row">
-        <label htmlFor="usage-soft-cap">Soft call budget</label>
+        <label htmlFor="usage-soft-cap">{t("usage.softBudget")}</label>
         <input
           id="usage-soft-cap"
           type="number"
           min={1}
-          placeholder="unset"
+          placeholder={t("usage.unset")}
           value={softCapInput}
           onChange={(e) => updateSoftCap(e.target.value)}
         />
-        <span className="acc-hint">calls — a local reminder only, doesn't block anything</span>
+        <span className="acc-hint">{t("usage.softBudgetHint")}</span>
       </div>
 
       {overSoftCap && (
         <div className="usage-budget-warning">
-          ⚠ You've reached your soft budget of {softCap!.toLocaleString()} calls ({totalCalls.toLocaleString()} so
-          far). This is only a reminder — cloud Agents keep working.
+          {t("usage.budgetWarning", { cap: softCap!.toLocaleString(), total: totalCalls.toLocaleString() })}
         </div>
       )}
 
-      <p className="acc-hint">
-        Estimated cost isn't shown yet — this app doesn't record token counts or per-model pricing
-        today, so there's nothing real to compute it from. See the per-key breakdown below (also on
-        the AI Control Center page) for raw success/failure counts.
-      </p>
+      <p className="acc-hint">{t("usage.costHint")}</p>
 
-      {!loading && usage.length === 0 && <p className="acc-empty">No usage recorded yet.</p>}
+      {!loading && usage.length === 0 && <p className="acc-empty">{t("usage.noneRecorded")}</p>}
 
       {providerRows.length > 0 && (
         <div className="usage-provider-panel">
-          <div className="usage-panel-title">Calls by provider</div>
+          <div className="usage-panel-title">{t("usage.callsByProvider")}</div>
           {providerRows.map(([provider, v]) => {
             const total = v.success + v.failure;
             const pct = (total / maxProviderTotal) * 100;

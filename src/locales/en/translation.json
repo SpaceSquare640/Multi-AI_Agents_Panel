@@ -41,5 +41,20 @@
     "usedByNone": "Not used by any Agent",
     "usedByCount_one": "Used by {{count}} Agent",
     "usedByCount_other": "Used by {{count}} Agents"
+  },
+  "usage": {
+    "title": "Usage",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing…",
+    "totalCalls": "Total calls",
+    "failedCalls": "Failed calls",
+    "failureRate": "Failure rate",
+    "softBudget": "Soft call budget",
+    "unset": "unset",
+    "softBudgetHint": "calls — a local reminder only, doesn't block anything",
+    "budgetWarning": "⚠ You've reached your soft budget of {{cap}} calls ({{total}} so far). This is only a reminder — cloud Agents keep working.",
+    "costHint": "Estimated cost isn't shown yet — this app doesn't record token counts or per-model pricing today, so there's nothing real to compute it from. See the per-key breakdown below (also on the AI Control Center page) for raw success/failure counts.",
+    "noneRecorded": "No usage recorded yet.",
+    "callsByProvider": "Calls by provider"
   }
 }
