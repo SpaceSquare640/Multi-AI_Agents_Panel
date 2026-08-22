@@ -173,12 +173,21 @@ pub fn is_running(state: &GameAgentState) -> bool {
 //
 // Everything below manages `game_agent_rl`'s Python CLI as a background
 // subprocess — the "record" stage of the design doc's §4 pipeline
-// (record → label → train-bc → train-rl → play). Only `record` exists
-// on the Python side so far; `label`/`train-bc`/`train-rl`/`play` are
-// future work, not stubbed here. Per ADR 0005, this is a standalone CLI
-// tool Rust starts/monitors/stops — not the JSON-RPC bridge pattern
-// `skill_manager`/`ml_engine` use, since a recording session is a
-// long-running background job, not a request/response call.
+// (record → label → train-bc → train-rl → play). `record` and `label`
+// both exist on the Python side now (`game_agent_rl/record.py`,
+// `game_agent_rl/label.py`) — `train-bc`/`train-rl`/`play` are still
+// future work, not stubbed here. Only `record` is wired into Rust below:
+// it's the one long-running background job that needs a start/stop
+// lifecycle Rust manages. `label` is a short, one-shot CLI invocation
+// over an already-recorded session directory (`python -m game_agent_rl.cli
+// label --session-dir <dir>`) — a developer/researcher runs it manually
+// once real demonstration data exists, the same "run this yourself"
+// posture as the rest of `game_agent_rl` (see `resolve_recording_dir`'s
+// doc comment on why this directory isn't bundled). Per ADR 0005,
+// `record` is a standalone CLI tool Rust starts/monitors/stops — not the
+// JSON-RPC bridge pattern `skill_manager`/`ml_engine` use, since a
+// recording session is a long-running background job, not a
+// request/response call.
 
 /// Resolves the `game_agent_rl/` directory: the packaged resource
 /// location first, falling back to the repo-relative path for `cargo

@@ -67,6 +67,13 @@ class Recorder:
     def capture_one_frame(self) -> Path:
         path = self.dir / frame_filename(self.frame_count)
         self._capture_frame(path)
+        # Logged as a "frame" event alongside input events (not a
+        # separate file) so the label stage only has to read one
+        # timeline to know both when each frame was captured and when
+        # each input event happened — actual capture timing can drift
+        # from the requested fps (scheduling jitter, slow disk, etc.),
+        # so this is the real timestamp, not `index / fps`.
+        self.log_event("frame", index=self.frame_count, filename=path.name)
         self.frame_count += 1
         return path
 
