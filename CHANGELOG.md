@@ -2,6 +2,17 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.10.0-alpha] - 2026-08-22
+
+### Added
+
+- Add per-agent long-term memory (Beta queue 6/8)
+
+### Changes
+
+- Chore: update CHANGELOG.md for v0.9.0-alpha [skip ci]
+- Chore: bump version to 0.10.0-alpha
+
 ## [0.9.0-alpha] - 2026-08-22
 
 ### Added
