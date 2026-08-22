@@ -108,6 +108,26 @@ export interface SkillAccessGrant {
   grantedAt: string;
 }
 
+export interface McpServer {
+  id: string;
+  name: string;
+  command: string;
+  args: string[];
+  createdAt: string;
+}
+
+export interface McpAccessGrant {
+  id: string;
+  agentId: string;
+  mcpServerId: string;
+  grantedAt: string;
+}
+
+export interface McpTool {
+  name: string;
+  description: string | null;
+}
+
 export interface MlCapabilityManifest {
   name: string;
   description: string;

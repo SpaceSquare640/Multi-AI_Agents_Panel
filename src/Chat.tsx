@@ -7,6 +7,9 @@ import type {
   CuratedModel,
   FileAccessGrant,
   GroupTurnResult,
+  McpAccessGrant,
+  McpServer,
+  McpTool,
   Message,
   MlAccessGrant,
   MlCapabilityManifest,
@@ -44,6 +47,11 @@ interface TabState {
   fileGrants: FileAccessGrant[];
   /** Skills this tab's agent may call. Empty for group tabs (not wired up yet — see Backlog). */
   skillGrants: SkillAccessGrant[];
+  /** MCP servers this tab's agent may call tools on. Same "independent
+   *  sessions only for now" scope as skillGrants — see mcp_manager
+   *  module docs for what per-agent authorization covers (a whole
+   *  server, not individual tools within it). */
+  mcpGrants: McpAccessGrant[];
   /** ML capabilities (e.g. semantic_search) this tab's agent may call.
    *  Independent Sessions only for now — Group Chat semantic search needs
    *  File Access sharing to land first (see Backlog). */
@@ -72,6 +80,7 @@ function emptyTab(): TabState {
     members: [],
     fileGrants: [],
     skillGrants: [],
+    mcpGrants: [],
     mlGrants: [],
     searchResults: null,
     draft: "",
@@ -112,6 +121,20 @@ export default function Chat() {
   const [runSkillPayload, setRunSkillPayload] = useState("{}");
   const [runningSkill, setRunningSkill] = useState(false);
   const [importingSkill, setImportingSkill] = useState(false);
+
+  // MCP servers: same catalog + per-tab-grants + "run one now" pattern as
+  // Skills, plus one extra step Skills doesn't need — a server's tool
+  // list isn't known until it's actually connected to, so running a
+  // tool means picking a granted server first, then a live-fetched tool
+  // from that specific server (mcpToolsForRun), not a single flat list.
+  const [availableMcpServers, setAvailableMcpServers] = useState<McpServer[]>([]);
+  const [mcpServerToGrant, setMcpServerToGrant] = useState("");
+  const [runMcpServerId, setRunMcpServerId] = useState("");
+  const [mcpToolsForRun, setMcpToolsForRun] = useState<McpTool[]>([]);
+  const [loadingMcpTools, setLoadingMcpTools] = useState(false);
+  const [runMcpToolName, setRunMcpToolName] = useState("");
+  const [runMcpToolPayload, setRunMcpToolPayload] = useState("{}");
+  const [runningMcpTool, setRunningMcpTool] = useState(false);
 
   // Semantic search (ml_engine): same catalog + per-tab-grants pattern as
   // Skills. Index name is always the agent's id for now — Group Chat's
@@ -204,6 +227,9 @@ export default function Chat() {
     refreshRoleTemplates().catch((e) => setError(String(e)));
     invoke<SkillManifest[]>("list_skills")
       .then(setAvailableSkills)
+      .catch((e) => setError(String(e)));
+    invoke<McpServer[]>("list_mcp_servers")
+      .then(setAvailableMcpServers)
       .catch((e) => setError(String(e)));
     invoke<MlCapabilityManifest[]>("list_ml_capabilities")
       .then(setAvailableMlCapabilities)
@@ -350,14 +376,15 @@ export default function Chat() {
           invoke<string | null>("get_session_agent_id", { sessionId }),
         ]);
         const agent = agents.find((a) => a.id === agentId) ?? null;
-        const [fileGrants, skillGrants, mlGrants] = agent
+        const [fileGrants, skillGrants, mcpGrants, mlGrants] = agent
           ? await Promise.all([
               invoke<FileAccessGrant[]>("list_file_access_grants", { agentId: agent.id }),
               invoke<SkillAccessGrant[]>("list_skill_access_grants", { agentId: agent.id }),
+              invoke<McpAccessGrant[]>("list_mcp_access_grants", { agentId: agent.id }),
               invoke<MlAccessGrant[]>("list_ml_access_grants_for_agent", { agentId: agent.id }),
             ])
-          : [[], [], []];
-        patchTab(sessionId, { kind, messages, agent, members: [], fileGrants, skillGrants, mlGrants });
+          : [[], [], [], []];
+        patchTab(sessionId, { kind, messages, agent, members: [], fileGrants, skillGrants, mcpGrants, mlGrants });
       }
     } catch (err) {
       setError(String(err));
@@ -617,6 +644,85 @@ export default function Chat() {
       setError(String(err));
     } finally {
       setRunningSkill(false);
+    }
+  }
+
+  async function handleGrantMcp(sessionId: string) {
+    const agent = tabs[sessionId]?.agent;
+    if (!agent || !mcpServerToGrant) return;
+    setError(null);
+    try {
+      await invoke("grant_mcp_access", { agentId: agent.id, mcpServerId: mcpServerToGrant });
+      const mcpGrants = await invoke<McpAccessGrant[]>("list_mcp_access_grants", { agentId: agent.id });
+      patchTab(sessionId, { mcpGrants });
+      setMcpServerToGrant("");
+    } catch (err) {
+      setError(String(err));
+    }
+  }
+
+  async function handleRevokeMcp(sessionId: string, id: string) {
+    const agent = tabs[sessionId]?.agent;
+    if (!agent) return;
+    setError(null);
+    try {
+      await invoke("revoke_mcp_access", { id });
+      const mcpGrants = await invoke<McpAccessGrant[]>("list_mcp_access_grants", { agentId: agent.id });
+      patchTab(sessionId, { mcpGrants });
+    } catch (err) {
+      setError(String(err));
+    }
+  }
+
+  /// Fetches the tool list for whichever granted server the "run a
+  /// tool" form's server dropdown just selected — a live connect/
+  /// list_tools call (see mcp_manager module docs: no persistent
+  /// connection is kept per server), not a cached lookup.
+  async function handleSelectMcpServerForRun(mcpServerId: string) {
+    setRunMcpServerId(mcpServerId);
+    setRunMcpToolName("");
+    setMcpToolsForRun([]);
+    if (!mcpServerId) return;
+    setLoadingMcpTools(true);
+    try {
+      setMcpToolsForRun(await invoke<McpTool[]>("list_mcp_server_tools", { mcpServerId }));
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setLoadingMcpTools(false);
+    }
+  }
+
+  /// Runs `runMcpToolName` on `runMcpServerId` with the JSON typed into
+  /// `runMcpToolPayload`, and drops the result into the transcript the
+  /// same way `handleRunSkill` does. Goes through the same Guardrails
+  /// injection screen + per-agent allowlist as every other MCP tool call.
+  async function handleRunMcpTool(sessionId: string) {
+    const agent = tabs[sessionId]?.agent;
+    if (!agent || !runMcpServerId || !runMcpToolName) return;
+    setError(null);
+    let payload: unknown;
+    try {
+      payload = JSON.parse(runMcpToolPayload || "{}");
+    } catch {
+      setError(t("chat.skillPayloadMustBeJson"));
+      return;
+    }
+    setRunningMcpTool(true);
+    try {
+      await invoke("run_mcp_tool_in_session", {
+        sessionId,
+        agentId: agent.id,
+        mcpServerId: runMcpServerId,
+        toolName: runMcpToolName,
+        arguments: payload,
+      });
+      const messages = await invoke<Message[]>("list_messages", { sessionId });
+      patchTab(sessionId, { messages });
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setRunningMcpTool(false);
     }
   }
 
@@ -1392,6 +1498,78 @@ export default function Chat() {
                       onClick={() => handleRunSkill(activeSessionId)}
                     >
                       {runningSkill ? t("chat.running") : t("chat.run")}
+                    </button>
+                  </div>
+                )}
+                <div className="chat-file-access">
+                  <span>{t("chat.mcpServers")}</span>
+                  {activeTab.mcpGrants.length === 0 && <span className="chat-empty">{t("chat.noneGranted")}</span>}
+                  {activeTab.mcpGrants.map((g) => {
+                    const server = availableMcpServers.find((s) => s.id === g.mcpServerId);
+                    return (
+                      <span key={g.id} className="chat-file-chip">
+                        {server?.name ?? g.mcpServerId}
+                        <button
+                          onClick={() => handleRevokeMcp(activeSessionId, g.id)}
+                          title={t("chat.revokeAccess")}
+                          aria-label={t("chat.revokeAccessToMcpServer", { serverName: server?.name ?? g.mcpServerId })}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    );
+                  })}
+                  <select value={mcpServerToGrant} onChange={(e) => setMcpServerToGrant(e.target.value)}>
+                    <option value="">{t("chat.grantAnMcpServer")}</option>
+                    {availableMcpServers
+                      .filter((s) => !activeTab.mcpGrants.some((g) => g.mcpServerId === s.id))
+                      .map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
+                      ))}
+                  </select>
+                  <button className="chat-link-button" disabled={!mcpServerToGrant} onClick={() => handleGrantMcp(activeSessionId)}>
+                    {t("chat.grant")}
+                  </button>
+                </div>
+                {activeTab.mcpGrants.length > 0 && (
+                  <div className="chat-run-skill">
+                    <select value={runMcpServerId} onChange={(e) => handleSelectMcpServerForRun(e.target.value)}>
+                      <option value="">{t("chat.runAnMcpTool")}</option>
+                      {activeTab.mcpGrants.map((g) => {
+                        const server = availableMcpServers.find((s) => s.id === g.mcpServerId);
+                        return (
+                          <option key={g.id} value={g.mcpServerId}>
+                            {server?.name ?? g.mcpServerId}
+                          </option>
+                        );
+                      })}
+                    </select>
+                    <select
+                      value={runMcpToolName}
+                      onChange={(e) => setRunMcpToolName(e.target.value)}
+                      disabled={!runMcpServerId || loadingMcpTools}
+                    >
+                      <option value="">{loadingMcpTools ? t("chat.loadingTools") : t("chat.selectTool")}</option>
+                      {mcpToolsForRun.map((tool) => (
+                        <option key={tool.name} value={tool.name}>
+                          {tool.name}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      placeholder={t("chat.jsonPayloadPlaceholder")}
+                      value={runMcpToolPayload}
+                      onChange={(e) => setRunMcpToolPayload(e.target.value)}
+                    />
+                    <button
+                      className="chat-link-button"
+                      disabled={!runMcpServerId || !runMcpToolName || runningMcpTool}
+                      onClick={() => handleRunMcpTool(activeSessionId)}
+                    >
+                      {runningMcpTool ? t("chat.running") : t("chat.run")}
                     </button>
                   </div>
                 )}

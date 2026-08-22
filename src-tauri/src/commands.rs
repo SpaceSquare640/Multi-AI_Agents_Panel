@@ -13,13 +13,14 @@ use crate::agent_manager::role_templates::{self, RoleTemplate};
 use crate::agent_manager::{self};
 use crate::file_access;
 use crate::key_vault;
+use crate::mcp_manager::{self, McpTool};
 use crate::ml_engine::{self, MlCapabilityManifest};
 use crate::orchestrator::{self, GroupChatError};
 use crate::session_manager;
 use crate::skill_manager::{self, SkillManifest};
 use crate::storage::{
-    Agent, AgentFallbackProvider, FileAccessGrant, MlAccessGrant, Message, ProviderKey, Session, SkillAccessGrant,
-    Storage, UsageSummary,
+    Agent, AgentFallbackProvider, FileAccessGrant, McpAccessGrant, McpServer, MlAccessGrant, Message, ProviderKey,
+    Session, SkillAccessGrant, Storage, UsageSummary,
 };
 use crate::{MlDir, MlEngineRuntimeState, SkillDirs, SkillRuntimeState};
 
@@ -960,6 +961,90 @@ pub fn list_skill_access_grants(storage: State<Storage>, agent_id: String) -> Re
 #[tauri::command]
 pub fn revoke_skill_access(storage: State<Storage>, id: String) -> Result<(), String> {
     storage.revoke_skill_access_grant(&id).map_err(|e| e.to_string())
+}
+
+// --- MCP (Model Context Protocol) client — mirrors the Skills command
+// block above exactly: add/list/delete a server, grant/list/revoke
+// per-agent access, then the two dispatch entry points. See
+// mcp_manager module docs for the enforcement-order guarantee
+// (Guardrails, then the allowlist) these commands rely on.
+
+#[tauri::command]
+pub fn add_mcp_server(storage: State<Storage>, name: String, command: String, args: Vec<String>) -> Result<McpServer, String> {
+    storage.create_mcp_server(&name, &command, &args).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn list_mcp_servers(storage: State<Storage>) -> Result<Vec<McpServer>, String> {
+    storage.list_mcp_servers().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn delete_mcp_server(storage: State<Storage>, id: String) -> Result<(), String> {
+    storage.delete_mcp_server(&id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn grant_mcp_access(storage: State<Storage>, agent_id: String, mcp_server_id: String) -> Result<McpAccessGrant, String> {
+    storage.grant_mcp_access(&agent_id, &mcp_server_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn list_mcp_access_grants(storage: State<Storage>, agent_id: String) -> Result<Vec<McpAccessGrant>, String> {
+    storage.list_mcp_access_grants(&agent_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn revoke_mcp_access(storage: State<Storage>, id: String) -> Result<(), String> {
+    storage.revoke_mcp_access_grant(&id).map_err(|e| e.to_string())
+}
+
+/// Connects to `mcp_server_id` and returns its tools, already screened
+/// for tool-poisoning (see `mcp_manager::list_tools_screened`) — this is
+/// a live network/subprocess call, not a cached list, since this module
+/// doesn't keep a persistent connection open per server (see mcp_manager
+/// module docs).
+#[tauri::command]
+pub async fn list_mcp_server_tools(storage: State<'_, Storage>, mcp_server_id: String) -> Result<Vec<McpTool>, String> {
+    let server = storage
+        .get_mcp_server(&mcp_server_id)
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| format!("E4001 MCP server \"{mcp_server_id}\" not found"))?;
+    let config = mcp_manager::McpServerConfig { command: server.command, args: server.args };
+    mcp_manager::list_tools_screened(&config).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn call_mcp_tool(
+    storage: State<'_, Storage>,
+    agent_id: String,
+    mcp_server_id: String,
+    tool_name: String,
+    arguments: serde_json::Value,
+) -> Result<String, String> {
+    mcp_manager::invoke_mcp_tool(&storage, &agent_id, &mcp_server_id, &tool_name, arguments)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Runs an MCP tool on `agent_id`'s behalf and persists the result into
+/// `session_id`'s message history (`role: "system"`), the same pattern
+/// as `run_skill_in_session` — visible in the transcript, not
+/// attributed to "user" or "assistant".
+#[tauri::command]
+pub async fn run_mcp_tool_in_session(
+    storage: State<'_, Storage>,
+    session_id: String,
+    agent_id: String,
+    mcp_server_id: String,
+    tool_name: String,
+    arguments: serde_json::Value,
+) -> Result<Message, String> {
+    let result = mcp_manager::invoke_mcp_tool(&storage, &agent_id, &mcp_server_id, &tool_name, arguments)
+        .await
+        .map_err(|e| e.to_string())?;
+    let content = format!("[MCP tool \"{tool_name}\" result]\n{result}");
+    storage.add_message(&session_id, Some(&agent_id), "system", &content).map_err(|e| e.to_string())
 }
 
 #[tauri::command]

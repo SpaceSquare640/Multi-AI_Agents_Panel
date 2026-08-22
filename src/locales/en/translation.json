@@ -236,6 +236,12 @@
     "jsonPayloadPlaceholder": "JSON payload, e.g. {\"action\":\"search\",\"indexName\":\"notes\",\"query\":\"...\"}",
     "running": "Running…",
     "run": "Run",
+    "mcpServers": "MCP Servers:",
+    "revokeAccessToMcpServer": "Revoke access to MCP server {{serverName}}",
+    "grantAnMcpServer": "Grant an MCP server…",
+    "runAnMcpTool": "Run a tool on…",
+    "loadingTools": "Loading tools…",
+    "selectTool": "Select a tool…",
     "semanticSearchLabel": "Semantic search:",
     "notGranted": "not granted",
     "revokeAccessToCapability": "Revoke access to {{capabilityName}}",
@@ -337,6 +343,18 @@
       "tableLastUsed": "Last used",
       "noUsageYet": "No usage recorded yet.",
       "never": "never"
+    },
+    "mcp": {
+      "heading": "MCP Servers",
+      "hint": "MCP (Model Context Protocol) servers run as local subprocesses, the same trust level as a Skill — no sandboxing. Only add servers you trust. Grant a specific Agent access to a server from that Agent's panel in Chat.",
+      "namePlaceholder": "Name (e.g. Filesystem)",
+      "commandPlaceholder": "Command (e.g. npx)",
+      "argsPlaceholder": "Arguments, space-separated (e.g. -y @modelcontextprotocol/server-filesystem /path)",
+      "add": "Add server",
+      "tableName": "Name",
+      "tableCommand": "Command",
+      "noneYet": "No MCP servers added yet.",
+      "delete": "Delete"
     },
     "gameAgent": {
       "heading": "Game-Playing Agent (experimental)",

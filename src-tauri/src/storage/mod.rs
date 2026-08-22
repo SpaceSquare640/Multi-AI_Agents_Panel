@@ -147,6 +147,36 @@ pub struct SkillAccessGrant {
     pub granted_at: String,
 }
 
+/// A user-added MCP (Model Context Protocol) server the app can connect
+/// to over stdio — see `mcp_manager` module docs. `args` is stored as a
+/// JSON array of strings (`args_json` column) rather than its own join
+/// table, same reasoning as `AgentFallbackProvider` not needing one for
+/// its scalar fields: a server's argument list is edited as a whole, not
+/// queried by individual argument.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct McpServer {
+    pub id: String,
+    pub name: String,
+    pub command: String,
+    pub args: Vec<String>,
+    pub created_at: String,
+}
+
+/// Grants one Agent permission to call any tool on one `McpServer` —
+/// deliberately per-server, not per-tool-within-a-server, matching
+/// `SkillAccessGrant`'s granularity (a whole Skill, not individual
+/// capabilities inside it). Finer-grained per-tool authorization is a
+/// real possible future refinement, not attempted here.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct McpAccessGrant {
+    pub id: String,
+    pub agent_id: String,
+    pub mcp_server_id: String,
+    pub granted_at: String,
+}
+
 /// Grants access to one `ml_engine` capability (e.g. `semantic_search`).
 /// Unlike `SkillAccessGrant`, this has a scope rather than always being
 /// tied to one agent — see `ML Engine Design.md` in the vault ("同場會議
@@ -309,6 +339,21 @@ impl Storage {
                 agent_id      TEXT NOT NULL REFERENCES agents(id),
                 skill_name    TEXT NOT NULL,
                 granted_at    TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS mcp_servers (
+                id            TEXT PRIMARY KEY,
+                name          TEXT NOT NULL,
+                command       TEXT NOT NULL,
+                args_json     TEXT NOT NULL,
+                created_at    TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS mcp_access_grants (
+                id              TEXT PRIMARY KEY,
+                agent_id        TEXT NOT NULL REFERENCES agents(id),
+                mcp_server_id   TEXT NOT NULL REFERENCES mcp_servers(id),
+                granted_at      TEXT NOT NULL
             );
 
             CREATE TABLE IF NOT EXISTS ml_access_grants (
@@ -1021,6 +1066,89 @@ impl Storage {
         Ok(())
     }
 
+    pub fn create_mcp_server(&self, name: &str, command: &str, args: &[String]) -> rusqlite::Result<McpServer> {
+        let server = McpServer {
+            id: uuid::Uuid::new_v4().to_string(),
+            name: name.to_string(),
+            command: command.to_string(),
+            args: args.to_vec(),
+            created_at: chrono::Utc::now().to_rfc3339(),
+        };
+        let args_json = serde_json::to_string(&server.args).expect("Vec<String> always serializes");
+        self.conn.lock().unwrap().execute(
+            "INSERT INTO mcp_servers (id, name, command, args_json, created_at) VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![server.id, server.name, server.command, args_json, server.created_at],
+        )?;
+        Ok(server)
+    }
+
+    pub fn list_mcp_servers(&self) -> rusqlite::Result<Vec<McpServer>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt =
+            conn.prepare("SELECT id, name, command, args_json, created_at FROM mcp_servers ORDER BY created_at ASC")?;
+        let rows = stmt.query_map([], |row| {
+            let args_json: String = row.get(3)?;
+            let args: Vec<String> = serde_json::from_str(&args_json).unwrap_or_default();
+            Ok(McpServer { id: row.get(0)?, name: row.get(1)?, command: row.get(2)?, args, created_at: row.get(4)? })
+        })?;
+        rows.collect()
+    }
+
+    pub fn get_mcp_server(&self, id: &str) -> rusqlite::Result<Option<McpServer>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare("SELECT id, name, command, args_json, created_at FROM mcp_servers WHERE id = ?1")?;
+        let mut rows = stmt.query_map(params![id], |row| {
+            let args_json: String = row.get(3)?;
+            let args: Vec<String> = serde_json::from_str(&args_json).unwrap_or_default();
+            Ok(McpServer { id: row.get(0)?, name: row.get(1)?, command: row.get(2)?, args, created_at: row.get(4)? })
+        })?;
+        rows.next().transpose()
+    }
+
+    /// Deletes the server and, since `mcp_access_grants.mcp_server_id`
+    /// has no `ON DELETE CASCADE` (SQLite foreign keys are off by
+    /// default and this schema doesn't turn them on), also deletes any
+    /// grants pointing at it — otherwise they'd become permanently
+    /// orphaned rows a UI could never clean up (there's no server left
+    /// to revoke access *from*).
+    pub fn delete_mcp_server(&self, id: &str) -> rusqlite::Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute("DELETE FROM mcp_access_grants WHERE mcp_server_id = ?1", params![id])?;
+        conn.execute("DELETE FROM mcp_servers WHERE id = ?1", params![id])?;
+        Ok(())
+    }
+
+    pub fn grant_mcp_access(&self, agent_id: &str, mcp_server_id: &str) -> rusqlite::Result<McpAccessGrant> {
+        let grant = McpAccessGrant {
+            id: uuid::Uuid::new_v4().to_string(),
+            agent_id: agent_id.to_string(),
+            mcp_server_id: mcp_server_id.to_string(),
+            granted_at: chrono::Utc::now().to_rfc3339(),
+        };
+        self.conn.lock().unwrap().execute(
+            "INSERT INTO mcp_access_grants (id, agent_id, mcp_server_id, granted_at) VALUES (?1, ?2, ?3, ?4)",
+            params![grant.id, grant.agent_id, grant.mcp_server_id, grant.granted_at],
+        )?;
+        Ok(grant)
+    }
+
+    pub fn list_mcp_access_grants(&self, agent_id: &str) -> rusqlite::Result<Vec<McpAccessGrant>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, agent_id, mcp_server_id, granted_at
+             FROM mcp_access_grants WHERE agent_id = ?1 ORDER BY granted_at ASC",
+        )?;
+        let rows = stmt.query_map(params![agent_id], |row| {
+            Ok(McpAccessGrant { id: row.get(0)?, agent_id: row.get(1)?, mcp_server_id: row.get(2)?, granted_at: row.get(3)? })
+        })?;
+        rows.collect()
+    }
+
+    pub fn revoke_mcp_access_grant(&self, id: &str) -> rusqlite::Result<()> {
+        self.conn.lock().unwrap().execute("DELETE FROM mcp_access_grants WHERE id = ?1", params![id])?;
+        Ok(())
+    }
+
     /// `scope_kind` must be `"agent"` or `"session"` — see `MlAccessGrant`
     /// docs. Callers (`commands::grant_ml_capability_to_agent` /
     /// `..._to_session`) are responsible for picking the right one; this
@@ -1488,6 +1616,58 @@ mod tests {
 
         storage.revoke_skill_access_grant(&grant.id).unwrap();
         assert!(storage.list_skill_access_grants(&agent.id).unwrap().is_empty());
+    }
+
+    #[test]
+    fn mcp_server_crud() {
+        let storage = Storage::open_in_memory().unwrap();
+        assert!(storage.list_mcp_servers().unwrap().is_empty());
+
+        let server = storage
+            .create_mcp_server("Everything (reference)", "npx", &["-y".to_string(), "@modelcontextprotocol/server-everything".to_string()])
+            .unwrap();
+        let servers = storage.list_mcp_servers().unwrap();
+        assert_eq!(servers.len(), 1);
+        assert_eq!(servers[0].name, "Everything (reference)");
+        assert_eq!(servers[0].args, vec!["-y".to_string(), "@modelcontextprotocol/server-everything".to_string()]);
+
+        let fetched = storage.get_mcp_server(&server.id).unwrap().expect("just-created server should be found");
+        assert_eq!(fetched.id, server.id);
+        assert!(storage.get_mcp_server("does-not-exist").unwrap().is_none());
+
+        storage.delete_mcp_server(&server.id).unwrap();
+        assert!(storage.list_mcp_servers().unwrap().is_empty());
+    }
+
+    #[test]
+    fn mcp_access_grant_crud() {
+        let storage = Storage::open_in_memory().unwrap();
+        let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude").unwrap();
+        let server = storage.create_mcp_server("test-server", "npx", &[]).unwrap();
+        assert!(storage.list_mcp_access_grants(&agent.id).unwrap().is_empty());
+
+        let grant = storage.grant_mcp_access(&agent.id, &server.id).unwrap();
+        let grants = storage.list_mcp_access_grants(&agent.id).unwrap();
+        assert_eq!(grants.len(), 1);
+        assert_eq!(grants[0].mcp_server_id, server.id);
+
+        storage.revoke_mcp_access_grant(&grant.id).unwrap();
+        assert!(storage.list_mcp_access_grants(&agent.id).unwrap().is_empty());
+    }
+
+    #[test]
+    fn deleting_an_mcp_server_also_deletes_grants_pointing_at_it() {
+        // Without this, a deleted server would leave permanently
+        // orphaned grant rows — there'd be no server left in the UI to
+        // revoke access "from".
+        let storage = Storage::open_in_memory().unwrap();
+        let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude").unwrap();
+        let server = storage.create_mcp_server("test-server", "npx", &[]).unwrap();
+        storage.grant_mcp_access(&agent.id, &server.id).unwrap();
+        assert_eq!(storage.list_mcp_access_grants(&agent.id).unwrap().len(), 1);
+
+        storage.delete_mcp_server(&server.id).unwrap();
+        assert!(storage.list_mcp_access_grants(&agent.id).unwrap().is_empty());
     }
 
     #[test]

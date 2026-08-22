@@ -6,6 +6,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import {
   CLOUD_PROVIDERS,
   type CuratedModel,
+  type McpServer,
   type OllamaModel,
   type OpenRouterModel,
   type ProviderKeyView,
@@ -96,6 +97,16 @@ export default function AIControlCenter() {
   const [fileImportProvider, setFileImportProvider] = useState<string>("openrouter");
   const [fileImportBusy, setFileImportBusy] = useState(false);
 
+  // MCP (Model Context Protocol) servers — see mcp_manager module docs.
+  // Per-agent authorization to actually call a server's tools is
+  // granted from Chat.tsx's agent header (mirrors Skills grant chips),
+  // not here; this section only manages the server list itself.
+  const [mcpServers, setMcpServers] = useState<McpServer[]>([]);
+  const [newMcpName, setNewMcpName] = useState("");
+  const [newMcpCommand, setNewMcpCommand] = useState("");
+  const [newMcpArgs, setNewMcpArgs] = useState("");
+  const [mcpBusy, setMcpBusy] = useState(false);
+
   async function refreshKeys() {
     setKeys(await invoke<ProviderKeyView[]>("list_provider_keys"));
   }
@@ -131,6 +142,41 @@ export default function AIControlCenter() {
     }
   }
 
+  async function refreshMcpServers() {
+    setMcpServers(await invoke<McpServer[]>("list_mcp_servers"));
+  }
+
+  async function handleAddMcpServer(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setMcpBusy(true);
+    try {
+      const args = newMcpArgs
+        .split(/\s+/)
+        .map((a) => a.trim())
+        .filter((a) => a.length > 0);
+      await invoke("add_mcp_server", { name: newMcpName, command: newMcpCommand, args });
+      setNewMcpName("");
+      setNewMcpCommand("");
+      setNewMcpArgs("");
+      await refreshMcpServers();
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setMcpBusy(false);
+    }
+  }
+
+  async function handleDeleteMcpServer(id: string) {
+    setError(null);
+    try {
+      await invoke("delete_mcp_server", { id });
+      await refreshMcpServers();
+    } catch (err) {
+      setError(String(err));
+    }
+  }
+
   useEffect(() => {
     refreshKeys().catch((e) => setError(String(e)));
     refreshUsage().catch((e) => setError(String(e)));
@@ -143,6 +189,7 @@ export default function AIControlCenter() {
       .catch((e) => setError(String(e)));
     invoke<boolean>("game_agent_status").then(setGameAgentRunning).catch((e) => setError(String(e)));
     invoke<boolean>("recording_status").then(setRecording).catch((e) => setError(String(e)));
+    refreshMcpServers().catch((e) => setError(String(e)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -585,6 +632,67 @@ export default function AIControlCenter() {
                 <td>{u.successCount}</td>
                 <td>{u.failureCount}</td>
                 <td>{u.lastUsedAt ?? t("acc.usage.never")}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      <section className="acc-section">
+        <h2>{t("acc.mcp.heading")}</h2>
+        <p className="acc-hint">{t("acc.mcp.hint")}</p>
+        <form className="acc-form" onSubmit={handleAddMcpServer}>
+          <div className="acc-form-row">
+            <input
+              type="text"
+              placeholder={t("acc.mcp.namePlaceholder")}
+              value={newMcpName}
+              onChange={(e) => setNewMcpName(e.target.value)}
+              required
+            />
+            <input
+              type="text"
+              placeholder={t("acc.mcp.commandPlaceholder")}
+              value={newMcpCommand}
+              onChange={(e) => setNewMcpCommand(e.target.value)}
+              required
+            />
+            <input
+              type="text"
+              placeholder={t("acc.mcp.argsPlaceholder")}
+              value={newMcpArgs}
+              onChange={(e) => setNewMcpArgs(e.target.value)}
+            />
+            <button type="submit" disabled={mcpBusy}>
+              {t("acc.mcp.add")}
+            </button>
+          </div>
+        </form>
+        <table className="acc-table">
+          <thead>
+            <tr>
+              <th>{t("acc.mcp.tableName")}</th>
+              <th>{t("acc.mcp.tableCommand")}</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {mcpServers.length === 0 && (
+              <tr>
+                <td colSpan={3} className="acc-empty">
+                  {t("acc.mcp.noneYet")}
+                </td>
+              </tr>
+            )}
+            {mcpServers.map((s) => (
+              <tr key={s.id}>
+                <td>{s.name}</td>
+                <td className="acc-mono">
+                  {s.command} {s.args.join(" ")}
+                </td>
+                <td>
+                  <button onClick={() => handleDeleteMcpServer(s.id)}>{t("acc.mcp.delete")}</button>
+                </td>
               </tr>
             ))}
           </tbody>
