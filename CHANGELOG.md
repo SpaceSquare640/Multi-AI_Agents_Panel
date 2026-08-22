@@ -2,6 +2,13 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.1.91-alpha] - 2026-08-22
+
+### Changes
+
+- Chore: update CHANGELOG.md for v0.1.90-alpha [skip ci]
+- Convert Manual.tsx to i18n as the fifth slice, search matches translated text
+
 ## [0.1.90-alpha] - 2026-08-22
 
 ### Changes
