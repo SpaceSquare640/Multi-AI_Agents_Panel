@@ -2,26 +2,41 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.4.0-alpha] - 2026-08-22
+
+### Added
+
+- Feat: wire Llama Guard 3 into send_message (Beta queue item 1/8)
+
+### Changes
+
+- Chore: manually backfill CHANGELOG.md for v0.3.2-alpha
+- Chore: bump to 0.4.0-alpha (Llama Guard 3 wired in)
+
+### Fixed
+
+- Fix(ci): discard dirty working tree before rebasing in CHANGELOG retry
+
 ## [0.3.2-alpha] - 2026-08-22
-
-### Documentation
-
-- Docs: disclose mcp_manager's accepted-risk threat model in SECURITY.md
 
 ### Changes
 
 - Chore: bump to 0.3.2-alpha (SECURITY.md disclosure)
 
+### Documentation
+
+- Docs: disclose mcp_manager's accepted-risk threat model in SECURITY.md
+
 ## [0.3.1-alpha] - 2026-08-22
-
-### Fixed
-
-- Fix: upgrade rmcp 0.17 -> 3.1.4, fixes RUSTSEC-2026-0189
 
 ### Changes
 
 - Chore: update CHANGELOG.md for v0.3.0-alpha [skip ci]
 - Chore: bump to 0.3.1-alpha (rmcp vulnerability fix)
+
+### Fixed
+
+- Fix: upgrade rmcp 0.17 -> 3.1.4, fixes RUSTSEC-2026-0189
 
 ## [0.3.0-alpha] - 2026-08-22
 
