@@ -2,6 +2,21 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.1.104-alpha] - 2026-08-22
+
+### Changes
+
+- Redesign(ui): eDEX-UI retheme phase 5 (Settings/Skills/Onboarding/Manual)
+- Chore: bump version to 0.1.104-alpha
+
+## [0.1.103-alpha] - 2026-08-22
+
+### Changes
+
+- Chore: update CHANGELOG.md for v0.1.102-alpha [skip ci]
+- Redesign(ui): AIControlCenter.tsx deep layout redesign, eDEX-UI panels
+- Chore: bump version to 0.1.103-alpha
+
 ## [0.1.102-alpha] - 2026-08-22
 
 ### Changes
