@@ -123,6 +123,7 @@ enum Provider {
     OpenAi,
     Ollama,
     Colibri,
+    OmniRoute,
 }
 
 impl Provider {
@@ -133,6 +134,7 @@ impl Provider {
             "openai" => Some(Provider::OpenAi),
             "ollama" => Some(Provider::Ollama),
             "colibri" => Some(Provider::Colibri),
+            "omniroute" => Some(Provider::OmniRoute),
             _ => None,
         }
     }
@@ -208,6 +210,16 @@ fn dispatch_one(
             &[()],
             |_| "local colibrì".to_string(),
             |_| providers::colibri::send(model, messages),
+            |_, _| {},
+        ),
+        // OmniRoute (github.com/diegosouzapw/OmniRoute) is a local,
+        // self-hosted gateway — same "no Key Vault entry" treatment as
+        // Ollama/colibrì, since the user runs their own process and its
+        // "auto" routing target works with no API key at all.
+        Provider::OmniRoute => run_with_fallback(
+            &[()],
+            |_| "local OmniRoute".to_string(),
+            |_| providers::omniroute::send(model, messages),
             |_, _| {},
         ),
     }
@@ -444,6 +456,7 @@ mod tests {
         assert_eq!(Provider::parse("openai"), Some(Provider::OpenAi));
         assert_eq!(Provider::parse("ollama"), Some(Provider::Ollama));
         assert_eq!(Provider::parse("colibri"), Some(Provider::Colibri));
+        assert_eq!(Provider::parse("omniroute"), Some(Provider::OmniRoute));
         assert_eq!(Provider::parse("Anthropic"), None); // case-sensitive, no typo tolerance
         assert_eq!(Provider::parse("not-a-real-provider"), None);
     }

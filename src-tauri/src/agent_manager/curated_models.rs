@@ -114,6 +114,30 @@ pub fn ollama_models() -> Vec<CuratedModel> {
     .collect()
 }
 
+/// A locally running OmniRoute (github.com/diegosouzapw/OmniRoute)
+/// gateway routes hundreds of documented models across 348 providers —
+/// far too many to curate exhaustively, and its actual catalog is only
+/// knowable by asking the running instance (`GET /v1/models`), which
+/// this list deliberately doesn't attempt (see `ML Engine Technical
+/// Options.md`'s "live catalog" precedent in `openrouter_catalog` for
+/// what a real fetch-based version of this would look like — out of
+/// scope for this pass). `"auto"` is OmniRoute's own zero-config,
+/// keyless routing target per its README quickstart; the rest are
+/// illustrative direct-backend examples from the same doc.
+pub fn omniroute_models() -> Vec<CuratedModel> {
+    [
+        ("auto", "Auto (let OmniRoute pick, no key needed)"),
+        ("oc/gpt-4o-mini", "OpenCode Free — GPT-4o mini"),
+        ("felo/gpt-4o", "Felo — GPT-4o"),
+    ]
+    .into_iter()
+    .map(|(id, label)| CuratedModel {
+        id: id.to_string(),
+        label: label.to_string(),
+    })
+    .collect()
+}
+
 /// The `--model-id` string sent to a locally running `coli serve`
 /// (github.com/JustVugg/colibri) is whatever the user chose when they
 /// started that process, not a value this app controls — these are just

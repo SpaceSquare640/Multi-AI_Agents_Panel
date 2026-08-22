@@ -150,6 +150,7 @@ pub fn list_curated_models(provider: String) -> Result<Vec<CuratedModel>, String
         "openrouter" => Ok(curated_models::openrouter_models()),
         "ollama" => Ok(curated_models::ollama_models()),
         "colibri" => Ok(curated_models::colibri_models()),
+        "omniroute" => Ok(curated_models::omniroute_models()),
         other => Err(format!("no curated model list for '{other}' yet")),
     }
 }

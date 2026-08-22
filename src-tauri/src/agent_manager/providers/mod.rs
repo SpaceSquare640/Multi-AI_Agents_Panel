@@ -6,6 +6,7 @@
 pub mod anthropic;
 pub mod colibri;
 pub mod ollama;
+pub mod omniroute;
 pub mod openai;
 pub mod openrouter;
 

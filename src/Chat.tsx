@@ -19,11 +19,11 @@ import type {
 } from "./types";
 import "./Chat.css";
 
-const PROVIDER_OPTIONS = ["anthropic", "openai", "openrouter", "ollama", "colibri"] as const;
+const PROVIDER_OPTIONS = ["anthropic", "openai", "openrouter", "ollama", "colibri", "omniroute"] as const;
 
 /// Providers that run as a local server the user starts themselves —
 /// no Key Vault entry to pick/pin, unlike the cloud providers above.
-const LOCAL_PROVIDERS = ["ollama", "colibri"] as const;
+const LOCAL_PROVIDERS = ["ollama", "colibri", "omniroute"] as const;
 function isLocalProvider(provider: string): boolean {
   return (LOCAL_PROVIDERS as readonly string[]).includes(provider);
 }
