@@ -5,20 +5,46 @@
   text-align: left;
 }
 
+/* Each section reads as its own bordered "window" (same eDEX-UI panel
+   language as Chat.tsx's sidebar/main split) instead of a plain heading
+   over an undifferentiated block — a header bar (h2) on top of a
+   bordered body, matching the terminal-panel-with-titlebar look. */
 .acc-section {
   margin-bottom: 2.5rem;
+  border: 1px solid var(--edex-cyan-dim);
+  background: var(--card-bg);
 }
 
 .acc-section h2 {
-  border-bottom: 1px solid var(--card-border);
-  padding-bottom: 0.4rem;
+  margin: 0;
+  padding: 0.6rem 1rem;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--edex-cyan);
+  background: var(--card-bg-alt);
+  border-bottom: 1px solid var(--edex-cyan-dim);
+}
+
+.acc-section > *:not(h2) {
+  padding-left: 1rem;
+  padding-right: 1rem;
+  box-sizing: border-box;
+}
+
+.acc-section > *:last-child {
+  padding-bottom: 1rem;
+}
+
+.acc-section > h2 + * {
+  padding-top: 1rem;
 }
 
 .acc-error {
   background: var(--error-bg);
   color: var(--error-fg);
-  border: 1px solid var(--error-border);
-  border-radius: 2px;
+  border: none;
+  border-left: 3px solid var(--error-border);
   padding: 0.6rem 1rem;
   margin-bottom: 1rem;
   display: flex;
@@ -36,6 +62,13 @@
 
 .acc-form {
   margin-bottom: 1.25rem;
+}
+
+.acc-form h3 {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.8;
 }
 
 .acc-form-row {
@@ -58,30 +91,56 @@
 }
 
 .acc-hint code {
-  font-family: monospace;
+  font-family: var(--edex-font);
 }
 
 textarea {
   width: 100%;
-  font-family: monospace;
+  font-family: var(--edex-font);
   font-size: 0.85rem;
   border-radius: 2px;
   padding: 0.6rem;
   box-sizing: border-box;
+  border: 1px solid var(--edex-cyan-dim);
+  background: var(--card-bg);
+  color: var(--card-fg);
 }
 
+textarea:focus {
+  border-color: var(--edex-cyan);
+  box-shadow: var(--edex-glow);
+  outline: none;
+}
+
+/* Table headers styled like a terminal readout's column labels —
+   uppercase, cyan, letter-spaced — with the same accent-underline used
+   for section headers elsewhere in the redesign. */
 .acc-table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 0.75rem;
 }
 
-.acc-table th,
+.acc-table th {
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--edex-cyan);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--edex-cyan);
+  opacity: 0.9;
+}
+
 .acc-table td {
   text-align: left;
   padding: 0.4rem 0.6rem;
   border-bottom: 1px solid var(--edex-cyan-dim);
   font-size: 0.9rem;
+}
+
+.acc-table tbody tr:hover td {
+  background: var(--edex-cyan-dim);
 }
 
 .acc-empty {
@@ -90,10 +149,14 @@ textarea {
 }
 
 .acc-mono {
-  font-family: monospace;
+  font-family: var(--edex-font);
   font-size: 0.85em;
 }
 
+/* Model list rows get the same left-border-accent log-line treatment
+   as Chat.tsx's message thread and search results — one consistent
+   "list of readout lines" convention across the app rather than a
+   plain divider-only list here. */
 .acc-model-list {
   list-style: none;
   padding: 0;
@@ -101,8 +164,10 @@ textarea {
 }
 
 .acc-model-list li {
-  padding: 0.3rem 0;
-  border-bottom: 1px solid var(--edex-cyan-dim);
+  padding: 0.35rem 0.5rem;
+  border-left: 3px solid var(--edex-cyan-dim);
+  margin-bottom: 2px;
+  background: var(--card-bg-alt);
   display: flex;
   align-items: center;
   gap: 0.5rem;
