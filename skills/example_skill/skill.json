@@ -2,5 +2,6 @@
   "name": "example_skill",
   "description": "Placeholder skill that echoes its input.",
   "entrypoint": "skill.py",
-  "version": "0.1.0"
+  "version": "0.1.0",
+  "permissions": []
 }

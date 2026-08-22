@@ -99,6 +99,7 @@ export interface SkillManifest {
   entrypoint: string;
   version: string;
   source: string;
+  permissions: string[];
 }
 
 export interface SkillAccessGrant {

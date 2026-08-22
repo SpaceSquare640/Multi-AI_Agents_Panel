@@ -2,5 +2,6 @@
   "name": "raffle_winner_picker",
   "description": "Picks random winners (and optional runner-ups) from a list of entries, with support for exclusions and weighted probability.",
   "entrypoint": "skill.py",
-  "version": "0.1.0"
+  "version": "0.1.0",
+  "permissions": []
 }

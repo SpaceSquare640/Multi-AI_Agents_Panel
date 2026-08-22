@@ -39,6 +39,16 @@ pub struct SkillManifest {
     /// existing manifests/tests that don't set it still parse.
     #[serde(default = "default_source")]
     pub source: String,
+    /// npm-style default-deny permissions: capabilities this skill needs
+    /// beyond pure computation on its `payload` — currently `"network"`
+    /// and `"filesystem"`. Enforced by `_bridge.py` for the duration of
+    /// each call (see `sandbox` there): a skill that doesn't declare a
+    /// permission gets a real `PermissionError` if it tries to use it,
+    /// not just a UI label. Missing/omitted in `skill.json` means no
+    /// permissions — the safe default, matching every existing skill
+    /// before this field existed.
+    #[serde(default)]
+    pub permissions: Vec<String>,
 }
 
 fn default_source() -> String {
@@ -55,6 +65,10 @@ pub enum SkillError {
     ExecutionError(String),
     /// Error Code Registry E4004.
     Timeout,
+    /// Error Code Registry E4005 — the skill called a capability
+    /// (filesystem/network) it didn't declare in `skill.json`'s
+    /// `permissions` array; the sandbox in `_bridge.py` blocked it.
+    PermissionDenied(String),
     /// Error Code Registry E9001 — the Guardrails prompt/tool-injection
     /// screen blocked this call before it reached the bridge.
     GuardrailBlocked(Violation),
@@ -69,6 +83,7 @@ impl SkillError {
             SkillError::NotAuthorized(_) => "E4002",
             SkillError::ExecutionError(_) => "E4003",
             SkillError::Timeout => "E4004",
+            SkillError::PermissionDenied(_) => "E4005",
             SkillError::GuardrailBlocked(v) => v.error_code,
             SkillError::Unknown(_) => "E4000",
         }
@@ -84,6 +99,7 @@ impl std::fmt::Display for SkillError {
             }
             SkillError::ExecutionError(msg) => write!(f, "{} {msg}", self.error_code()),
             SkillError::Timeout => write!(f, "{} skill call timed out", self.error_code()),
+            SkillError::PermissionDenied(msg) => write!(f, "{} {msg}", self.error_code()),
             SkillError::GuardrailBlocked(v) => write!(f, "{v}"),
             SkillError::Unknown(msg) => write!(f, "{} {msg}", self.error_code()),
         }
@@ -264,8 +280,10 @@ fn parse_jsonrpc_response(body: Value, skill_name: &str) -> Result<Value, SkillE
             .and_then(Value::as_str)
             .unwrap_or("unknown skill error")
             .to_string();
-        if error.get("code").and_then(Value::as_i64) == Some(-32601) {
-            return Err(SkillError::NotFound(skill_name.to_string()));
+        match error.get("code").and_then(Value::as_i64) {
+            Some(-32601) => return Err(SkillError::NotFound(skill_name.to_string())),
+            Some(-32001) => return Err(SkillError::PermissionDenied(message)),
+            _ => {}
         }
         return Err(SkillError::ExecutionError(message));
     }
@@ -349,6 +367,26 @@ mod tests {
     }
 
     #[test]
+    fn a_manifest_with_no_permissions_field_defaults_to_no_permissions() {
+        let dir = temp_skills_dir("no-permissions-field");
+        let manifests = discover_skills(&dir);
+        assert!(manifests[0].permissions.is_empty());
+    }
+
+    #[test]
+    fn a_manifest_can_declare_permissions() {
+        let dir = std::env::temp_dir().join(format!("map-skills-test-perms-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(dir.join("networked")).unwrap();
+        std::fs::write(
+            dir.join("networked/skill.json"),
+            r#"{"name":"networked","description":"calls out","entrypoint":"skill.py","version":"0.1.0","permissions":["network"]}"#,
+        )
+        .unwrap();
+        let manifests = discover_skills(&dir);
+        assert_eq!(manifests[0].permissions, vec!["network".to_string()]);
+    }
+
+    #[test]
     fn copy_dir_recursive_copies_nested_files_and_dirs() {
         let src = std::env::temp_dir().join(format!("map-skills-copy-src-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(src.join("nested")).unwrap();
@@ -395,6 +433,17 @@ mod tests {
         let err = parse_jsonrpc_response(body, "nope").unwrap_err();
         assert!(matches!(err, SkillError::NotFound(ref name) if name == "nope"));
         assert_eq!(err.error_code(), "E4001");
+    }
+
+    #[test]
+    fn maps_a_sandbox_permission_error_to_permission_denied() {
+        let body = serde_json::json!({
+            "jsonrpc": "2.0", "id": "1",
+            "error": {"code": -32001, "message": "this skill did not declare the \"network\" permission in its skill.json"}
+        });
+        let err = parse_jsonrpc_response(body, "greeter").unwrap_err();
+        assert!(matches!(err, SkillError::PermissionDenied(ref msg) if msg.contains("network")));
+        assert_eq!(err.error_code(), "E4005");
     }
 
     #[test]
@@ -525,6 +574,78 @@ mod live {
             .unwrap_err();
         assert!(matches!(err, SkillError::NotFound(_)));
         assert_eq!(err.error_code(), "E4001");
+    }
+
+    /// End-to-end proof that the sandbox in `_bridge.py` actually blocks a
+    /// skill that didn't declare the "filesystem" permission — not just
+    /// that the manifest field parses, but that trying to open a file for
+    /// real, through a real Python subprocess, comes back as
+    /// `PermissionDenied` (E4005) rather than silently succeeding or
+    /// failing some other way.
+    #[test]
+    #[ignore]
+    fn a_skill_without_the_filesystem_permission_is_blocked_from_opening_a_file() {
+        let bundled_dir = resolve_skills_dir(None);
+
+        let custom_dir = std::env::temp_dir().join(format!("map-sandbox-fs-{}", uuid::Uuid::new_v4()));
+        let skill_dir = custom_dir.join("no_fs_perm");
+        std::fs::create_dir_all(&skill_dir).unwrap();
+        std::fs::write(
+            skill_dir.join("skill.json"),
+            r#"{"name":"no_fs_perm","description":"tries to read a file without permission","entrypoint":"skill.py","version":"0.1.0"}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            skill_dir.join("skill.py"),
+            "def run(payload):\n    with open(__file__) as f:\n        return {\"read\": len(f.read())}\n",
+        )
+        .unwrap();
+
+        let runtime = SkillRuntime::start(&[bundled_dir, custom_dir], None)
+            .expect("bridge should start with a real Python on PATH");
+
+        let storage = Storage::open_in_memory().unwrap();
+        let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude").unwrap();
+        storage.grant_skill_access(&agent.id, "no_fs_perm").unwrap();
+
+        let err = invoke_skill(&storage, Some(&runtime), &agent.id, "no_fs_perm", serde_json::json!({})).unwrap_err();
+        assert!(matches!(err, SkillError::PermissionDenied(ref msg) if msg.contains("filesystem")));
+        assert_eq!(err.error_code(), "E4005");
+    }
+
+    /// The positive case for the same sandbox: a skill that *does*
+    /// declare "filesystem" in its manifest can actually open a file —
+    /// proving the sandbox is a real gate that opens, not just a gate
+    /// that always closes.
+    #[test]
+    #[ignore]
+    fn a_skill_with_the_filesystem_permission_can_open_a_file() {
+        let bundled_dir = resolve_skills_dir(None);
+
+        let custom_dir = std::env::temp_dir().join(format!("map-sandbox-fs-allowed-{}", uuid::Uuid::new_v4()));
+        let skill_dir = custom_dir.join("fs_perm");
+        std::fs::create_dir_all(&skill_dir).unwrap();
+        std::fs::write(
+            skill_dir.join("skill.json"),
+            r#"{"name":"fs_perm","description":"reads a file with permission","entrypoint":"skill.py","version":"0.1.0","permissions":["filesystem"]}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            skill_dir.join("skill.py"),
+            "def run(payload):\n    with open(__file__) as f:\n        return {\"read\": len(f.read())}\n",
+        )
+        .unwrap();
+
+        let runtime = SkillRuntime::start(&[bundled_dir, custom_dir], None)
+            .expect("bridge should start with a real Python on PATH");
+
+        let storage = Storage::open_in_memory().unwrap();
+        let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude").unwrap();
+        storage.grant_skill_access(&agent.id, "fs_perm").unwrap();
+
+        let result = invoke_skill(&storage, Some(&runtime), &agent.id, "fs_perm", serde_json::json!({}))
+            .expect("a skill with the filesystem permission should be able to open a file");
+        assert!(result["read"].as_u64().unwrap() > 0);
     }
 
     /// End-to-end proof of the `import_custom_skill` flow (see

@@ -10,10 +10,74 @@ interpreter already on the user's machine — no pip install required.
 """
 
 import argparse
+import builtins
 import importlib.util
 import json
+import socket
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
+
+# npm-style default-deny sandbox: a skill gets none of these capabilities
+# unless its skill.json's "permissions" array names them. Mirrors the
+# Rust side's `SkillManifest::permissions` (src-tauri/src/skill_manager/mod.rs)
+# — that struct just carries the declaration through to the UI; this is
+# where it's actually enforced, since only the Python side can restrict
+# what a skill's own code does when it runs.
+KNOWN_PERMISSIONS = {"network", "filesystem"}
+
+_real_open = builtins.open
+_real_socket = socket.socket
+_real_create_connection = socket.create_connection
+
+
+class SkillPermissionError(Exception):
+    """Raised when a skill calls a capability it didn't declare in its
+    manifest's "permissions" array — a real enforcement failure, not a
+    logged warning, so a misbehaving or compromised skill can't just
+    quietly touch the filesystem or network because nobody's watching."""
+
+
+def _blocked_open(*_args, **_kwargs):
+    raise SkillPermissionError('this skill did not declare the "filesystem" permission in its skill.json')
+
+
+def _blocked_socket(*_args, **_kwargs):
+    raise SkillPermissionError('this skill did not declare the "network" permission in its skill.json')
+
+
+class sandbox:
+    """Context manager that restricts `builtins.open` and socket creation
+    for the duration of one skill call, based on that skill's declared
+    permissions. Not a full OS-level sandbox (a sufficiently determined
+    skill could still reach the filesystem/network through other stdlib
+    paths, e.g. `os.open` or `ctypes`) — it's a real default-deny gate on
+    the two capabilities skills would ordinarily reach for, which is what
+    npm's own `package.json` permission model covers too. Applied
+    globally rather than per-module because Python has no per-module
+    sandboxing primitive; safe here because the bridge's HTTPServer
+    handles one request at a time (see `main`), so no other skill call
+    can be mid-flight while this one's restrictions are active."""
+
+    def __init__(self, permissions):
+        self.permissions = set(permissions)
+
+    def __enter__(self):
+        if "filesystem" not in self.permissions:
+            builtins.open = _blocked_open
+        if "network" not in self.permissions:
+            socket.socket = _blocked_socket
+            socket.create_connection = _blocked_create_connection
+        return self
+
+    def __exit__(self, *_exc_info):
+        builtins.open = _real_open
+        socket.socket = _real_socket
+        socket.create_connection = _real_create_connection
+        return False
+
+
+def _blocked_create_connection(*_args, **_kwargs):
+    raise SkillPermissionError('this skill did not declare the "network" permission in its skill.json')
 
 
 def load_skills(skills_dirs: list) -> dict:
@@ -23,7 +87,12 @@ def load_skills(skills_dirs: list) -> dict:
     appears in a later directory overwrites one from an earlier
     directory — this is what lets a user-supplied custom skill directory
     (passed after the built-in one) override a built-in skill of the
-    same name."""
+    same name.
+
+    Each entry stores both the imported `module` and its declared
+    `permissions` (unknown permission strings in skill.json are ignored
+    rather than rejected, so a manifest is never "invalid" just because
+    it names a capability this bridge version doesn't recognize yet)."""
     skills = {}
     for skills_dir in skills_dirs:
         for manifest_path in sorted(skills_dir.glob("*/skill.json")):
@@ -32,7 +101,8 @@ def load_skills(skills_dirs: list) -> dict:
             spec = importlib.util.spec_from_file_location(manifest["name"], entrypoint)
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
-            skills[manifest["name"]] = module
+            permissions = [p for p in manifest.get("permissions", []) if p in KNOWN_PERMISSIONS]
+            skills[manifest["name"]] = {"module": module, "permissions": permissions}
     return skills
 
 
@@ -89,8 +159,15 @@ def make_handler(skills: dict, token: str):
                 return
 
             try:
-                result = skill.run(params)
+                with sandbox(skill["permissions"]):
+                    result = skill["module"].run(params)
                 self._send_json(200, {"jsonrpc": "2.0", "id": request_id, "result": result})
+            except SkillPermissionError as exc:
+                self._send_json(200, {
+                    "jsonrpc": "2.0",
+                    "id": request_id,
+                    "error": {"code": -32001, "message": str(exc)},
+                })
             except Exception as exc:
                 self._send_json(200, {
                     "jsonrpc": "2.0",

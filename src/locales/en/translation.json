@@ -44,6 +44,7 @@
     "refreshing": "Refreshing…",
     "hint": "Skill access is granted per-Agent — open an Agent's session in Chat to grant or revoke a Skill for it. This page just shows what's currently in use across every Agent.",
     "noneDiscovered": "No Skills discovered.",
+    "noPermissions": "No permissions requested",
     "sourceCustom": "Custom",
     "sourceBuiltin": "Built-in",
     "usedByNone": "Not used by any Agent",

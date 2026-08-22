@@ -94,6 +94,17 @@ export default function Skills() {
                 </span>
               </div>
               <p className="skill-desc">{skill.description}</p>
+              <div className="skill-permissions">
+                {skill.permissions.length === 0 ? (
+                  <span className="permission-tag none">{t("skills.noPermissions")}</span>
+                ) : (
+                  skill.permissions.map((permission) => (
+                    <span className="permission-tag" key={permission}>
+                      {permission}
+                    </span>
+                  ))
+                )}
+              </div>
               <div className="skill-footer">
                 <span className="acc-mono">v{skill.version}</span>
                 <span className="agent-count" title={usedBy.length > 0 ? usedBy.join(", ") : undefined}>

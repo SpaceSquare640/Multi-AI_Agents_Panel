@@ -76,6 +76,32 @@
   margin: 0 0 0.6rem;
 }
 
+.skill-permissions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0 0 0.6rem;
+}
+
+.permission-tag {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--edex-orange-dim, #ff990022);
+  color: var(--edex-orange);
+}
+
+.permission-tag.none {
+  background: transparent;
+  color: inherit;
+  opacity: 0.5;
+  text-transform: none;
+  letter-spacing: normal;
+  padding-left: 0;
+}
+
 .skill-footer {
   display: flex;
   align-items: center;
