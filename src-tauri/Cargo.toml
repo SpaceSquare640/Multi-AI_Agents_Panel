@@ -34,7 +34,7 @@ reqwest = { version = "0.12", default-features = false, features = ["blocking", 
 # encoding screenshots into Ollama's `images` field.
 xcap = "0.9"
 enigo = "0.2"
-base64 = "0.22"
+base64 = "0.23"
 image = { version = "0.25", default-features = false, features = ["png"] }
 # ml_engine::vector_index: a native-Rust ANN index (github.com/RyanCodrai/turbovec)
 # for the semantic-search embeddings the Python ml_engine bridge produces —
