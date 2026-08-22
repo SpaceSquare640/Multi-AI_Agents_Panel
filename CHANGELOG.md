@@ -2,6 +2,17 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.1.98-alpha] - 2026-08-22
+
+### Added
+
+- Feat: add turbovec as a native-Rust ANN vector index building block
+
+### Changes
+
+- Chore: update CHANGELOG.md for v0.1.97-alpha [skip ci]
+- Chore: bump version to 0.1.98-alpha
+
 ## [0.1.97-alpha] - 2026-08-22
 
 ### Changes
