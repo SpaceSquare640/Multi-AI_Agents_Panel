@@ -52,13 +52,10 @@ first slice, not full coverage:
 
 - `src/i18n.ts` wires up [react-i18next](https://react.i18next.com/).
 - `src/locales/en/translation.json` is the only real locale — the source of
-  truth. `Settings.tsx`, `Skills.tsx`, `Usage.tsx`, `Onboarding.tsx`,
-  `Manual.tsx`, and `Chat.tsx` have been converted to
-  `useTranslation()`/`t(...)` so far. **`AIControlCenter.tsx` is the only
-  remaining screen** still using plain hardcoded English strings.
-  Don't assume `t(...)` is wired up anywhere it isn't just because the
-  infra exists — check whether the specific screen you're touching has
-  been converted yet.
+  truth. **All 7 screens are converted** to `useTranslation()`/`t(...)`:
+  `Settings.tsx`, `Skills.tsx`, `Usage.tsx`, `Onboarding.tsx`, `Manual.tsx`,
+  `Chat.tsx`, and `AIControlCenter.tsx`. New UI text should use `t(...)`
+  from the start rather than hardcoded strings.
 - When Weblate setup does happen, it'll point at the `src/locales/*/translation.json` file-mask pattern (no repo-committed Weblate config file is needed for this — component setup happens in Weblate's own dashboard).
 - The `LANGUAGES` list in `Settings.tsx` intentionally shows non-English
   languages as "coming soon" rather than offering them — picking one would
