@@ -19,6 +19,8 @@
 //! grants), then dispatch. There is no other path that reaches a
 //! capability.
 
+pub mod vector_index;
+
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::time::Duration;
