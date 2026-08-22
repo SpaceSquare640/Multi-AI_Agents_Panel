@@ -4,6 +4,7 @@
 
 pub mod curated_models;
 pub mod function_calling;
+pub mod memory;
 pub mod openrouter_catalog;
 pub mod providers;
 pub mod role_templates;

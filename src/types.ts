@@ -109,6 +109,13 @@ export interface SkillAccessGrant {
   grantedAt: string;
 }
 
+export interface AgentMemory {
+  id: string;
+  agentId: string;
+  content: string;
+  createdAt: string;
+}
+
 export interface McpServer {
   id: string;
   name: string;

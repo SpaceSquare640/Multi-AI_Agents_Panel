@@ -20,8 +20,8 @@ use crate::session_manager;
 use crate::skill_manager::{self, SkillManifest};
 use crate::update_check;
 use crate::storage::{
-    Agent, AgentFallbackProvider, FileAccessGrant, McpAccessGrant, McpServer, MlAccessGrant, Message, ProviderKey,
-    Session, SkillAccessGrant, Storage, UsageSummary,
+    Agent, AgentFallbackProvider, AgentMemory, FileAccessGrant, McpAccessGrant, McpServer, MlAccessGrant, Message,
+    ProviderKey, Session, SkillAccessGrant, Storage, UsageSummary,
 };
 use crate::{MlDir, MlEngineRuntimeState, SkillDirs, SkillRuntimeState};
 
@@ -413,6 +413,13 @@ pub fn send_chat_message(storage: State<Storage>, session_id: String, content: S
         .collect();
     if let Some(last) = history.last_mut() {
         last.content = expanded_content;
+    }
+    // Insert order matters: memory context first (at position 0, ahead of
+    // the conversation), then the system prompt last (also at position 0,
+    // pushing memory context after it) — so the final order is system
+    // prompt, then memory context, then the actual conversation.
+    for (offset, message) in agent_manager::memory::context_messages(&storage, &agent_id, &content).into_iter().enumerate() {
+        history.insert(offset, message);
     }
     if let Some(system_prompt) = &agent.system_prompt {
         history.insert(
@@ -1027,6 +1034,26 @@ pub fn list_skill_access_grants(storage: State<Storage>, agent_id: String) -> Re
 #[tauri::command]
 pub fn revoke_skill_access(storage: State<Storage>, id: String) -> Result<(), String> {
     storage.revoke_skill_access_grant(&id).map_err(|e| e.to_string())
+}
+
+// --- Long-term memory (agent_manager::memory) — notes an agent can
+// recall across sessions, distinct from `messages`' per-session history.
+// See that module's docs for how relevance ranking works and what's
+// deliberately out of scope (semantic embedding search).
+
+#[tauri::command]
+pub fn add_agent_memory(storage: State<Storage>, agent_id: String, content: String) -> Result<AgentMemory, String> {
+    storage.add_agent_memory(&agent_id, &content).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn list_agent_memories(storage: State<Storage>, agent_id: String) -> Result<Vec<AgentMemory>, String> {
+    storage.list_agent_memories(&agent_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn delete_agent_memory(storage: State<Storage>, id: String) -> Result<(), String> {
+    storage.delete_agent_memory(&id).map_err(|e| e.to_string())
 }
 
 // --- MCP (Model Context Protocol) client — mirrors the Skills command

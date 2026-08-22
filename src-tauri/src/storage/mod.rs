@@ -147,6 +147,21 @@ pub struct SkillAccessGrant {
     pub granted_at: String,
 }
 
+/// One note in an agent's long-term memory — persists across sessions,
+/// unlike `messages` (scoped to one `session_id`, deleted when the
+/// session is). See `agent_manager::memory` module docs for how these
+/// get written and recalled. Deliberately just agent-scoped free text,
+/// not tied to any particular session — "the same agent remembers this
+/// no matter which conversation it's currently in" is the whole point.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AgentMemory {
+    pub id: String,
+    pub agent_id: String,
+    pub content: String,
+    pub created_at: String,
+}
+
 /// A user-added MCP (Model Context Protocol) server the app can connect
 /// to over stdio — see `mcp_manager` module docs. `args` is stored as a
 /// JSON array of strings (`args_json` column) rather than its own join
@@ -372,6 +387,13 @@ impl Storage {
                 provider_name  TEXT NOT NULL,
                 model          TEXT NOT NULL,
                 created_at     TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS agent_memories (
+                id            TEXT PRIMARY KEY,
+                agent_id      TEXT NOT NULL REFERENCES agents(id),
+                content       TEXT NOT NULL,
+                created_at    TEXT NOT NULL
             );
 
             CREATE TABLE IF NOT EXISTS group_boundary_consent (
@@ -1066,6 +1088,42 @@ impl Storage {
         Ok(())
     }
 
+    pub fn add_agent_memory(&self, agent_id: &str, content: &str) -> rusqlite::Result<AgentMemory> {
+        let memory = AgentMemory {
+            id: uuid::Uuid::new_v4().to_string(),
+            agent_id: agent_id.to_string(),
+            content: content.to_string(),
+            created_at: chrono::Utc::now().to_rfc3339(),
+        };
+        self.conn.lock().unwrap().execute(
+            "INSERT INTO agent_memories (id, agent_id, content, created_at) VALUES (?1, ?2, ?3, ?4)",
+            params![memory.id, memory.agent_id, memory.content, memory.created_at],
+        )?;
+        Ok(memory)
+    }
+
+    pub fn list_agent_memories(&self, agent_id: &str) -> rusqlite::Result<Vec<AgentMemory>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, agent_id, content, created_at
+             FROM agent_memories WHERE agent_id = ?1 ORDER BY created_at ASC",
+        )?;
+        let rows = stmt.query_map(params![agent_id], |row| {
+            Ok(AgentMemory {
+                id: row.get(0)?,
+                agent_id: row.get(1)?,
+                content: row.get(2)?,
+                created_at: row.get(3)?,
+            })
+        })?;
+        rows.collect()
+    }
+
+    pub fn delete_agent_memory(&self, id: &str) -> rusqlite::Result<()> {
+        self.conn.lock().unwrap().execute("DELETE FROM agent_memories WHERE id = ?1", params![id])?;
+        Ok(())
+    }
+
     pub fn create_mcp_server(&self, name: &str, command: &str, args: &[String]) -> rusqlite::Result<McpServer> {
         let server = McpServer {
             id: uuid::Uuid::new_v4().to_string(),
@@ -1616,6 +1674,32 @@ mod tests {
 
         storage.revoke_skill_access_grant(&grant.id).unwrap();
         assert!(storage.list_skill_access_grants(&agent.id).unwrap().is_empty());
+    }
+
+    #[test]
+    fn agent_memory_crud() {
+        let storage = Storage::open_in_memory().unwrap();
+        let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude").unwrap();
+        assert!(storage.list_agent_memories(&agent.id).unwrap().is_empty());
+
+        let memory = storage.add_agent_memory(&agent.id, "the user prefers terse replies").unwrap();
+        let memories = storage.list_agent_memories(&agent.id).unwrap();
+        assert_eq!(memories.len(), 1);
+        assert_eq!(memories[0].content, "the user prefers terse replies");
+
+        storage.delete_agent_memory(&memory.id).unwrap();
+        assert!(storage.list_agent_memories(&agent.id).unwrap().is_empty());
+    }
+
+    #[test]
+    fn agent_memories_are_scoped_to_their_own_agent() {
+        let storage = Storage::open_in_memory().unwrap();
+        let agent_a = storage.create_agent("A", None, None, "cloud", "anthropic", "claude").unwrap();
+        let agent_b = storage.create_agent("B", None, None, "cloud", "anthropic", "claude").unwrap();
+        storage.add_agent_memory(&agent_a.id, "only agent A should see this").unwrap();
+
+        assert_eq!(storage.list_agent_memories(&agent_a.id).unwrap().len(), 1);
+        assert!(storage.list_agent_memories(&agent_b.id).unwrap().is_empty());
     }
 
     #[test]

@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { open as openFolderPicker, save as saveFilePicker } from "@tauri-apps/plugin-dialog";
 import type {
   Agent,
+  AgentMemory,
   CuratedModel,
   FileAccessGrant,
   GroupTurnResult,
@@ -65,6 +66,11 @@ interface TabState {
    *  Independent Sessions only for now — Group Chat semantic search needs
    *  File Access sharing to land first (see Backlog). */
   mlGrants: MlAccessGrant[];
+  /** This tab's agent's long-term memory notes (agent_manager::memory)
+   *  — survive across sessions, unlike `messages`. Empty for group tabs
+   *  (each member has their own memories; there's no single "the tab's
+   *  agent" to show here). */
+  memories: AgentMemory[];
   searchResults: SemanticSearchResult[] | null;
   draft: string;
   sending: boolean;
@@ -98,6 +104,7 @@ function emptyTab(): TabState {
     skillGrants: [],
     mcpGrants: [],
     mlGrants: [],
+    memories: [],
     useFunctionCalling: false,
     searchResults: null,
     draft: "",
@@ -134,6 +141,7 @@ export default function Chat() {
   // + a small "run one now" form scoped to whichever tab is active.
   const [availableSkills, setAvailableSkills] = useState<SkillManifest[]>([]);
   const [skillToGrant, setSkillToGrant] = useState("");
+  const [newMemoryDraft, setNewMemoryDraft] = useState("");
   const [runSkillName, setRunSkillName] = useState("");
   const [runSkillPayload, setRunSkillPayload] = useState("{}");
   const [runningSkill, setRunningSkill] = useState(false);
@@ -393,15 +401,16 @@ export default function Chat() {
           invoke<string | null>("get_session_agent_id", { sessionId }),
         ]);
         const agent = agents.find((a) => a.id === agentId) ?? null;
-        const [fileGrants, skillGrants, mcpGrants, mlGrants] = agent
+        const [fileGrants, skillGrants, mcpGrants, mlGrants, memories] = agent
           ? await Promise.all([
               invoke<FileAccessGrant[]>("list_file_access_grants", { agentId: agent.id }),
               invoke<SkillAccessGrant[]>("list_skill_access_grants", { agentId: agent.id }),
               invoke<McpAccessGrant[]>("list_mcp_access_grants", { agentId: agent.id }),
               invoke<MlAccessGrant[]>("list_ml_access_grants_for_agent", { agentId: agent.id }),
+              invoke<AgentMemory[]>("list_agent_memories", { agentId: agent.id }),
             ])
-          : [[], [], [], []];
-        patchTab(sessionId, { kind, messages, agent, members: [], fileGrants, skillGrants, mcpGrants, mlGrants });
+          : [[], [], [], [], []];
+        patchTab(sessionId, { kind, messages, agent, members: [], fileGrants, skillGrants, mcpGrants, mlGrants, memories });
       }
     } catch (err) {
       setError(String(err));
@@ -631,6 +640,32 @@ export default function Chat() {
       await invoke("revoke_skill_access", { id });
       const skillGrants = await invoke<SkillAccessGrant[]>("list_skill_access_grants", { agentId: agent.id });
       patchTab(sessionId, { skillGrants });
+    } catch (err) {
+      setError(String(err));
+    }
+  }
+
+  async function handleAddMemory(sessionId: string, content: string) {
+    const agent = tabs[sessionId]?.agent;
+    if (!agent || !content.trim()) return;
+    setError(null);
+    try {
+      await invoke("add_agent_memory", { agentId: agent.id, content: content.trim() });
+      const memories = await invoke<AgentMemory[]>("list_agent_memories", { agentId: agent.id });
+      patchTab(sessionId, { memories });
+    } catch (err) {
+      setError(String(err));
+    }
+  }
+
+  async function handleDeleteMemory(sessionId: string, id: string) {
+    const agent = tabs[sessionId]?.agent;
+    if (!agent) return;
+    setError(null);
+    try {
+      await invoke("delete_agent_memory", { id });
+      const memories = await invoke<AgentMemory[]>("list_agent_memories", { agentId: agent.id });
+      patchTab(sessionId, { memories });
     } catch (err) {
       setError(String(err));
     }
@@ -1530,6 +1565,40 @@ export default function Chat() {
                     </button>
                   </div>
                 )}
+                <div className="chat-file-access">
+                  <span>{t("chat.memories")}</span>
+                  {activeTab.memories.length === 0 && <span className="chat-empty">{t("chat.noMemoriesYet")}</span>}
+                  {activeTab.memories.map((m) => (
+                    <span key={m.id} className="chat-file-chip">
+                      {m.content}
+                      <button
+                        onClick={() => handleDeleteMemory(activeSessionId, m.id)}
+                        title={t("chat.forgetThis")}
+                        aria-label={t("chat.forgetMemory", { content: m.content })}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                <div className="chat-file-access">
+                  <input
+                    type="text"
+                    placeholder={t("chat.rememberSomethingPlaceholder")}
+                    value={newMemoryDraft}
+                    onChange={(e) => setNewMemoryDraft(e.target.value)}
+                  />
+                  <button
+                    className="chat-link-button"
+                    disabled={!newMemoryDraft.trim()}
+                    onClick={() => {
+                      void handleAddMemory(activeSessionId, newMemoryDraft);
+                      setNewMemoryDraft("");
+                    }}
+                  >
+                    {t("chat.remember")}
+                  </button>
+                </div>
                 <div className="chat-file-access">
                   <span>{t("chat.mcpServers")}</span>
                   {activeTab.mcpGrants.length === 0 && <span className="chat-empty">{t("chat.noneGranted")}</span>}
