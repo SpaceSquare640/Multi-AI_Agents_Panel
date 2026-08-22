@@ -2,6 +2,16 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.3.2-alpha] - 2026-08-22
+
+### Documentation
+
+- Docs: disclose mcp_manager's accepted-risk threat model in SECURITY.md
+
+### Changes
+
+- Chore: bump to 0.3.2-alpha (SECURITY.md disclosure)
+
 ## [0.3.1-alpha] - 2026-08-22
 
 ### Fixed
