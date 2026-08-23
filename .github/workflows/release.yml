@@ -58,9 +58,9 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: "Multi-AI Agents Panel ${{ github.ref_name }}"
           releaseDraft: false
-          # Alpha/Beta stage: mark as prerelease. Flip to false only for the
-          # first tag with no -alpha/-beta suffix (see CI-CD Pipeline.md).
-          prerelease: true
+          # GA as of v1.0.0 (user decision, see CI-CD Pipeline.md) — no more
+          # -alpha/-beta suffixes, tags are no longer marked prerelease.
+          prerelease: false
       - name: Generate and upload SHA256 checksum
         # The header comment above claims "a checksum is attached so users
         # can verify what they downloaded" — this step is what actually
