@@ -2,6 +2,17 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [1.2.1] - 2026-08-23
+
+### Changes
+
+- Chore: update CHANGELOG.md for v1.2.0 [skip ci]
+- Chore: bump version to 1.2.1
+
+### Documentation
+
+- Docs: finish the private-vault reference scrub
+
 ## [1.2.0] - 2026-08-23
 
 ### Added
