@@ -112,6 +112,13 @@ pub struct UsageSummary {
     pub success_count: i64,
     pub failure_count: i64,
     pub last_used_at: Option<String>,
+    /// Sum of `usage_log.estimated_cost_usd` across this key's calls that
+    /// have a known cost (see `agent_manager::cost` for who fills this
+    /// in — OpenRouter only so far). `None` when none of this key's
+    /// calls have a known cost, not "$0" — a subtotal of only the known
+    /// calls, so it understates the true total if some calls' cost is
+    /// unknown rather than falsely claiming completeness.
+    pub total_estimated_cost_usd: Option<f64>,
 }
 
 /// One folder an agent has been explicitly granted read access to.
@@ -409,7 +416,12 @@ impl Storage {
         // `agents` predates key pinning; same soft-migration approach.
         Self::ensure_column(&conn, "agents", "pinned_provider_key_id", "pinned_provider_key_id TEXT")?;
         // `file_access_grants` predates Group Chat's "同場會議共用" rule.
-        Self::ensure_column(&conn, "file_access_grants", "session_id", "session_id TEXT")
+        Self::ensure_column(&conn, "file_access_grants", "session_id", "session_id TEXT")?;
+        // `usage_log` predates token-usage/cost-estimation tracking (see
+        // agent_manager::cost) — same soft-migration approach.
+        Self::ensure_column(&conn, "usage_log", "prompt_tokens", "prompt_tokens INTEGER")?;
+        Self::ensure_column(&conn, "usage_log", "completion_tokens", "completion_tokens INTEGER")?;
+        Self::ensure_column(&conn, "usage_log", "estimated_cost_usd", "estimated_cost_usd REAL")
     }
 
     fn ensure_column(conn: &Connection, table: &str, column: &str, ddl: &str) -> rusqlite::Result<()> {
@@ -909,6 +921,51 @@ impl Storage {
         Ok(())
     }
 
+    /// Same as `record_usage`, plus token counts and an estimated USD
+    /// cost — a separate method rather than adding parameters to
+    /// `record_usage` itself, so every existing caller that doesn't have
+    /// this data (which is most of them — see `agent_manager::cost`'s
+    /// module docs on which providers report it) doesn't need to start
+    /// passing `None, None, None` through a chain of call sites.
+    #[allow(clippy::too_many_arguments, dead_code)] // staged — see agent_manager::cost's module docs
+    pub fn record_usage_with_cost(
+        &self,
+        provider_key_id: Option<&str>,
+        agent_id: Option<&str>,
+        provider: &str,
+        model: &str,
+        success: bool,
+        prompt_tokens: Option<u32>,
+        completion_tokens: Option<u32>,
+        estimated_cost_usd: Option<f64>,
+    ) -> rusqlite::Result<()> {
+        let now = chrono::Utc::now().to_rfc3339();
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "INSERT INTO usage_log (id, provider_key_id, agent_id, provider, model, success, created_at, prompt_tokens, completion_tokens, estimated_cost_usd)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+            params![
+                uuid::Uuid::new_v4().to_string(),
+                provider_key_id,
+                agent_id,
+                provider,
+                model,
+                success as i64,
+                now,
+                prompt_tokens,
+                completion_tokens,
+                estimated_cost_usd,
+            ],
+        )?;
+        if let Some(id) = provider_key_id {
+            conn.execute(
+                "UPDATE provider_keys SET last_used_at = ?1 WHERE id = ?2",
+                params![now, id],
+            )?;
+        }
+        Ok(())
+    }
+
     pub fn usage_summary(&self) -> rusqlite::Result<Vec<UsageSummary>> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
@@ -918,7 +975,8 @@ impl Storage {
                 pk.label,
                 COALESCE(SUM(CASE WHEN u.success = 1 THEN 1 ELSE 0 END), 0) AS success_count,
                 COALESCE(SUM(CASE WHEN u.success = 0 THEN 1 ELSE 0 END), 0) AS failure_count,
-                pk.last_used_at
+                pk.last_used_at,
+                SUM(u.estimated_cost_usd) AS total_estimated_cost_usd
              FROM provider_keys pk
              LEFT JOIN usage_log u ON u.provider_key_id = pk.id
              GROUP BY pk.id
@@ -932,6 +990,7 @@ impl Storage {
                 success_count: row.get(3)?,
                 failure_count: row.get(4)?,
                 last_used_at: row.get(5)?,
+                total_estimated_cost_usd: row.get(6)?,
             })
         })?;
         rows.collect()

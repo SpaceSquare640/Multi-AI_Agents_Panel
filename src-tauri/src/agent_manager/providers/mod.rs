@@ -10,6 +10,20 @@ pub mod omniroute;
 pub mod openai;
 pub mod openrouter;
 
+/// Token counts a provider reported for one call — the input to
+/// cost estimation (see `agent_manager::cost::estimate_usd`). Not every
+/// provider adapter reports this yet (see each adapter's docs for
+/// whether it does) — `None` anywhere this is optional means "unknown,"
+/// not "zero cost."
+// Not constructed by any live call path yet — see agent_manager::cost's
+// module docs for what's staged and what wiring is still needed.
+#[allow(dead_code)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TokenUsage {
+    pub prompt_tokens: u32,
+    pub completion_tokens: u32,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ChatMessage {
     /// "user" | "assistant"

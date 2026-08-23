@@ -22,12 +22,22 @@ use crate::agent_manager::providers::ProviderError;
 /// attempt in a fallback chain individually (e.g. into `usage_log`, one row
 /// per key tried) instead of only the chain's final outcome. It is not
 /// called for candidates never reached (e.g. after an earlier success).
-pub fn run_with_fallback<T>(
+///
+/// Generic over the success type `R` (originally hardcoded to `String`)
+/// so a caller that needs more than just the reply text back — e.g. an
+/// OpenRouter call that also wants the token-usage numbers alongside the
+/// reply, for `usage_log`'s cost-estimation columns — can instantiate
+/// this with `R = (String, Option<TokenUsage>)` without this module
+/// needing to know anything about token usage itself. Every existing
+/// caller already returns a plain `String` from its `attempt` closure,
+/// which is just `R = String` — this widening is source-compatible with
+/// all of them.
+pub fn run_with_fallback<T, R>(
     candidates: &[T],
     describe: impl Fn(&T) -> String,
-    mut attempt: impl FnMut(&T) -> Result<String, ProviderError>,
+    mut attempt: impl FnMut(&T) -> Result<R, ProviderError>,
     mut on_attempt: impl FnMut(&T, bool),
-) -> Result<String, ProviderError> {
+) -> Result<R, ProviderError> {
     if candidates.is_empty() {
         return Err(ProviderError::AllProvidersFailed {
             error_code: "E3001",
@@ -104,7 +114,7 @@ mod tests {
         let err = run_with_fallback(
             &candidates,
             |c| format!("candidate {c}"),
-            |_| Err(ProviderError::Network { error_code: "E2003", message: "unreachable".to_string() }),
+            |_| Err::<String, _>(ProviderError::Network { error_code: "E2003", message: "unreachable".to_string() }),
             |_, _| {},
         )
         .unwrap_err();
@@ -123,7 +133,9 @@ mod tests {
     #[test]
     fn no_candidates_at_all_is_also_e3001() {
         let candidates: Vec<&str> = vec![];
-        let err = run_with_fallback(&candidates, |c| c.to_string(), |_| unreachable!(), |_, _| {}).unwrap_err();
+        let err =
+            run_with_fallback(&candidates, |c| c.to_string(), |_| -> Result<String, _> { unreachable!() }, |_, _| {})
+                .unwrap_err();
         assert!(matches!(err, ProviderError::AllProvidersFailed { error_code: "E3001", .. }));
     }
 

@@ -3,7 +3,7 @@
 
 use serde_json::{json, Value};
 
-use super::{ChatMessage, ProviderError};
+use super::{ChatMessage, ProviderError, TokenUsage};
 
 const API_URL: &str = "https://openrouter.ai/api/v1/chat/completions";
 
@@ -47,6 +47,46 @@ pub fn parse_response(body: &Value) -> Result<String, ProviderError> {
             error_code: "E2000",
             message: "response had no message content".to_string(),
         })
+}
+
+/// Extracts token usage from a chat-completions response body's
+/// OpenAI-compatible `usage` object, if present. `None` (not zero) when
+/// the field is missing — some OpenRouter-routed models don't report
+/// usage — so a caller can tell "unknown" from "reported zero" and skip
+/// cost estimation rather than silently claiming a free call.
+#[allow(dead_code)] // staged — see agent_manager::cost's module docs
+fn parse_usage(body: &Value) -> Option<TokenUsage> {
+    let usage = body.get("usage")?;
+    Some(TokenUsage {
+        prompt_tokens: usage.get("prompt_tokens")?.as_u64()? as u32,
+        completion_tokens: usage.get("completion_tokens")?.as_u64()? as u32,
+    })
+}
+
+/// Same call as `send`, but also returns whatever token usage the
+/// response reported — used by `dispatch_one`'s OpenRouter branch so
+/// `usage_log` can record an estimated cost (see `agent_manager::cost`).
+/// A separate function rather than changing `send`'s signature: the
+/// plain-text path (`send`, used by tool-calling/DAG/memory contexts
+/// that only need the reply) is unaffected, and every existing test
+/// against `send`/`parse_response` still holds.
+#[allow(dead_code)] // staged — see agent_manager::cost's module docs
+pub fn send_with_usage(api_key: &str, model: &str, messages: &[ChatMessage]) -> Result<(String, Option<TokenUsage>), ProviderError> {
+    let client = reqwest::blocking::Client::new();
+    let response = client
+        .post(API_URL)
+        .bearer_auth(api_key)
+        .header("content-type", "application/json")
+        .json(&build_request(model, messages))
+        .send()
+        .map_err(|e| ProviderError::Network { error_code: "E2003", message: e.to_string() })?;
+
+    let body: Value = response
+        .json()
+        .map_err(|e| ProviderError::Network { error_code: "E2003", message: e.to_string() })?;
+
+    let text = parse_response(&body)?;
+    Ok((text, parse_usage(&body)))
 }
 
 pub fn send(api_key: &str, model: &str, messages: &[ChatMessage]) -> Result<String, ProviderError> {
@@ -104,6 +144,18 @@ mod tests {
     fn parse_response_rejects_missing_content() {
         let body = json!({});
         assert!(parse_response(&body).is_err());
+    }
+
+    #[test]
+    fn parse_usage_reads_prompt_and_completion_tokens() {
+        let body = json!({"usage": {"prompt_tokens": 12, "completion_tokens": 34, "total_tokens": 46}});
+        assert_eq!(parse_usage(&body), Some(TokenUsage { prompt_tokens: 12, completion_tokens: 34 }));
+    }
+
+    #[test]
+    fn parse_usage_is_none_rather_than_zero_when_the_field_is_absent() {
+        let body = json!({"choices": []});
+        assert_eq!(parse_usage(&body), None);
     }
 }
 
