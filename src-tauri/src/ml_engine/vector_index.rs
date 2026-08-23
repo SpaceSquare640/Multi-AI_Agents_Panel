@@ -12,8 +12,7 @@
 //! `ml/_engine.py`'s `semantic_search` capability computes cosine
 //! similarity in Python (numpy) over whatever embeddings it holds
 //! in-process per call — see the module doc at the top of this file's
-//! parent (`ml_engine::mod`) and `ML Engine Design.md` in the vault.
-//! Replacing that with this index for real would mean deciding where a
+//! parent (`ml_engine::mod`). Replacing that with this index for real would mean deciding where a
 //! per-agent `.tvim` file persists, when it's rebuilt after a file
 //! grant is revoked, and how the Python bridge's embedding step feeds
 //! vectors into a Rust-owned index across the JSON-RPC boundary —

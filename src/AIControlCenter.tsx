@@ -67,10 +67,10 @@ export default function AIControlCenter() {
   const [openRouterQuery, setOpenRouterQuery] = useState("");
   const [openRouterLoading, setOpenRouterLoading] = useState(false);
 
-  // Game-Playing Agent (Track A — see "Game-Playing Agent Design.md" in
-  // the vault): a persistent screenshot -> local vision model -> real
-  // mouse/keyboard automation loop. Off by default, only ever starts on
-  // an explicit click here — see game_agent module docs.
+  // Game-Playing Agent (Track A): a persistent screenshot -> local
+  // vision model -> real mouse/keyboard automation loop. Off by
+  // default, only ever starts on an explicit click here — see
+  // game_agent module docs.
   const [gameAgentRunning, setGameAgentRunning] = useState(false);
   const [gameAgentModel, setGameAgentModel] = useState("llava");
   const [gameAgentPrompt, setGameAgentPrompt] = useState(

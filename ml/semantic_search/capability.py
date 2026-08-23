@@ -5,7 +5,7 @@ files inside folders the calling agent, or its current Group Chat
 session, has actually been granted) and answers similarity queries
 against that index.
 
-Per ADR 0003 in the vault ("Bundle sentence-transformers for a Separate
+Per ADR 0003 ("Bundle sentence-transformers for a Separate
 ML Engine Process"), `sentence-transformers` + PyTorch are a required,
 bundled dependency of this app's `ml_engine` process — not optional the
 way a plain Skill's dependencies would be. This capability does not

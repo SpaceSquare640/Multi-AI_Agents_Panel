@@ -101,8 +101,7 @@ pub fn read_file(storage: &Storage, agent_id: &str, path: &Path) -> Result<Strin
 
 /// Collects `(path, content)` pairs for every `.md`/`.txt` file inside
 /// `agent_id`'s granted folders (recursively), for feeding into the
-/// `ml_engine`'s `semantic_search` capability (see `ML Engine Design.md`
-/// in the vault). Every file returned lives under a path the user
+/// `ml_engine`'s `semantic_search` capability. Every file returned lives under a path the user
 /// explicitly granted — this walks `grant.folder_path` itself rather
 /// than accepting a path from the caller, so there's no `..` escape to
 /// defend against the way `read_file` has to. Unreadable, oversized, or

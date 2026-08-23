@@ -1,7 +1,5 @@
 //! Cost estimation: turns a provider-reported token count into an
-//! estimated USD cost, given per-million-token pricing. Answers one of
-//! the Usage dashboard's open items (see the vault's Daily Log
-//! "待釐清" section: "用量儀表板的「估計花費」功能仍未實作").
+//! estimated USD cost, given per-million-token pricing.
 //!
 //! `agent_manager::dispatch_one`'s `OpenRouter` branch now records real
 //! `prompt_tokens`/`completion_tokens` per call (via

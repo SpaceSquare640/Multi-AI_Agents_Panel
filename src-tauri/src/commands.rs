@@ -1295,9 +1295,9 @@ pub fn run_skill_in_session(
 
 // --- ML Engine (semantic search / RAG) ---
 //
-// See `ml_engine` module docs and the vault's `ML Engine Design.md` — a
-// separate Python subprocess from the Skills bridge, gated by the same
-// Guardrails-then-allowlist pattern, but with its own grant scoping
+// See `ml_engine` module docs — a separate Python subprocess from the
+// Skills bridge, gated by the same Guardrails-then-allowlist pattern,
+// but with its own grant scoping
 // (`ml_access_grants`) that supports Group-Chat-session-shared access.
 
 #[tauri::command]

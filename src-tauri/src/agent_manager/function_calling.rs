@@ -1,8 +1,7 @@
 //! Agent function calling: lets the model itself decide, mid-reply, to
 //! call one of the agent's *granted* Skills — as opposed to every other
 //! Skill/MCP entry point in this app, which is the human clicking "run"
-//! in the UI. This is queue item 4/8 of the "離 Beta 還缺的具體項目" work
-//! (see the vault's Backlog.md).
+//! in the UI.
 //!
 //! **Scope, stated honestly**: only wired for the Anthropic provider —
 //! its `tools`/`tool_use`/`tool_result` shape is the one implemented in

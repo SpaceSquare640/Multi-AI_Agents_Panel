@@ -10,8 +10,7 @@ Pure, deterministic, and fully testable against synthetic events —
 labeling is just matching timestamps that already exist in
 `events.jsonl`, so this doesn't need a real recorded human demonstration
 session to verify. It does need one to actually produce a training set,
-which this repo doesn't have yet (see the vault's Daily Log "待釐清"
-section) — this module is the honest next increment given that: the
+which this repo doesn't have yet — this module is the honest next increment given that: the
 matching logic is real and tested, `train-bc` (the stage that would
 consume its output) is future work once real demonstration data exists.
 """

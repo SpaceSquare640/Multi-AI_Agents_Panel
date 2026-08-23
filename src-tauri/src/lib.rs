@@ -34,9 +34,8 @@ pub(crate) struct SkillRuntimeState(pub(crate) Mutex<Option<SkillRuntime>>);
 /// `builtin` is the bundled, read-only resource directory (refreshed by
 /// the installer on every app update); `custom` is the user-writable
 /// directory under the unified data folder (see `resolve_data_dir`) that
-/// survives app updates/reinstalls. See
-/// `Unified Data Folder & Custom Skills Design.md` in the vault for why
-/// these are deliberately two separate directories rather than one.
+/// survives app updates/reinstalls — these are deliberately two
+/// separate directories rather than one.
 pub(crate) struct SkillDirs {
     pub(crate) builtin: std::path::PathBuf,
     pub(crate) custom: std::path::PathBuf,
@@ -73,9 +72,7 @@ fn greet(name: &str) -> String {
 /// `~/.local/share/...` depending on OS) or the install directory itself
 /// (installer upgrade/reinstall behavior touching that path has never
 /// been verified, and deb/AppImage have no equivalent writable "install
-/// directory" concept at all). See ADR 0004 and
-/// `Unified Data Folder & Custom Skills Design.md` in the vault for the
-/// full reasoning.
+/// directory" concept at all). See ADR 0004 for the full reasoning.
 ///
 /// **Renamed from `~/MultiAIAgentsPanel-Data/` with no migration** (see
 /// Backlog): alpha stage, no known real installs depending on the old

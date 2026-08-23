@@ -4,7 +4,7 @@ demonstration a session's `labels.jsonl` (see `label.py`) captured, as a
 starting point for later RL fine-tuning rather than training from random
 play.
 
-**Scope, per the vault's explicit clarification (`2026-08-21`,
+**Scope (`2026-08-21`,
 "Track B 的交付標準是「框架」，不是「開箱即玩」")**: this is a real,
 runnable pipeline stage — not a stub — but it ships no pretrained
 weights or demonstration data. It trains on whatever session directory

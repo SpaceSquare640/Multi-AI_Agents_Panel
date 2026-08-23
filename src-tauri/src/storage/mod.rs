@@ -204,9 +204,9 @@ pub struct McpAccessGrant {
 
 /// Grants access to one `ml_engine` capability (e.g. `semantic_search`).
 /// Unlike `SkillAccessGrant`, this has a scope rather than always being
-/// tied to one agent — see `ML Engine Design.md` in the vault ("同場會議
-/// 共用"): a `session` grant is shared by every agent currently in that
-/// Group Chat, not just whoever the grant command was called for.
+/// tied to one agent ("同場會議共用"): a `session` grant is shared by
+/// every agent currently in that Group Chat, not just whoever the grant
+/// command was called for.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MlAccessGrant {

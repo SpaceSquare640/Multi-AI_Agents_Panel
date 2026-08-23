@@ -96,8 +96,8 @@ fn default_template(
 }
 
 /// The 10 built-in "1 人公司" roles. Suggested provider/model are
-/// defaults only — `create_agent` never enforces them, per the vault's
-/// "已定案：僅作預設建議值，使用者可自由覆寫" decision.
+/// defaults only — `create_agent` never enforces them
+/// ("已定案：僅作預設建議值，使用者可自由覆寫").
 pub fn default_templates() -> Vec<RoleTemplate> {
     vec![
         default_template(

@@ -49,8 +49,8 @@ llmfit-core = { git = "https://github.com/AlexsJones/llmfit.git", tag = "v1.1.10
 # mcp_manager: MCP (Model Context Protocol) client support — the official
 # Rust SDK, spawns/talks to local MCP servers over stdio (same shape as
 # the existing Python Skills bridge). See mcp_manager's doc comment for
-# what's wired in vs. staged; see the vault's "MCP Integration Options.md"
-# research for why rmcp was chosen over the community alternatives.
+# what's wired in vs. staged. rmcp was chosen over the community
+# alternatives for being the official SDK.
 # Pinned >=1.4.0 to avoid RUSTSEC-2026-0189 (DNS rebinding in rmcp's
 # Streamable HTTP *server* transport — a transport this app doesn't even
 # enable, since only the client/stdio features are used, but cargo-audit

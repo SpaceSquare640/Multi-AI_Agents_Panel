@@ -1,9 +1,8 @@
 //! MCP (Model Context Protocol) client support — connects to external
 //! MCP servers the user configures, the same way Claude Desktop/Cursor/
 //! Cline do (spawn the server as a local subprocess over stdio, talk
-//! JSON-RPC). Built on `rmcp`, the official Rust SDK — see the vault's
-//! `05 Research/MCP Integration Options.md` for why it was chosen over
-//! the community alternatives.
+//! JSON-RPC). Built on `rmcp`, the official Rust SDK, chosen over the
+//! community alternatives.
 //!
 //! Structurally this is a smaller cousin of `skill_manager`/`ml_engine`:
 //! same idea ("run untrusted local-subprocess code on the Agent's
@@ -15,10 +14,10 @@
 //! then the per-agent `mcp_access_grants` allowlist
 //! (`storage::list_mcp_access_grants`), then dispatch. `list_tools_screened`
 //! additionally screens each tool's *metadata* (name + description) at
-//! discovery time via `guardrails::screen_mcp_tool_metadata` — the
-//! "tool poisoning" risk flagged in the vault's MCP Integration Options
-//! research, where a malicious server hides instructions in a tool's
-//! description rather than its output, upstream of any single call.
+//! discovery time via `guardrails::screen_mcp_tool_metadata` — a
+//! defense against "tool poisoning", where a malicious server hides
+//! instructions in a tool's description rather than its output,
+//! upstream of any single call.
 //! There is no other path that reaches an MCP server's tools.
 //!
 //! What this module still does NOT do (real, scoped-out follow-ups, not
@@ -64,9 +63,9 @@ impl std::fmt::Display for McpError {
 /// `CreateProcess` directly, which — unlike a shell — does not search
 /// `PATHEXT` or resolve `.cmd` extensions. A real MCP server config
 /// copy-pasted from a README (the documented, expected way users add
-/// servers — see the vault's MCP Integration Options research on the
-/// `mcpServers` JSON convention) will very commonly say `"command":
-/// "npx"`, so this isn't an edge case to special-case away — routing
+/// servers, following the common `mcpServers` JSON convention) will
+/// very commonly say `"command": "npx"`, so this isn't an edge case to
+/// special-case away — routing
 /// through `cmd.exe /C` on Windows is the actual fix, matching how the
 /// same problem is solved elsewhere in the Rust ecosystem. Discovered
 /// via this module's own live test actually failing against a real

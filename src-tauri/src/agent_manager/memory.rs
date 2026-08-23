@@ -1,7 +1,7 @@
 //! Long-term memory: notes an agent has saved that survive across
 //! sessions, unlike `storage::Message`, which is scoped to one
 //! `session_id` and gone once that session's history isn't loaded
-//! anymore. Beta-gap queue item 6/8 (see the vault's Backlog.md).
+//! anymore.
 //!
 //! **Scope, stated honestly**: relevance ranking here is keyword
 //! overlap (case-insensitive token intersection), not semantic

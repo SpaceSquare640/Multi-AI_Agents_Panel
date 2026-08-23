@@ -5,8 +5,7 @@ can run `label`/`train-bc` against real files and see the pipeline
 actually work end to end without recording their own gameplay first.
 
 This is a different thing from the "no demonstration data shipped"
-decision already on record (see the vault's Game-Playing Agent Design
-doc, `2026-08-21`): that decision is about not bundling real human
+decision (`2026-08-21`): that decision is about not bundling real human
 gameplay recordings or trained weights, which would be a real
 copyright/size/provenance concern for an open-source repo. A handful of
 solid-color placeholder frames with hand-crafted click/key timings isn't
