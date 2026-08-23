@@ -129,10 +129,30 @@ jobs:
         # bash `for X in ...; do ... done` loop is a parser error (see
         # v0.1.94-alpha's Release failure) — explicit `shell: bash`
         # needed, same fix as the release-notes step below.
+        #
+        # Retries reset-and-reapply the generated file rather than
+        # rebasing the commit (v0.16.0-beta's Release genuinely failed
+        # this way): `git rebase` replays the CHANGELOG.md commit as a
+        # *textual diff* onto the new base, but git-cliff regenerates the
+        # whole file from scratch every run, so two tags pushed close
+        # together (this repo's own v0.16.0-alpha and v0.16.0-beta, ~10
+        # minutes apart) produce genuinely different full-file diffs that
+        # don't line up — a real content conflict, not a dirty-tree
+        # problem the old `git checkout -- .` fix already handled. The
+        # content this step already generated (saved to a temp file
+        # before the first commit) is deterministic from this tag's own
+        # commit history, which — since tags on this repo are always
+        # created from commits descending from every earlier tag — is
+        # already a strict superset of whatever an earlier tag's bot
+        # commit added. So on conflict, the correct resolution isn't to
+        # merge two textual diffs at all: reset straight to the latest
+        # origin/main and re-apply this run's already-correct generated
+        # content as a fresh commit.
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          cp CHANGELOG.md /tmp/generated-changelog.md
           git add CHANGELOG.md
           git diff --staged --quiet && exit 0
           git commit -m "chore: update CHANGELOG.md for ${{ github.ref_name }} [skip ci]"
@@ -140,18 +160,13 @@ jobs:
             if git push origin HEAD:main; then
               exit 0
             fi
-            echo "Push rejected (attempt $attempt) — rebasing onto origin/main and retrying"
+            echo "Push rejected (attempt $attempt) — resetting to origin/main and reapplying the generated CHANGELOG.md"
             git fetch origin main
-            # The build step(s) before this one can leave the working
-            # tree dirty (e.g. Cargo.lock touched by the tauri-action
-            # build, or CRLF-normalization noise on checkout) — none of
-            # that is meant to be committed here, only CHANGELOG.md is,
-            # and it's already committed above. An unstaged change of
-            # any kind blocks `git rebase` outright ("You have unstaged
-            # changes"), which is what actually broke v0.3.1-alpha's
-            # Release — discard it before rebasing.
-            git checkout -- .
-            git rebase origin/main
+            git reset --hard origin/main
+            cp /tmp/generated-changelog.md CHANGELOG.md
+            git add CHANGELOG.md
+            git diff --staged --quiet && exit 0
+            git commit -m "chore: update CHANGELOG.md for ${{ github.ref_name }} [skip ci]"
           done
           echo "::error::Failed to push CHANGELOG.md commit to main after 5 attempts"
           exit 1
