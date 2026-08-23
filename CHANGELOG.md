@@ -2,6 +2,17 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.18.0-beta] - 2026-08-23
+
+### Added
+
+- Feat: complete multi-language support (7 locales)
+
+### Changes
+
+- Chore: update CHANGELOG.md for v0.17.0-beta [skip ci]
+- Chore: bump version to 0.18.0-beta
+
 ## [0.17.0-beta] - 2026-08-23
 
 ### Added
