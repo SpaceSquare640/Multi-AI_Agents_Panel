@@ -231,8 +231,28 @@ pub fn run() {
             commands::build_semantic_index_for_session,
             commands::semantic_search_query,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while running tauri application")
+        .run(|app_handle, event| {
+            // Tauri's default window-close path exits the process directly
+            // (no Rust `Drop` chain runs for managed state), so the
+            // `SkillRuntime`/`MlEngineRuntime` child `python.exe` processes
+            // they spawn at startup would otherwise survive the app
+            // closing — an orphaned process holding the installed
+            // `python-windows/*.pyd` files open, which is exactly what
+            // makes a subsequent installer run fail with "Error opening
+            // file for writing". `RunEvent::Exit` fires once, right before
+            // the process actually terminates, giving us one real chance
+            // to kill them explicitly instead of relying on `Drop`.
+            if let tauri::RunEvent::Exit = event {
+                if let Some(state) = app_handle.try_state::<SkillRuntimeState>() {
+                    drop(state.0.lock().unwrap().take());
+                }
+                if let Some(state) = app_handle.try_state::<MlEngineRuntimeState>() {
+                    drop(state.0.lock().unwrap().take());
+                }
+            }
+        });
 }
 
 #[cfg(test)]
