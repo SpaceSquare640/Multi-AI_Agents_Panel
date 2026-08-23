@@ -58,7 +58,13 @@
     "sourceBuiltin": "Integriert",
     "usedByNone": "Von keinem Agenten verwendet",
     "usedByCount_one": "Von {{count}} Agent verwendet",
-    "usedByCount_other": "Von {{count}} Agenten verwendet"
+    "usedByCount_other": "Von {{count}} Agenten verwendet",
+    "importCustomSkill": "+ Benutzerdefinierte Fähigkeit importieren…",
+    "importingSkill": "Wird importiert…",
+    "importWarning": "⚠ Das Importieren einer Fähigkeit führt deren Python-Code mit derselben Vertrauensstufe wie eine integrierte Fähigkeit aus. Sie ist an die in ihrer skill.json deklarierten Berechtigungen gebunden — eine nicht deklarierte Dateisystem-/Netzwerkfähigkeit wird tatsächlich blockiert, nicht nur gewarnt — importieren Sie Fähigkeiten jedoch nur aus vertrauenswürdigen Quellen.",
+    "export": "Exportieren…",
+    "exporting": "Wird exportiert…",
+    "exportedTo": "Exportiert nach {{path}}"
   },
   "usage": {
     "title": "Nutzung",

@@ -58,7 +58,13 @@
     "sourceBuiltin": "內建",
     "usedByNone": "未被任何 Agent 使用",
     "usedByCount_one": "被 {{count}} 個 Agent 使用",
-    "usedByCount_other": "被 {{count}} 個 Agent 使用"
+    "usedByCount_other": "被 {{count}} 個 Agent 使用",
+    "importCustomSkill": "+ 匯入自訂技能…",
+    "importingSkill": "匯入中…",
+    "importWarning": "⚠ 匯入技能會以與內建技能相同的信任等級執行其 Python 程式碼。其行為受 skill.json 中宣告的權限約束——未宣告的檔案系統／網路能力會被真正封鎖，而不僅是警告——但請僅從您信任的來源匯入技能。",
+    "export": "匯出…",
+    "exporting": "匯出中…",
+    "exportedTo": "已匯出至 {{path}}"
   },
   "usage": {
     "title": "使用量",

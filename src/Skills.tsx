@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
+import { open as openFolderPicker } from "@tauri-apps/plugin-dialog";
 import type { Agent, SkillAccessGrant, SkillManifest } from "./types";
 import "./Skills.css";
 
@@ -42,10 +43,53 @@ export default function Skills() {
   const [grantsBySkill, setGrantsBySkill] = useState<Map<string, string[]>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [exportingName, setExportingName] = useState<string | null>(null);
+  const [exportedMessage, setExportedMessage] = useState<string | null>(null);
 
   useEffect(() => {
     void refresh();
   }, []);
+
+  /** Lets a user add a Skill they got from anywhere on disk (downloaded,
+   *  copied from a USB stick, whatever) without needing to find this
+   *  app's own install/data directory first — same folder-picker pattern
+   *  Chat.tsx's per-Agent panel already used, just surfaced here too
+   *  since this is the more natural "manage Skills" screen. */
+  async function handleImport() {
+    setError(null);
+    setExportedMessage(null);
+    try {
+      const folder = await openFolderPicker({ directory: true, multiple: false });
+      if (!folder) return; // user cancelled the picker
+      setImporting(true);
+      await invoke("import_custom_skill", { sourceFolder: folder });
+      await refresh();
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  /** The reverse of import: copies a custom Skill's folder out to a
+   *  user-picked destination so it can be shared/backed up, again
+   *  without the user needing to locate this app's own data directory. */
+  async function handleExport(skillName: string) {
+    setError(null);
+    setExportedMessage(null);
+    try {
+      const folder = await openFolderPicker({ directory: true, multiple: false });
+      if (!folder) return;
+      setExportingName(skillName);
+      await invoke("export_custom_skill", { skillName, destFolder: folder });
+      setExportedMessage(t("skills.exportedTo", { path: `${folder}/${skillName}` }));
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setExportingName(null);
+    }
+  }
 
   async function refresh() {
     setLoading(true);
@@ -72,13 +116,20 @@ export default function Skills() {
     <div className="skills-screen">
       <div className="skills-head">
         <h1>{t("skills.title")}</h1>
-        <button onClick={() => void refresh()} disabled={loading}>
-          {loading ? t("skills.refreshing") : t("skills.refresh")}
-        </button>
+        <div className="skills-head-actions">
+          <button onClick={() => void handleImport()} disabled={importing}>
+            {importing ? t("skills.importingSkill") : t("skills.importCustomSkill")}
+          </button>
+          <button onClick={() => void refresh()} disabled={loading}>
+            {loading ? t("skills.refreshing") : t("skills.refresh")}
+          </button>
+        </div>
       </div>
       <p className="acc-hint">{t("skills.hint")}</p>
+      <p className="acc-hint">{t("skills.importWarning")}</p>
 
       {error && <div className="acc-error">{error}</div>}
+      {exportedMessage && <div className="acc-hint">{exportedMessage}</div>}
 
       {!loading && skills.length === 0 && <p className="acc-empty">{t("skills.noneDiscovered")}</p>}
 
@@ -111,6 +162,15 @@ export default function Skills() {
                   {usedBy.length === 0 ? t("skills.usedByNone") : t("skills.usedByCount", { count: usedBy.length })}
                 </span>
               </div>
+              {skill.source === "custom" && (
+                <button
+                  className="skill-export-button"
+                  onClick={() => void handleExport(skill.name)}
+                  disabled={exportingName === skill.name}
+                >
+                  {exportingName === skill.name ? t("skills.exporting") : t("skills.export")}
+                </button>
+              )}
             </div>
           );
         })}

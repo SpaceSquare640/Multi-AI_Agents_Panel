@@ -193,6 +193,7 @@ pub fn run() {
             commands::import_custom_role_template,
             commands::list_skills,
             commands::import_custom_skill,
+            commands::export_custom_skill,
             commands::grant_skill_access,
             commands::list_skill_access_grants,
             commands::revoke_skill_access,

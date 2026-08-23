@@ -52,12 +52,11 @@ translation hasn't started yet (no Weblate project has been set up).
 - `src/i18n.ts` wires up [react-i18next](https://react.i18next.com/) and
   registers all seven locales under `src/locales/*/translation.json`.
   `en/translation.json` is the source of truth.
-- **Only `Settings.tsx` is converted** to `useTranslation()`/`t(...)` so
-  far — the rest of the app (`Chat.tsx`, `AIControlCenter.tsx`,
-  `Skills.tsx`, `Usage.tsx`, `Onboarding.tsx`, `Manual.tsx`) still has
-  hardcoded English strings. Converting one more screen per PR is a
-  good, reviewable first contribution. New UI text should use `t(...)`
-  from the start rather than hardcoded strings.
+- **All 7 screens are converted** to `useTranslation()`/`t(...)`:
+  `Settings.tsx`, `Skills.tsx`, `Usage.tsx`, `Onboarding.tsx`, `Manual.tsx`,
+  `Chat.tsx`, and `AIControlCenter.tsx`. New UI text should use `t(...)`
+  from the start rather than hardcoded strings, and any new key needs an
+  entry in every one of the 7 locale files, not just `en`.
 - When Weblate setup does happen, it'll point at the `src/locales/*/translation.json` file-mask pattern (no repo-committed Weblate config file is needed for this — component setup happens in Weblate's own dashboard).
 
 ## Guidelines

@@ -1088,6 +1088,25 @@ pub fn import_custom_skill(
     Ok(SkillManifest { source: "custom".to_string(), ..manifest })
 }
 
+/// The reverse of `import_custom_skill`: copies a custom skill's folder
+/// (source, entrypoint, `skill.json`, everything) out to a user-picked
+/// destination folder, so it can be shared or backed up without the user
+/// needing to go find this app's own data directory on disk. Built-in
+/// skills aren't exportable this way — they ship with every install
+/// already, there's nothing to hand someone that they don't already have.
+#[tauri::command]
+pub fn export_custom_skill(skill_dirs: State<SkillDirs>, skill_name: String, dest_folder: String) -> Result<(), String> {
+    let source = skill_dirs.custom.join(&skill_name);
+    if !source.is_dir() {
+        return Err(format!("no custom skill named \"{skill_name}\""));
+    }
+    let dest = std::path::Path::new(&dest_folder).join(&skill_name);
+    if dest.exists() {
+        return Err(format!("{} already exists — pick a different destination", dest.display()));
+    }
+    skill_manager::copy_dir_recursive(&source, &dest).map_err(|e| format!("failed to copy skill files: {e}"))
+}
+
 #[tauri::command]
 pub fn grant_skill_access(
     storage: State<Storage>,

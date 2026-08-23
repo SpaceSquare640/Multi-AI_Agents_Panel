@@ -12,6 +12,11 @@
   gap: 1rem;
 }
 
+.skills-head-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
 .skills-head h1 {
   margin: 0;
   text-transform: uppercase;
@@ -108,4 +113,11 @@
   justify-content: space-between;
   font-size: 0.78rem;
   opacity: 0.85;
+}
+
+.skill-export-button {
+  margin-top: 0.6rem;
+  width: 100%;
+  font-size: 0.78rem;
+  padding: 0.35rem 0.6rem;
 }

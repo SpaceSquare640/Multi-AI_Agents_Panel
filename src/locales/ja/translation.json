@@ -58,7 +58,13 @@
     "sourceBuiltin": "組み込み",
     "usedByNone": "どの Agent にも使用されていません",
     "usedByCount_one": "{{count}} 個の Agent が使用中",
-    "usedByCount_other": "{{count}} 個の Agent が使用中"
+    "usedByCount_other": "{{count}} 個の Agent が使用中",
+    "importCustomSkill": "+ カスタムスキルをインポート…",
+    "importingSkill": "インポート中…",
+    "importWarning": "⚠ スキルをインポートすると、組み込みスキルと同じ信頼レベルでその Python コードが実行されます。skill.json で宣言された権限に拘束されます——宣言されていないファイルシステム／ネットワーク機能は、単なる警告ではなく実際にブロックされます——信頼できるソースからのみスキルをインポートしてください。",
+    "export": "エクスポート…",
+    "exporting": "エクスポート中…",
+    "exportedTo": "{{path}} にエクスポートしました"
   },
   "usage": {
     "title": "使用状況",

@@ -58,7 +58,13 @@
     "sourceBuiltin": "Built-in",
     "usedByNone": "Not used by any Agent",
     "usedByCount_one": "Used by {{count}} Agent",
-    "usedByCount_other": "Used by {{count}} Agents"
+    "usedByCount_other": "Used by {{count}} Agents",
+    "importCustomSkill": "+ Import custom skill…",
+    "importingSkill": "Importing…",
+    "importWarning": "⚠ Importing a Skill runs its Python code with the same trust level as a built-in Skill. It's bound by whatever permissions its skill.json declares — an undeclared filesystem/network capability is genuinely blocked, not just a warning — but only import Skills from sources you trust.",
+    "export": "Export…",
+    "exporting": "Exporting…",
+    "exportedTo": "Exported to {{path}}"
   },
   "usage": {
     "title": "Usage",
