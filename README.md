@@ -28,17 +28,6 @@ npm run tauri dev
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for tests and how to submit changes.
 
-## Learn more
-
-Full planning, architecture, and decision history live in the Obsidian
-vault at `../Multi-AI Agent Panel Document/` (start at
-`00 Dashboard/Dashboard.md`). Notably:
-
-- `01 Project Overview/Vision & Goals.md` — scope, non-goals, governance
-- `01 Project Overview/AI Guardrails (必守規則).md` — the rules every agent must follow
-- `03 Development Notes/Architecture.md` — module breakdown
-- `02 Planning/Roadmap.md` / `Backlog.md` — what's next, what's deliberately not built
-
 ## Stack
 
 Rust + [Tauri](https://tauri.app) (`src-tauri/`) · TypeScript + React
