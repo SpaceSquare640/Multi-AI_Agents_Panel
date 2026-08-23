@@ -28,9 +28,10 @@ Notably:
 
 ## Status
 
-**Alpha** (`-alpha` version tags). Core features work end-to-end and are
-covered by tests, but interfaces and storage formats may still change
-without a migration path. Implemented so far:
+**Beta** (`-beta` version tags, since `v0.16.0-beta`). Core features work
+end-to-end, are covered by tests, and the app is usable day to day —
+interfaces and storage formats may still change without a migration
+path, and it's still unsigned (see below). Implemented so far:
 
 - Independent Sessions with multiple providers (Anthropic, OpenAI,
   OpenRouter, Ollama, [colibrì](https://github.com/JustVugg/colibri)),
