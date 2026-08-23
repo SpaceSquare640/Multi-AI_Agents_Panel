@@ -2,6 +2,17 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [1.3.0] - 2026-08-23
+
+### Added
+
+- Feat: delete sessions and group chats
+
+### Changes
+
+- Chore: update CHANGELOG.md for v1.2.2 [skip ci]
+- Chore: bump version to 1.3.0
+
 ## [1.2.2] - 2026-08-23
 
 ### Changes
