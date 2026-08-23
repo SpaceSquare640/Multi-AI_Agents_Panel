@@ -8,6 +8,7 @@ Usage:
   python -m game_agent_rl.cli record --session <name> --output-dir <dir>
   python -m game_agent_rl.cli label --session-dir <dir> [--window-seconds <n>]
   python -m game_agent_rl.cli train-bc --session-dir <dir> --checkpoint-out <path> [--epochs <n>]
+  python -m game_agent_rl.cli example --output-dir <dir> [--session <name>]
 """
 
 import argparse
@@ -15,6 +16,7 @@ import sys
 import time
 from pathlib import Path
 
+from .example import generate_example_session
 from .label import label_session
 from .record import Recorder
 
@@ -88,6 +90,15 @@ def cmd_train_bc(args: argparse.Namespace) -> None:
     )
 
 
+def cmd_example(args: argparse.Namespace) -> None:
+    session_path = generate_example_session(Path(args.output_dir), args.session)
+    print(
+        f"Wrote a synthetic (non-real) example session to {session_path} — "
+        f"try: python -m game_agent_rl.cli label --session-dir {session_path}",
+        file=sys.stderr,
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="game_agent_rl")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -114,6 +125,13 @@ def main() -> None:
     train_bc_parser.add_argument("--epochs", type=int, default=10, help="Training epochs (default: 10)")
     train_bc_parser.add_argument("--batch-size", type=int, default=8, help="Training batch size (default: 8)")
     train_bc_parser.set_defaults(func=cmd_train_bc)
+
+    example_parser = sub.add_parser(
+        "example", help="Generate a small synthetic (non-real) example session to try the pipeline against"
+    )
+    example_parser.add_argument("--output-dir", required=True, help="Directory to write the example session folder into")
+    example_parser.add_argument("--session", default="example", help="Session name (used as the output folder name, default: example)")
+    example_parser.set_defaults(func=cmd_example)
 
     args = parser.parse_args()
     args.func(args)
