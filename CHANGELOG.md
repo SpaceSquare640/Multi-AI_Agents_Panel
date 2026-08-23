@@ -2,6 +2,14 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.14.0-alpha] - 2026-08-23
+
+### Changes
+
+- Reduce Track A's most naive bot-detection signatures
+- Chore: update CHANGELOG.md for v0.13.1-alpha [skip ci]
+- Chore: bump version to 0.14.0-alpha
+
 ## [0.13.1-alpha] - 2026-08-23
 
 ### Changes
