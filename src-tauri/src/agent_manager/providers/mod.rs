@@ -15,9 +15,6 @@ pub mod openrouter;
 /// provider adapter reports this yet (see each adapter's docs for
 /// whether it does) — `None` anywhere this is optional means "unknown,"
 /// not "zero cost."
-// Not constructed by any live call path yet — see agent_manager::cost's
-// module docs for what's staged and what wiring is still needed.
-#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TokenUsage {
     pub prompt_tokens: u32,

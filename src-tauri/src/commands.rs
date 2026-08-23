@@ -144,6 +144,49 @@ pub fn get_usage_summary(storage: State<Storage>) -> Result<Vec<UsageSummary>, S
     storage.usage_summary().map_err(|e| e.to_string())
 }
 
+/// Same as `get_usage_summary`, but with `total_estimated_cost_usd`
+/// actually filled in for OpenRouter keys — joins each key's recorded
+/// calls (`Storage::usage_log_rows_for_key`, real token counts) against
+/// the OpenRouter model catalog's *current* pricing (cached at most 24h,
+/// see `openrouter_catalog::list_models`) via `agent_manager::cost::estimate_usd`.
+/// A separate command from `get_usage_summary` rather than changing it
+/// in place: this one does real network/cache work for the catalog and
+/// per-key extra queries, which every caller of the plain summary
+/// (e.g. anything that just needs success/failure counts) shouldn't pay
+/// for. Non-OpenRouter keys, and OpenRouter calls whose model isn't in
+/// the catalog or whose tokens weren't recorded, keep
+/// `total_estimated_cost_usd: None` — an honest "unknown," not a false
+/// zero.
+#[tauri::command]
+pub fn get_usage_summary_with_cost(
+    storage: State<Storage>,
+    catalog: State<OpenRouterCatalogState>,
+) -> Result<Vec<UsageSummary>, String> {
+    let mut summary = storage.usage_summary().map_err(|e| e.to_string())?;
+
+    let openrouter_pricing: std::collections::HashMap<String, (Option<f64>, Option<f64>)> =
+        openrouter_catalog::list_models(&catalog, false)
+            .models
+            .into_iter()
+            .map(|m| (m.id, (m.prompt_price_per_million, m.completion_price_per_million)))
+            .collect();
+
+    for row in &mut summary {
+        if row.provider != "openrouter" {
+            continue;
+        }
+        let usage_rows: Vec<(String, Option<u32>, Option<u32>)> = storage
+            .usage_log_rows_for_key(&row.provider_key_id)
+            .map_err(|e| e.to_string())?
+            .into_iter()
+            .map(|(model, prompt, completion)| (model, prompt.map(|n| n as u32), completion.map(|n| n as u32)))
+            .collect();
+        row.total_estimated_cost_usd = agent_manager::cost::estimate_total_usd(&usage_rows, &openrouter_pricing);
+    }
+
+    Ok(summary)
+}
+
 #[tauri::command]
 pub fn list_curated_models(provider: String) -> Result<Vec<CuratedModel>, String> {
     match provider.as_str() {

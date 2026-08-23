@@ -58,6 +58,8 @@
     "totalCalls": "Total calls",
     "failedCalls": "Failed calls",
     "failureRate": "Failure rate",
+    "estimatedCost": "Estimated cost",
+    "estimatedCostHint": "OpenRouter only, known-cost calls",
     "softBudget": "Soft call budget",
     "unset": "unset",
     "softBudgetHint": "calls — a local reminder only, doesn't block anything",

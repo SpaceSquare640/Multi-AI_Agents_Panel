@@ -54,7 +54,6 @@ pub fn parse_response(body: &Value) -> Result<String, ProviderError> {
 /// the field is missing — some OpenRouter-routed models don't report
 /// usage — so a caller can tell "unknown" from "reported zero" and skip
 /// cost estimation rather than silently claiming a free call.
-#[allow(dead_code)] // staged — see agent_manager::cost's module docs
 fn parse_usage(body: &Value) -> Option<TokenUsage> {
     let usage = body.get("usage")?;
     Some(TokenUsage {
@@ -70,7 +69,6 @@ fn parse_usage(body: &Value) -> Option<TokenUsage> {
 /// plain-text path (`send`, used by tool-calling/DAG/memory contexts
 /// that only need the reply) is unaffected, and every existing test
 /// against `send`/`parse_response` still holds.
-#[allow(dead_code)] // staged — see agent_manager::cost's module docs
 pub fn send_with_usage(api_key: &str, model: &str, messages: &[ChatMessage]) -> Result<(String, Option<TokenUsage>), ProviderError> {
     let client = reqwest::blocking::Client::new();
     let response = client
@@ -87,23 +85,6 @@ pub fn send_with_usage(api_key: &str, model: &str, messages: &[ChatMessage]) -> 
 
     let text = parse_response(&body)?;
     Ok((text, parse_usage(&body)))
-}
-
-pub fn send(api_key: &str, model: &str, messages: &[ChatMessage]) -> Result<String, ProviderError> {
-    let client = reqwest::blocking::Client::new();
-    let response = client
-        .post(API_URL)
-        .bearer_auth(api_key)
-        .header("content-type", "application/json")
-        .json(&build_request(model, messages))
-        .send()
-        .map_err(|e| ProviderError::Network { error_code: "E2003", message: e.to_string() })?;
-
-    let body: Value = response
-        .json()
-        .map_err(|e| ProviderError::Network { error_code: "E2003", message: e.to_string() })?;
-
-    parse_response(&body)
 }
 
 #[cfg(test)]
@@ -176,8 +157,12 @@ mod live {
             role: "user".to_string(),
             content: "Reply with exactly one word: pong".to_string(),
         }];
-        let reply = send(&api_key, "inclusionai/ling-3.0-flash:free", &messages)
+        let (reply, usage) = send_with_usage(&api_key, "inclusionai/ling-3.0-flash:free", &messages)
             .expect("live call to OpenRouter failed");
         assert!(!reply.trim().is_empty());
+        // Not every OpenRouter-routed model reports usage, so this only
+        // checks the reply text is non-empty above — usage is printed
+        // for a human running this manually to eyeball, not asserted on.
+        eprintln!("token usage reported: {usage:?}");
     }
 }

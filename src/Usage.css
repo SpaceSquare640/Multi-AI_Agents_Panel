@@ -77,6 +77,12 @@
   font-variant-numeric: tabular-nums;
 }
 
+.usage-kpi-hint {
+  font-size: 0.68rem;
+  opacity: 0.6;
+  margin-top: 0.25rem;
+}
+
 .usage-provider-panel,
 .usage-status-panel {
   padding: 1rem 1.1rem;

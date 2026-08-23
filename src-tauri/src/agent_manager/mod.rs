@@ -159,16 +159,49 @@ fn dispatch_one(
     messages: &[ChatMessage],
 ) -> Result<String, ProviderError> {
     // Usage logging is best-effort here: a logging failure shouldn't mask
-    // the real result of a provider call.
-    let log_attempt = |key: &ProviderKey, provider: &str, success: bool| {
-        let _ = storage.record_usage(Some(&key.id), Some(&agent.id), provider, model, success);
+    // the real result of a provider call. Every branch's `attempt`
+    // closure returns `(String, Option<TokenUsage>)` uniformly — even
+    // branches that never have usage data just return `None` for it —
+    // so `on_attempt` can log real token counts where a provider reports
+    // them (currently only OpenRouter, see `providers::openrouter::send_with_usage`)
+    // without dispatch_one's own return type (still plain `String`,
+    // stripped back down at the very end of this function) rippling out
+    // to every caller of `dispatch`/`send_message`.
+    let log_attempt = |key: &ProviderKey,
+                        provider: &str,
+                        outcome: Result<&(String, Option<providers::TokenUsage>), &ProviderError>| {
+        let (success, usage) = match outcome {
+            Ok((_, usage)) => (true, *usage),
+            Err(_) => (false, None),
+        };
+        let _ = storage.record_usage_with_cost(
+            Some(&key.id),
+            Some(&agent.id),
+            provider,
+            model,
+            success,
+            usage.map(|u| u.prompt_tokens),
+            usage.map(|u| u.completion_tokens),
+            // Cost estimation needs live per-model pricing
+            // (`openrouter_catalog`), which isn't available down here —
+            // dispatch_one only has `Storage`/`Agent`/the message list,
+            // not the Tauri-managed catalog cache. Left `None` (unknown,
+            // not zero) rather than threading catalog state through
+            // every layer between the command handler and here for a
+            // number a future read-time calculation (joining these real
+            // token counts against current pricing when the Usage
+            // dashboard actually displays them) can produce more
+            // accurately anyway, using pricing current as of *viewing*
+            // time rather than pricing frozen at call time.
+            None,
+        );
     };
 
     let Some(provider) = Provider::parse(provider_name) else {
         return Err(ProviderError::Unsupported(provider_name.to_string()));
     };
 
-    match provider {
+    let result = match provider {
         Provider::Anthropic => {
             let candidates = candidate_keys(storage, agent, "anthropic")?;
             run_with_fallback(
@@ -176,9 +209,9 @@ fn dispatch_one(
                 |k| k.label.clone().unwrap_or_else(|| format!("key {}", k.id)),
                 |k| {
                     let secret = fetch_secret(k)?;
-                    providers::anthropic::send(&secret, model, messages)
+                    providers::anthropic::send(&secret, model, messages).map(|text| (text, None))
                 },
-                |k, success| log_attempt(k, "anthropic", success),
+                |k, outcome| log_attempt(k, "anthropic", outcome),
             )
         }
         Provider::OpenRouter => {
@@ -188,9 +221,9 @@ fn dispatch_one(
                 |k| k.label.clone().unwrap_or_else(|| format!("key {}", k.id)),
                 |k| {
                     let secret = fetch_secret(k)?;
-                    providers::openrouter::send(&secret, model, messages)
+                    providers::openrouter::send_with_usage(&secret, model, messages)
                 },
-                |k, success| log_attempt(k, "openrouter", success),
+                |k, outcome| log_attempt(k, "openrouter", outcome),
             )
         }
         Provider::OpenAi => {
@@ -200,9 +233,9 @@ fn dispatch_one(
                 |k| k.label.clone().unwrap_or_else(|| format!("key {}", k.id)),
                 |k| {
                     let secret = fetch_secret(k)?;
-                    providers::openai::send(&secret, model, messages)
+                    providers::openai::send(&secret, model, messages).map(|text| (text, None))
                 },
-                |k, success| log_attempt(k, "openai", success),
+                |k, outcome| log_attempt(k, "openai", outcome),
             )
         }
         // Local Ollama has no Key Vault entries to log against — the
@@ -211,7 +244,7 @@ fn dispatch_one(
         Provider::Ollama => run_with_fallback(
             &[()],
             |_| "local Ollama".to_string(),
-            |_| providers::ollama::send(model, messages),
+            |_| providers::ollama::send(model, messages).map(|text| (text, None)),
             |_, _| {},
         ),
         // Colibrì (github.com/JustVugg/colibri) is local like Ollama —
@@ -220,7 +253,7 @@ fn dispatch_one(
         Provider::Colibri => run_with_fallback(
             &[()],
             |_| "local colibrì".to_string(),
-            |_| providers::colibri::send(model, messages),
+            |_| providers::colibri::send(model, messages).map(|text| (text, None)),
             |_, _| {},
         ),
         // OmniRoute (github.com/diegosouzapw/OmniRoute) is a local,
@@ -230,10 +263,12 @@ fn dispatch_one(
         Provider::OmniRoute => run_with_fallback(
             &[()],
             |_| "local OmniRoute".to_string(),
-            |_| providers::omniroute::send(model, messages),
+            |_| providers::omniroute::send(model, messages).map(|text| (text, None)),
             |_, _| {},
         ),
-    }
+    };
+
+    result.map(|(text, _usage)| text)
 }
 
 /// Tries the agent's own primary provider first; if (and only if) that

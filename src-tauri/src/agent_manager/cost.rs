@@ -3,31 +3,28 @@
 //! the Usage dashboard's open items (see the vault's Daily Log
 //! "待釐清" section: "用量儀表板的「估計花費」功能仍未實作").
 //!
-//! **Staged building block, not yet wired into the live dispatch
-//! path** (`#![allow(dead_code)]` below, same convention as
-//! `ml_engine::vector_index`): `storage::usage_log` now has nullable
-//! `prompt_tokens`/`completion_tokens`/`estimated_cost_usd` columns and
-//! `Storage::record_usage_with_cost`, and `providers::openrouter` can
-//! parse token usage from a response (`send_with_usage`/`parse_usage`)
-//! — OpenRouter is the one provider this codebase already has live
-//! per-model pricing for (`openrouter_catalog`). What's still missing
-//! is wiring `send_with_usage` into `agent_manager::dispatch_one`'s
-//! `OpenRouter` branch without double-logging: `fallback::run_with_fallback`'s
-//! `on_attempt` callback only carries a success bool today, not the `Ok`
-//! value, so cost can't reach the same `usage_log` row a plain
-//! `record_usage` call already writes for every attempt — widening
-//! `on_attempt`'s signature to carry the outcome is a real, separate
-//! change deserving its own focused pass, not squeezed in here as an
-//! afterthought that risks silently duplicating usage rows.
-//! Anthropic/OpenAI would additionally need their own usage-parsing +
-//! a pricing source (Anthropic's response body already reports
-//! `usage.input_tokens`/`output_tokens`, but there's no equivalent live
-//! pricing catalog for it in this repo yet — a static table would drift
-//! out of date silently, which this project's "don't fake correctness"
-//! convention prefers not to ship). Local providers (Ollama/colibrì/
-//! OmniRoute) have no cost at all — not part of this by design.
-
-#![allow(dead_code)]
+//! `agent_manager::dispatch_one`'s `OpenRouter` branch now records real
+//! `prompt_tokens`/`completion_tokens` per call (via
+//! `providers::openrouter::send_with_usage`) into `storage::usage_log` —
+//! OpenRouter is the one provider this codebase already has live
+//! per-model pricing for (`openrouter_catalog`). The actual USD estimate
+//! is computed at *read* time (`commands::get_usage_summary_with_cost`,
+//! via `Storage::usage_log_rows_for_key` + this module's `estimate_usd`),
+//! not stored per-call — this joins each recorded call's tokens against
+//! *current* pricing when the Usage dashboard is actually viewed, rather
+//! than freezing a possibly-stale price at call time. `usage_log`'s own
+//! `estimated_cost_usd` column exists (`record_usage_with_cost`'s
+//! signature accepts it) but is currently always written as `None` for
+//! exactly this reason — nothing pre-computes it at insert time.
+//!
+//! **Scope, stated honestly**: Anthropic/OpenAI would additionally need
+//! their own usage-parsing + a pricing source (Anthropic's response body
+//! already reports `usage.input_tokens`/`output_tokens`, but there's no
+//! equivalent live pricing catalog for it in this repo yet — a static
+//! table would drift out of date silently, which this project's "don't
+//! fake correctness" convention prefers not to ship). Local providers
+//! (Ollama/colibrì/OmniRoute) have no cost at all — not part of this by
+//! design.
 
 /// `prompt_price_per_million`/`completion_price_per_million` are USD per
 /// 1,000,000 tokens (the unit `openrouter_catalog::CuratedModel` already
@@ -44,6 +41,39 @@ pub fn estimate_usd(
     let prompt_cost = usage.prompt_tokens as f64 / 1_000_000.0 * prompt_price;
     let completion_cost = usage.completion_tokens as f64 / 1_000_000.0 * completion_price;
     Some(prompt_cost + completion_cost)
+}
+
+/// Sums the estimated cost of a key's recorded calls (`(model,
+/// prompt_tokens, completion_tokens)`, e.g. from
+/// `Storage::usage_log_rows_for_key`) against a pricing lookup keyed by
+/// model id — the pure aggregation `commands::get_usage_summary_with_cost`
+/// runs per OpenRouter key, split out here so it's testable without a
+/// database or the OpenRouter catalog's cache/network. `None` when zero
+/// rows had both known tokens and known pricing (nothing to estimate
+/// from), never a false `Some(0.0)`.
+pub fn estimate_total_usd(
+    rows: &[(String, Option<u32>, Option<u32>)],
+    pricing: &std::collections::HashMap<String, (Option<f64>, Option<f64>)>,
+) -> Option<f64> {
+    let mut total = 0.0;
+    let mut any_known = false;
+    for (model, prompt_tokens, completion_tokens) in rows {
+        let (Some(prompt_tokens), Some(completion_tokens)) = (prompt_tokens, completion_tokens) else {
+            continue;
+        };
+        let Some((prompt_price, completion_price)) = pricing.get(model) else {
+            continue;
+        };
+        let usage = crate::agent_manager::providers::TokenUsage {
+            prompt_tokens: *prompt_tokens,
+            completion_tokens: *completion_tokens,
+        };
+        if let Some(cost) = estimate_usd(&usage, *prompt_price, *completion_price) {
+            total += cost;
+            any_known = true;
+        }
+    }
+    any_known.then_some(total)
 }
 
 #[cfg(test)]
@@ -81,5 +111,42 @@ mod tests {
     fn zero_tokens_is_a_real_zero_cost_not_none() {
         let usage = TokenUsage { prompt_tokens: 0, completion_tokens: 0 };
         assert_eq!(estimate_usd(&usage, Some(3.0), Some(15.0)), Some(0.0));
+    }
+
+    fn pricing(entries: &[(&str, f64, f64)]) -> std::collections::HashMap<String, (Option<f64>, Option<f64>)> {
+        entries.iter().map(|(id, p, c)| (id.to_string(), (Some(*p), Some(*c)))).collect()
+    }
+
+    #[test]
+    fn estimate_total_usd_sums_across_multiple_rows_of_the_same_model() {
+        let rows = vec![
+            ("model-a".to_string(), Some(1_000_000), Some(0)),
+            ("model-a".to_string(), Some(1_000_000), Some(0)),
+        ];
+        let prices = pricing(&[("model-a", 3.0, 15.0)]);
+        assert_eq!(estimate_total_usd(&rows, &prices), Some(6.0));
+    }
+
+    #[test]
+    fn estimate_total_usd_skips_rows_with_unknown_tokens_but_still_counts_the_rest() {
+        let rows = vec![
+            ("model-a".to_string(), None, None),
+            ("model-a".to_string(), Some(1_000_000), Some(0)),
+        ];
+        let prices = pricing(&[("model-a", 3.0, 0.0)]);
+        assert_eq!(estimate_total_usd(&rows, &prices), Some(3.0));
+    }
+
+    #[test]
+    fn estimate_total_usd_skips_rows_whose_model_has_no_known_pricing() {
+        let rows = vec![("unpriced-model".to_string(), Some(1_000_000), Some(0))];
+        let prices = pricing(&[("some-other-model", 3.0, 15.0)]);
+        assert_eq!(estimate_total_usd(&rows, &prices), None);
+    }
+
+    #[test]
+    fn estimate_total_usd_is_none_for_an_empty_row_list() {
+        let prices = pricing(&[]);
+        assert_eq!(estimate_total_usd(&[], &prices), None);
     }
 }

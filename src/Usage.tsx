@@ -18,20 +18,20 @@ export function isOverSoftCap(totalCalls: number, rawCapInput: string): boolean 
 }
 
 /** High-level usage dashboard: KPI cards + per-provider breakdown,
- *  aggregated from the same `get_usage_summary` data the AI Control
- *  Center's raw per-key table already shows (that table stays — it's
- *  useful for debugging a specific key; this view is for a glance at
- *  the big picture).
+ *  aggregated from the same underlying data the AI Control Center's raw
+ *  per-key table already shows (that table stays — it's useful for
+ *  debugging a specific key; this view is for a glance at the big
+ *  picture).
  *
- *  Deliberately shows call counts only, not estimated cost — the
- *  Screen Inventory mockup for this screen included a cost figure, but
- *  there is no real pricing data wired up yet (Usage Tracker's cost
- *  estimation is still open in the Backlog: it needs a decision on
- *  where per-model pricing comes from, and today's `usage_log` doesn't
- *  even record token counts). Showing a fabricated cost number would
- *  be worse than not showing one.
+ *  Estimated cost is real, but partial: uses `get_usage_summary_with_cost`
+ *  (not the plain `get_usage_summary`), which only fills in a number for
+ *  OpenRouter keys with recorded token counts and known model pricing
+ *  (see `agent_manager::cost`'s module docs) — Anthropic/OpenAI/local
+ *  providers contribute `null`, so the total shown is a known-cost
+ *  subtotal, not a complete bill. The KPI card says so explicitly rather
+ *  than implying completeness it doesn't have.
  *
- *  What IS real: a soft call-count budget warning — the actual purpose
+ *  Also real: a soft call-count budget warning — the actual purpose
  *  Architecture.md gives Usage Tracker ("避免失控燒 API 額度"). Only
  *  cloud calls ever reach `usage_log` (local Ollama has no Key Vault
  *  entry to log against — see `dispatch_one`), so `totalCalls` here is
@@ -54,7 +54,7 @@ export default function Usage() {
     setError(null);
     try {
       const [usageResult, agentsResult, sessionsResult] = await Promise.all([
-        invoke<UsageSummary[]>("get_usage_summary"),
+        invoke<UsageSummary[]>("get_usage_summary_with_cost"),
         invoke<Agent[]>("list_agents"),
         invoke<Session[]>("list_sessions"),
       ]);
@@ -81,6 +81,10 @@ export default function Usage() {
   const totalFailure = usage.reduce((sum, u) => sum + u.failureCount, 0);
   const totalCalls = totalSuccess + totalFailure;
   const failureRate = totalCalls === 0 ? 0 : (totalFailure / totalCalls) * 100;
+
+  const keysWithKnownCost = usage.filter((u) => u.totalEstimatedCostUsd !== null);
+  const totalEstimatedCostUsd =
+    keysWithKnownCost.length === 0 ? null : keysWithKnownCost.reduce((sum, u) => sum + (u.totalEstimatedCostUsd ?? 0), 0);
 
   const softCap = softCapInput.trim() === "" ? null : Number(softCapInput);
   const overSoftCap = isOverSoftCap(totalCalls, softCapInput);
@@ -124,6 +128,13 @@ export default function Usage() {
         <div className="usage-kpi-card">
           <div className="usage-kpi-label">{t("usage.failureRate")}</div>
           <div className="usage-kpi-value">{failureRate.toFixed(1)}%</div>
+        </div>
+        <div className="usage-kpi-card">
+          <div className="usage-kpi-label">{t("usage.estimatedCost")}</div>
+          <div className="usage-kpi-value">
+            {totalEstimatedCostUsd === null ? "—" : `$${totalEstimatedCostUsd.toFixed(4)}`}
+          </div>
+          <div className="usage-kpi-hint">{t("usage.estimatedCostHint")}</div>
         </div>
       </div>
 

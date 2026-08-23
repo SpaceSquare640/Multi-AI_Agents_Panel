@@ -20,6 +20,11 @@ export interface UsageSummary {
   successCount: number;
   failureCount: number;
   lastUsedAt: string | null;
+  /** Only ever non-null for OpenRouter keys, and only when at least one
+   *  recorded call has both known tokens and known model pricing — see
+   *  `get_usage_summary_with_cost` (regular `get_usage_summary` never
+   *  fills this in, always `null`). */
+  totalEstimatedCostUsd: number | null;
 }
 
 export interface CuratedModel {

@@ -152,6 +152,7 @@ pub fn run() {
             commands::import_provider_keys_from_files,
             commands::delete_provider_key,
             commands::get_usage_summary,
+            commands::get_usage_summary_with_cost,
             commands::list_curated_models,
             commands::list_openrouter_models_live,
             commands::start_game_agent,

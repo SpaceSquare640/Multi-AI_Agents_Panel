@@ -17,11 +17,13 @@ use crate::agent_manager::providers::ProviderError;
 /// carrying a human-readable description of what was tried and why each
 /// one failed.
 ///
-/// `on_attempt` is called once per candidate actually tried, with whether
-/// that specific attempt succeeded — this is what lets a caller log each
-/// attempt in a fallback chain individually (e.g. into `usage_log`, one row
-/// per key tried) instead of only the chain's final outcome. It is not
-/// called for candidates never reached (e.g. after an earlier success).
+/// `on_attempt` is called once per candidate actually tried, with the
+/// actual outcome of that attempt — this is what lets a caller log each
+/// attempt in a fallback chain individually (e.g. into `usage_log`, one
+/// row per key tried) instead of only the chain's final outcome, and
+/// with enough detail to log more than just success/failure (e.g. the
+/// token usage an OpenRouter call reported). It is not called for
+/// candidates never reached (e.g. after an earlier success).
 ///
 /// Generic over the success type `R` (originally hardcoded to `String`)
 /// so a caller that needs more than just the reply text back — e.g. an
@@ -36,7 +38,7 @@ pub fn run_with_fallback<T, R>(
     candidates: &[T],
     describe: impl Fn(&T) -> String,
     mut attempt: impl FnMut(&T) -> Result<R, ProviderError>,
-    mut on_attempt: impl FnMut(&T, bool),
+    mut on_attempt: impl FnMut(&T, Result<&R, &ProviderError>),
 ) -> Result<R, ProviderError> {
     if candidates.is_empty() {
         return Err(ProviderError::AllProvidersFailed {
@@ -49,11 +51,11 @@ pub fn run_with_fallback<T, R>(
     for candidate in candidates {
         match attempt(candidate) {
             Ok(reply) => {
-                on_attempt(candidate, true);
+                on_attempt(candidate, Ok(&reply));
                 return Ok(reply);
             }
             Err(err) => {
-                on_attempt(candidate, false);
+                on_attempt(candidate, Err(&err));
                 attempts_log.push(format!("{}: {err}", describe(candidate)));
             }
         }
@@ -84,7 +86,7 @@ mod tests {
                     Err(ProviderError::Network { error_code: "E2003", message: "should not be reached".to_string() })
                 }
             },
-            |_, _| {},
+            |_, _: Result<&String, &ProviderError>| {},
         );
         assert_eq!(result, Ok("ok from a".to_string()));
         assert_eq!(tried, vec!["a"]);
@@ -103,7 +105,7 @@ mod tests {
                     Ok("ok from b".to_string())
                 }
             },
-            |_, _| {},
+            |_, _: Result<&String, &ProviderError>| {},
         );
         assert_eq!(result, Ok("ok from b".to_string()));
     }
@@ -115,7 +117,7 @@ mod tests {
             &candidates,
             |c| format!("candidate {c}"),
             |_| Err::<String, _>(ProviderError::Network { error_code: "E2003", message: "unreachable".to_string() }),
-            |_, _| {},
+            |_, _: Result<&String, &ProviderError>| {},
         )
         .unwrap_err();
 
@@ -133,9 +135,13 @@ mod tests {
     #[test]
     fn no_candidates_at_all_is_also_e3001() {
         let candidates: Vec<&str> = vec![];
-        let err =
-            run_with_fallback(&candidates, |c| c.to_string(), |_| -> Result<String, _> { unreachable!() }, |_, _| {})
-                .unwrap_err();
+        let err = run_with_fallback(
+            &candidates,
+            |c| c.to_string(),
+            |_| -> Result<String, _> { unreachable!() },
+            |_, _: Result<&String, &ProviderError>| {},
+        )
+        .unwrap_err();
         assert!(matches!(err, ProviderError::AllProvidersFailed { error_code: "E3001", .. }));
     }
 
@@ -153,10 +159,24 @@ mod tests {
                     Err(ProviderError::Network { error_code: "E2003", message: "nope".to_string() })
                 }
             },
-            |c, success| log.push((c, success)),
+            |c, outcome: Result<&String, &ProviderError>| log.push((c, outcome.is_ok())),
         );
         assert_eq!(result, Ok("ok from b".to_string()));
         // "c" is never reached because "b" already succeeded.
         assert_eq!(log, vec![("a", false), ("b", true)]);
+    }
+
+    #[test]
+    fn on_attempt_carries_the_actual_ok_value_not_just_a_success_bool() {
+        let candidates = vec!["a"];
+        let mut seen: Option<String> = None;
+        run_with_fallback(
+            &candidates,
+            |c| c.to_string(),
+            |_| Ok("the real reply".to_string()),
+            |_, outcome: Result<&String, &ProviderError>| seen = outcome.ok().cloned(),
+        )
+        .unwrap();
+        assert_eq!(seen, Some("the real reply".to_string()));
     }
 }

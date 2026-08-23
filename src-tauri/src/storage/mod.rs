@@ -102,6 +102,10 @@ pub struct ProviderKey {
     pub last_used_at: Option<String>,
 }
 
+/// One successful call's model + token counts — see
+/// `Storage::usage_log_rows_for_key`.
+pub type UsageLogTokenRow = (String, Option<i64>, Option<i64>);
+
 /// Aggregated call counts for one Key Vault entry, joined with its metadata.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -927,7 +931,7 @@ impl Storage {
     /// this data (which is most of them — see `agent_manager::cost`'s
     /// module docs on which providers report it) doesn't need to start
     /// passing `None, None, None` through a chain of call sites.
-    #[allow(clippy::too_many_arguments, dead_code)] // staged — see agent_manager::cost's module docs
+    #[allow(clippy::too_many_arguments)]
     pub fn record_usage_with_cost(
         &self,
         provider_key_id: Option<&str>,
@@ -964,6 +968,30 @@ impl Storage {
             )?;
         }
         Ok(())
+    }
+
+    /// One successful call's model + token counts, for `provider_key_id`
+    /// — the raw material `agent_manager::cost::estimate_usd` needs to
+    /// compute a cost per row against *current* pricing (see that
+    /// module's docs on why cost is estimated at read time, joined
+    /// against live catalog pricing, rather than frozen at call time).
+    /// Only successful calls are returned — a failed call consumed no
+    /// tokens worth costing. Rows with unknown token counts (any
+    /// provider except OpenRouter, for now) are included too, with
+    /// `None` for both counts, so the caller's row count still matches
+    /// "how many successful calls happened," even though those rows
+    /// can't contribute to a cost estimate.
+    ///
+    pub fn usage_log_rows_for_key(&self, provider_key_id: &str) -> rusqlite::Result<Vec<UsageLogTokenRow>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT model, prompt_tokens, completion_tokens
+             FROM usage_log WHERE provider_key_id = ?1 AND success = 1",
+        )?;
+        let rows = stmt.query_map(params![provider_key_id], |row| {
+            Ok((row.get(0)?, row.get(1)?, row.get(2)?))
+        })?;
+        rows.collect()
     }
 
     pub fn usage_summary(&self) -> rusqlite::Result<Vec<UsageSummary>> {
@@ -2002,5 +2030,30 @@ mod tests {
 
         let refreshed = storage.list_provider_keys().unwrap();
         assert!(refreshed[0].last_used_at.is_some());
+    }
+
+    #[test]
+    fn record_usage_with_cost_round_trips_token_counts() {
+        let storage = Storage::open_in_memory().unwrap();
+        let key = storage.create_provider_key("openrouter", Some("main"), None).unwrap();
+
+        storage
+            .record_usage_with_cost(Some(&key.id), None, "openrouter", "some/model", true, Some(100), Some(200), None)
+            .unwrap();
+        // A failed call and a call from a different provider shouldn't
+        // pollute this key's rows.
+        storage
+            .record_usage_with_cost(Some(&key.id), None, "openrouter", "some/model", false, Some(1), Some(1), None)
+            .unwrap();
+
+        let rows = storage.usage_log_rows_for_key(&key.id).unwrap();
+        assert_eq!(rows, vec![("some/model".to_string(), Some(100), Some(200))]);
+    }
+
+    #[test]
+    fn usage_log_rows_for_key_is_empty_for_a_key_with_no_calls() {
+        let storage = Storage::open_in_memory().unwrap();
+        let key = storage.create_provider_key("openrouter", Some("unused"), None).unwrap();
+        assert!(storage.usage_log_rows_for_key(&key.id).unwrap().is_empty());
     }
 }
