@@ -2,6 +2,17 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [1.2.0] - 2026-08-23
+
+### Added
+
+- Feat: install Ollama directly from the app (Windows)
+
+### Changes
+
+- Chore: update CHANGELOG.md for v1.1.0 [skip ci]
+- Chore: bump version to 1.2.0
+
 ## [1.1.0] - 2026-08-23
 
 ### Added
