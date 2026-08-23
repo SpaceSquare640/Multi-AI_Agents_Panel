@@ -2,6 +2,20 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [1.0.1] - 2026-08-23
+
+### Changes
+
+- Update README.md
+- Chore: update CHANGELOG.md for v1.0.0 [skip ci]
+- Chore: bump version to 1.0.1
+
+### Documentation
+
+- Docs: rewrite README for v1.0.0 GA
+- Docs: trim README to a fast, precise intro
+- Docs: remove all references to the private planning vault
+
 ## [1.0.0] - 2026-08-23
 
 ### Changes
