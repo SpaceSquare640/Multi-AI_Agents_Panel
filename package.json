@@ -2,7 +2,7 @@
   "name": "multi-ai-agents-panel",
   "private": true,
   "license": "MIT",
-  "version": "0.13.1-alpha",
+  "version": "0.14.0-alpha",
   "type": "module",
   "scripts": {
     "dev": "vite",
