@@ -75,6 +75,16 @@ fn build_command(config: &McpServerConfig) -> tokio::process::Command {
     if cfg!(target_os = "windows") {
         let mut cmd = tokio::process::Command::new("cmd");
         cmd.arg("/C").arg(&config.command).args(&config.args);
+        // Same reasoning as skill_manager/ml_engine's bridge subprocesses
+        // (see bridge_support::hide_console_window): an MCP server is a
+        // background process the user never interacts with through a
+        // console, so `cmd.exe /C <command>` popping a visible window
+        // for it would be pure noise, not useful.
+        #[cfg(windows)]
+        {
+            const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+            cmd.creation_flags(CREATE_NO_WINDOW);
+        }
         cmd
     } else {
         tokio::process::Command::new(&config.command).configure(|cmd| {

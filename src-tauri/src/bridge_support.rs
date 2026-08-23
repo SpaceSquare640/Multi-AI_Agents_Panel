@@ -66,6 +66,33 @@ pub(crate) fn find_bundled_python(resource_dir: Option<&Path>) -> Option<String>
     }
 }
 
+/// Windows only: `CREATE_NO_WINDOW` — spawning a console-subsystem
+/// executable (`python.exe`) from a GUI app pops up a real, empty
+/// console/CMD window on Windows unless told not to, since Windows
+/// creates a new console for a child process by default whenever the
+/// parent didn't already have a console of its own attached (a GUI
+/// subsystem app like this one doesn't). Every bridge subprocess this
+/// app spawns (`skill_manager`'s Skills bridge, `ml_engine`'s ML Engine
+/// bridge, `game_agent`'s Track B recorder) is a long-running background
+/// process the user never interacts with directly — there's no reason
+/// for any of them to have a visible console at all, and two of them
+/// starting simultaneously at app launch is exactly what produced the
+/// "opening the App opens two CMD windows" report this fixes. A no-op
+/// on macOS/Linux, where child processes never get their own window in
+/// the first place.
+pub(crate) fn hide_console_window(command: &mut Command) {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = command;
+    }
+}
+
 /// Binds port 0 (OS picks any free port) and immediately reads back
 /// which one it got — the standard "ask the OS for a free port" trick.
 /// There's an inherent TOCTOU gap between this returning and the bridge
@@ -124,6 +151,30 @@ mod tests {
 
         let found = find_bundled_python(Some(&dir)).expect("should find the interpreter that's actually there");
         assert_eq!(PathBuf::from(found), full_path);
+    }
+
+    #[test]
+    fn hide_console_window_does_not_prevent_the_process_from_actually_running() {
+        // Can't headlessly assert "no window appeared" (there's no
+        // automated signal for that), but this proves the flag doesn't
+        // break spawning/output capture — a real regression the flag
+        // could plausibly cause if it were the wrong constant or applied
+        // wrong. `cmd /C echo` prints something recognizable to stdout
+        // on Windows; harmlessly a no-op process on other platforms
+        // where the function itself is a no-op too.
+        let mut command = if cfg!(windows) {
+            let mut c = Command::new("cmd");
+            c.arg("/C").arg("echo").arg("hidden-console-smoke-test");
+            c
+        } else {
+            let mut c = Command::new("echo");
+            c.arg("hidden-console-smoke-test");
+            c
+        };
+        hide_console_window(&mut command);
+        let output = command.output().expect("the process should still spawn and run with the flag applied");
+        assert!(output.status.success());
+        assert!(String::from_utf8_lossy(&output.stdout).contains("hidden-console-smoke-test"));
     }
 
     #[test]

@@ -153,6 +153,7 @@ impl MlEngineRuntime {
         let token = uuid::Uuid::new_v4().to_string();
 
         let mut command = Command::new(&python_bin);
+        crate::bridge_support::hide_console_window(&mut command);
         command
             .arg(&bridge_script)
             .arg("--port")

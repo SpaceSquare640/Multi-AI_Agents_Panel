@@ -304,7 +304,9 @@ pub fn start_recording(
     let working_dir = game_agent_rl_dir
         .parent()
         .ok_or_else(|| format!("could not resolve the parent of {game_agent_rl_dir:?}"))?;
-    let child = Command::new(&python_bin)
+    let mut command = Command::new(&python_bin);
+    crate::bridge_support::hide_console_window(&mut command);
+    let child = command
         .arg("-m")
         .arg("game_agent_rl.cli")
         .arg("record")
