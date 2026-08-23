@@ -2,6 +2,17 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [1.4.0] - 2026-08-23
+
+### Added
+
+- Feat: dedicated Machine Learning page
+
+### Changes
+
+- Chore: update CHANGELOG.md for v1.3.0 [skip ci]
+- Chore: bump version to 1.4.0
+
 ## [1.3.0] - 2026-08-23
 
 ### Added
