@@ -2,6 +2,23 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.17.0-beta] - 2026-08-23
+
+### Added
+
+- Add global custom instructions (like Claude's own "Instructions for Claude")
+
+### Changes
+
+- Chore: update CHANGELOG.md for v0.16.1-beta [skip ci]
+- Hide console windows for Python/MCP bridge subprocesses on Windows
+- Chore: bump version to 0.17.0-beta
+
+### Fixed
+
+- Fix Release CHANGELOG.md commit-back failing on close-together tags
+- Fix page switches fully destroying/remounting the whole page component
+
 ## [0.16.1-beta] - 2026-08-23
 
 ### Changes
