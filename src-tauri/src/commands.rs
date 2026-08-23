@@ -187,6 +187,18 @@ pub fn get_usage_summary_with_cost(
     Ok(summary)
 }
 
+/// Right-sizes local model choices to this machine's actual RAM/CPU/GPU
+/// (`ml_engine::hardware_fit`, wrapping `llmfit-core`) — for a local
+/// provider like Ollama, "which model should I pick" has a real answer
+/// grounded in hardware, unlike a cloud provider where any model just
+/// works. `use_case` is free-form (llmfit-core's own model database uses
+/// plain strings like `"coding"`, not a closed enum) and optional; `None`
+/// scores every backend-compatible model.
+#[tauri::command]
+pub fn recommend_local_models(limit: usize, use_case: Option<String>) -> Vec<ml_engine::hardware_fit::ModelRecommendation> {
+    ml_engine::hardware_fit::recommend_models(limit, use_case.as_deref())
+}
+
 #[tauri::command]
 pub fn list_curated_models(provider: String) -> Result<Vec<CuratedModel>, String> {
     match provider.as_str() {

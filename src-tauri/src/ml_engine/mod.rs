@@ -19,6 +19,7 @@
 //! grants), then dispatch. There is no other path that reaches a
 //! capability.
 
+pub mod hardware_fit;
 pub mod vector_index;
 
 use std::path::{Path, PathBuf};

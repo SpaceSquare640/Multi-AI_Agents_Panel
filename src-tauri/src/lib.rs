@@ -154,6 +154,7 @@ pub fn run() {
             commands::get_usage_summary,
             commands::get_usage_summary_with_cost,
             commands::list_curated_models,
+            commands::recommend_local_models,
             commands::list_openrouter_models_live,
             commands::start_game_agent,
             commands::stop_game_agent,

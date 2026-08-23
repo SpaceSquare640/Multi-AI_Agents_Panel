@@ -41,6 +41,11 @@ image = { version = "0.25", default-features = false, features = ["png"] }
 # for the semantic-search embeddings the Python ml_engine bridge produces —
 # see that module's doc comment for what's wired in vs. staged.
 turbovec = "1"
+# ml_engine::hardware_fit: right-sizes local Ollama model choices to the
+# user's actual RAM/CPU/GPU (github.com/AlexsJones/llmfit). Not on
+# crates.io under this crate name (checked), so pinned to the git tag
+# matching the local copy the user pointed at (llmfit-core version.txt: 1.1.10).
+llmfit-core = { git = "https://github.com/AlexsJones/llmfit.git", tag = "v1.1.10" }
 # mcp_manager: MCP (Model Context Protocol) client support — the official
 # Rust SDK, spawns/talks to local MCP servers over stdio (same shape as
 # the existing Python Skills bridge). See mcp_manager's doc comment for

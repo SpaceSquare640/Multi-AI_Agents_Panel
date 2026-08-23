@@ -51,7 +51,10 @@ without a migration path. Implemented so far:
   prompt/tool-injection screening, enforced inline (not opt-in) at every
   point an Agent can act
 - Live OpenRouter model catalog (real pricing, 24h cache) and Ollama
-  model management (search, install with streaming progress)
+  model management (search, install with streaming progress), with
+  hardware-aware model recommendations via
+  [llmfit](https://github.com/AlexsJones/llmfit) (which local models
+  will actually run well on your RAM/CPU/GPU)
 - Usage dashboard with a soft call-count budget warning
 - Dark/Light/System theme, first-launch Guardrails summary, and an
   in-app searchable user manual

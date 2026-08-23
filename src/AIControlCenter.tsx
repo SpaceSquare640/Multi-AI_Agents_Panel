@@ -7,6 +7,7 @@ import {
   CLOUD_PROVIDERS,
   type CuratedModel,
   type McpServer,
+  type ModelRecommendation,
   type OllamaModel,
   type OpenRouterModel,
   type ProviderKeyView,
@@ -51,6 +52,8 @@ export default function AIControlCenter() {
   const [pullingModel, setPullingModel] = useState<string | null>(null);
   const [pullProgress, setPullProgress] = useState<{ status: string; percent: number | null } | null>(null);
   const [ollamaModelsEnvHint, setOllamaModelsEnvHint] = useState<string | null | undefined>(undefined);
+  const [hardwareRecommendations, setHardwareRecommendations] = useState<ModelRecommendation[] | null>(null);
+  const [loadingHardwareRecommendations, setLoadingHardwareRecommendations] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Live OpenRouter catalog (search + real USD pricing) — only relevant
@@ -261,6 +264,18 @@ export default function AIControlCenter() {
       await refreshKeys();
     } catch (err) {
       setError(String(err));
+    }
+  }
+
+  async function handleRecommendLocalModels() {
+    setError(null);
+    setLoadingHardwareRecommendations(true);
+    try {
+      setHardwareRecommendations(await invoke<ModelRecommendation[]>("recommend_local_models", { limit: 8 }));
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setLoadingHardwareRecommendations(false);
     }
   }
 
@@ -602,6 +617,38 @@ export default function AIControlCenter() {
               ))}
             </ul>
           </>
+        )}
+
+        <h3>{t("acc.localModels.hardwareFitHeading")}</h3>
+        <p className="acc-hint">{t("acc.localModels.hardwareFitHint")}</p>
+        <button disabled={loadingHardwareRecommendations} onClick={() => void handleRecommendLocalModels()}>
+          {loadingHardwareRecommendations ? t("acc.localModels.hardwareFitLoading") : t("acc.localModels.hardwareFitButton")}
+        </button>
+        {hardwareRecommendations && (
+          <table className="acc-table">
+            <thead>
+              <tr>
+                <th>{t("acc.localModels.tableModel")}</th>
+                <th>{t("acc.localModels.hardwareFitLevel")}</th>
+                <th>{t("acc.localModels.hardwareFitScore")}</th>
+                <th>{t("acc.localModels.hardwareFitSpeed")}</th>
+                <th>{t("acc.localModels.hardwareFitQuant")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {hardwareRecommendations.map((m) => (
+                <tr key={m.name}>
+                  <td className="acc-mono">
+                    {m.name} ({m.parameterCount})
+                  </td>
+                  <td>{m.fitLevel}</td>
+                  <td>{m.score.toFixed(0)}</td>
+                  <td>{m.estimatedTokensPerSecond.toFixed(1)} tok/s</td>
+                  <td className="acc-mono">{m.bestQuantization}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </section>
 

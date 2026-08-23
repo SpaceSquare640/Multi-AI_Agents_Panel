@@ -348,7 +348,15 @@
       "remove": "Remove",
       "availableHeading": "Available to install",
       "install": "Install",
-      "installing": "Installing…"
+      "installing": "Installing…",
+      "hardwareFitHeading": "Which model fits my hardware?",
+      "hardwareFitHint": "Detects this machine's RAM/CPU/GPU and scores every model in llmfit's bundled database against it — a real answer grounded in your hardware, not a guess.",
+      "hardwareFitButton": "Check my hardware",
+      "hardwareFitLoading": "Detecting hardware…",
+      "hardwareFitLevel": "Fit",
+      "hardwareFitScore": "Score",
+      "hardwareFitSpeed": "Est. speed",
+      "hardwareFitQuant": "Best quant"
     },
     "usage": {
       "heading": "Usage",

@@ -27,6 +27,17 @@ export interface UsageSummary {
   totalEstimatedCostUsd: number | null;
 }
 
+export interface ModelRecommendation {
+  name: string;
+  provider: string;
+  parameterCount: string;
+  /** "Perfect" | "Good" | "Marginal" | "TooTight" */
+  fitLevel: string;
+  score: number;
+  estimatedTokensPerSecond: number;
+  bestQuantization: string;
+}
+
 export interface CuratedModel {
   id: string;
   label: string;
