@@ -539,9 +539,16 @@ pub fn send_chat_message_with_tools(
 
     let expanded_content = expand_file_references(&storage, &agent_id, &content)?;
 
-    let guard = skill_runtime.0.lock().unwrap();
-    let result = agent_manager::function_calling::run(&storage, guard.as_ref(), &agent, &available_skills, &expanded_content)
-        .map_err(|e| e.to_string())?;
+    // Passes the unlocked mutex, not a pre-acquired guard — `run` locks
+    // it fresh for each individual tool call it actually executes, not
+    // once for the whole (potentially multi-round, real-network-latency)
+    // conversation. See agent_manager::function_calling::run's doc
+    // comment: holding a guard here for the whole call would block every
+    // other Skill-related command for as long as this conversation with
+    // Anthropic takes — a real bug this fixed, not a hypothetical one.
+    let result =
+        agent_manager::function_calling::run(&storage, &skill_runtime.0, &agent, &available_skills, &expanded_content)
+            .map_err(|e| e.to_string())?;
 
     for call in &result.tool_calls {
         let content = format!(

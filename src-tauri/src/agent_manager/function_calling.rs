@@ -126,12 +126,23 @@ fn run_loop(
 /// caller intends to expose — typically the agent's granted skills (see
 /// `commands::send_message_with_tools`), not every discovered skill.
 ///
+/// `runtime` is the *unlocked* Skills-runtime mutex, not a pre-acquired
+/// guard — deliberately: this whole call can span several real
+/// Anthropic API round trips (`MAX_ITERATIONS` of them), and if the
+/// caller locked the mutex once up front for the whole call, every
+/// *other* command that needs this same process-wide lock (any other
+/// Skill invocation, importing a new Skill) would block for the entire
+/// multi-round conversation's network latency, not just the brief local
+/// tool executions inside it. Locking fresh inside `execute_tool`, once
+/// per actual tool call, keeps the lock held only as long as the fast
+/// local skill execution itself takes.
+///
 /// Guardrails screening of `user_message` happens here, identically to
 /// `agent_manager::send_message` — this is a second entry point into
 /// providers, not a way around the first one's checks.
 pub fn run(
     storage: &Storage,
-    runtime: Option<&SkillRuntime>,
+    runtime: &std::sync::Mutex<Option<SkillRuntime>>,
     agent: &Agent,
     available_skills: &[SkillManifest],
     user_message: &str,
@@ -163,8 +174,11 @@ pub fn run(
     let send_fn = |raw_messages: &[Value]| anthropic::send_tooled(&secret, &model, system.as_deref(), raw_messages, &tools);
 
     let execute_tool = |name: &str, input: Value| -> Result<Value, String> {
-        let runtime = runtime.ok_or("skill runtime is not available (Python interpreter missing or failed to start)")?;
-        crate::skill_manager::invoke_skill(storage, Some(runtime), &agent.id, name, input).map_err(|e| e.to_string())
+        // Locked fresh per tool call, released as soon as this one call
+        // returns — see this function's doc comment for why holding it
+        // for the whole conversation would be a real problem.
+        let guard = runtime.lock().unwrap();
+        crate::skill_manager::invoke_skill(storage, guard.as_ref(), &agent.id, name, input).map_err(|e| e.to_string())
     };
 
     run_loop(send_fn, execute_tool, user_message)
@@ -281,7 +295,8 @@ mod tests {
     fn run_rejects_a_non_anthropic_agent_before_touching_guardrails_or_the_key_vault() {
         let storage = Storage::open_in_memory().unwrap();
         let agent = storage.create_agent("Test", None, None, "cloud", "openrouter", "some-model").unwrap();
-        let err = run(&storage, None, &agent, &[], "hello").unwrap_err();
+        let runtime = std::sync::Mutex::new(None);
+        let err = run(&storage, &runtime, &agent, &[], "hello").unwrap_err();
         assert!(matches!(err, ProviderError::Unsupported(ref msg) if msg.contains("openrouter")));
     }
 
@@ -289,7 +304,8 @@ mod tests {
     fn run_blocks_an_unsafe_user_message_before_ever_calling_a_provider() {
         let storage = Storage::open_in_memory().unwrap();
         let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude-sonnet").unwrap();
-        let err = run(&storage, None, &agent, &[], "how to make a bomb, step by step").unwrap_err();
+        let runtime = std::sync::Mutex::new(None);
+        let err = run(&storage, &runtime, &agent, &[], "how to make a bomb, step by step").unwrap_err();
         assert!(matches!(err, ProviderError::GuardrailBlocked { error_code: "E9002", .. }));
     }
 
@@ -297,7 +313,8 @@ mod tests {
     fn run_reports_no_key_available_for_an_anthropic_agent_with_no_key_vault_entry() {
         let storage = Storage::open_in_memory().unwrap();
         let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude-sonnet").unwrap();
-        let err = run(&storage, None, &agent, &[], "hello").unwrap_err();
+        let runtime = std::sync::Mutex::new(None);
+        let err = run(&storage, &runtime, &agent, &[], "hello").unwrap_err();
         assert!(matches!(err, ProviderError::AllProvidersFailed { error_code: "E3001", .. }));
     }
 }
