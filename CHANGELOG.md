@@ -2,6 +2,14 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.12.0-alpha] - 2026-08-23
+
+### Changes
+
+- Chore: update CHANGELOG.md for v0.11.1-alpha [skip ci]
+- Wire estimated cost into live dispatch and the Usage dashboard
+- Chore: bump version to 0.12.0-alpha
+
 ## [0.11.1-alpha] - 2026-08-23
 
 ### Changes
