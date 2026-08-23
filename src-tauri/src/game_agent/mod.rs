@@ -11,6 +11,17 @@
 //! calls the `start_game_agent` command, and `is_running`/`stop` are the
 //! only way to check/end it. There is no autonomous trigger anywhere in
 //! this module.
+//!
+//! **Bot-detection risk, stated honestly**: the decision tick and mouse
+//! movement both carry small randomized jitter (`jittered_duration`,
+//! `mouse_path`) rather than a perfectly constant interval and an
+//! instantly-teleporting cursor — those are the *most naive* automation
+//! signatures a basic heuristic checks for, so avoiding them is a real,
+//! cheap improvement. It is not, and cannot honestly be claimed to be, a
+//! defense against real anti-cheat (server-side statistical analysis,
+//! kernel-level input monitoring). Track A should not be pointed at a
+//! game with server-enforced anti-cheat or a ToS prohibiting automation —
+//! see `TICK_INTERVAL`'s doc comment.
 
 use std::io::Cursor;
 use std::path::PathBuf;
@@ -88,10 +99,61 @@ fn capture_screenshot_base64() -> Result<String, String> {
     Ok(base64::engine::general_purpose::STANDARD.encode(png_bytes))
 }
 
+/// How many intermediate points to move the mouse through on the way to
+/// a click target, instead of teleporting there in one `move_mouse`
+/// call. Chosen as a small, cheap number — this is not motion-curve
+/// realism (no easing, no overshoot), just enough that the cursor's
+/// position is sampled moving across the screen rather than appearing
+/// at its destination with zero travel, which is one of the most naive
+/// signals a bot-detection heuristic checks for. See module docs on
+/// what this does and doesn't defend against.
+const MOUSE_PATH_STEPS: u32 = 6;
+
+/// Delay between each intermediate mouse-movement step — small and
+/// jittered (see `jittered_duration`) so the whole path takes on the
+/// order of ~100ms total, not a human-realistic multi-hundred-ms
+/// movement, but not an instantaneous jump either.
+const MOUSE_STEP_BASE_DELAY: Duration = Duration::from_millis(15);
+
+/// Linearly interpolated waypoints from `from` to `to` (inclusive of
+/// `to`, exclusive of `from` — the caller is already at `from`), evenly
+/// spaced into `steps` segments. Pure and deterministic so it's
+/// unit-testable without a real mouse; the small amount of realism this
+/// buys (a moving cursor instead of a teleporting one) is deliberately
+/// simple — see `MOUSE_PATH_STEPS`'s doc comment for the honest scope.
+fn mouse_path(from: (i32, i32), to: (i32, i32), steps: u32) -> Vec<(i32, i32)> {
+    let steps = steps.max(1);
+    (1..=steps)
+        .map(|i| {
+            let t = i as f64 / steps as f64;
+            let x = from.0 as f64 + (to.0 - from.0) as f64 * t;
+            let y = from.1 as f64 + (to.1 - from.1) as f64 * t;
+            (x.round() as i32, y.round() as i32)
+        })
+        .collect()
+}
+
+/// Applies up to ±`jitter_fraction` random variation to `base`, using
+/// `random_unit` (expected in `[-1.0, 1.0]`) as the source of
+/// randomness — pulled out as a parameter rather than calling `rand`
+/// directly so the jitter math itself is unit-testable without
+/// depending on actual randomness. A perfectly constant, unvarying
+/// interval between actions (identical delay every single time, down to
+/// the millisecond) is itself a detectable automation signature, not
+/// just how fast the actions happen — see module docs.
+fn jittered_duration(base: Duration, jitter_fraction: f64, random_unit: f64) -> Duration {
+    let factor = 1.0 + jitter_fraction * random_unit.clamp(-1.0, 1.0);
+    Duration::from_secs_f64((base.as_secs_f64() * factor).max(0.0))
+}
+
 fn execute_action(enigo: &mut Enigo, action: &AgentAction) -> Result<(), String> {
     match action {
         AgentAction::Click { x, y } => {
-            enigo.move_mouse(*x, *y, Coordinate::Abs).map_err(|e| e.to_string())?;
+            let from = enigo.location().map_err(|e| e.to_string())?;
+            for (step_x, step_y) in mouse_path(from, (*x, *y), MOUSE_PATH_STEPS) {
+                enigo.move_mouse(step_x, step_y, Coordinate::Abs).map_err(|e| e.to_string())?;
+                std::thread::sleep(jittered_duration(MOUSE_STEP_BASE_DELAY, 0.5, rand::random::<f64>() * 2.0 - 1.0));
+            }
             enigo.button(Button::Left, Direction::Click).map_err(|e| e.to_string())
         }
         AgentAction::Key { key } => {
@@ -102,10 +164,23 @@ fn execute_action(enigo: &mut Enigo, action: &AgentAction) -> Result<(), String>
     }
 }
 
-/// How long to sleep between decision ticks — deliberately not
-/// configurable yet (see Backlog follow-up), just a fixed, conservative
-/// pace so a misbehaving loop can't hammer the local Ollama instance or
-/// spam mouse clicks faster than a human could react to stop it.
+/// Base time to sleep between decision ticks — a real, randomized
+/// interval is derived from this (see `jittered_duration`, used in the
+/// loop in `start`), not this fixed value directly. Deliberately not
+/// configurable yet (see Backlog follow-up), just a conservative pace so
+/// a misbehaving loop can't hammer the local Ollama instance or spam
+/// mouse clicks faster than a human could react to stop it.
+///
+/// **On bot detection, stated honestly**: the timing jitter and
+/// multi-step mouse movement in this module reduce the *most naive*
+/// automation signatures (perfectly periodic timing, instantly
+/// teleporting cursor positions) — they are not, and cannot honestly be
+/// claimed to be, a defense against real anti-cheat systems (server-side
+/// statistical analysis, kernel-level input monitoring, behavioral
+/// fingerprinting). Track A should not be pointed at any game with
+/// server-enforced anti-cheat or a ToS prohibiting automation — that's a
+/// real risk (account bans, ToS violations) this module cannot
+/// engineer away, only a choice of which games to run it against can.
 const TICK_INTERVAL: Duration = Duration::from_secs(1);
 
 /// Shared running flag — the only thing `start`/`stop`/`is_running` (and
@@ -151,7 +226,7 @@ pub fn start(state: &GameAgentState, model: String, prompt: String) -> Result<()
                 },
                 Err(e) => eprintln!("game_agent: screenshot failed: {e}"),
             }
-            std::thread::sleep(TICK_INTERVAL);
+            std::thread::sleep(jittered_duration(TICK_INTERVAL, 0.3, rand::random::<f64>() * 2.0 - 1.0));
         }
     });
     Ok(())
@@ -268,6 +343,78 @@ pub fn is_recording(state: &RecordingState) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn mouse_path_ends_exactly_at_the_target() {
+        let path = mouse_path((0, 0), (100, 50), 6);
+        assert_eq!(path.last(), Some(&(100, 50)));
+    }
+
+    #[test]
+    fn mouse_path_has_one_point_per_step() {
+        let path = mouse_path((0, 0), (100, 50), 6);
+        assert_eq!(path.len(), 6);
+    }
+
+    #[test]
+    fn mouse_path_moves_monotonically_toward_the_target_on_each_axis() {
+        let path = mouse_path((0, 0), (100, -50), 5);
+        let mut prev = (0, 0);
+        for point in &path {
+            assert!(point.0 >= prev.0, "x should never move backward toward a positive target");
+            assert!(point.1 <= prev.1, "y should never move backward toward a negative target");
+            prev = *point;
+        }
+    }
+
+    #[test]
+    fn mouse_path_handles_a_zero_distance_click_without_panicking() {
+        let path = mouse_path((10, 10), (10, 10), 6);
+        assert!(path.iter().all(|&p| p == (10, 10)));
+    }
+
+    #[test]
+    fn mouse_path_clamps_a_zero_step_count_to_at_least_one() {
+        let path = mouse_path((0, 0), (10, 10), 0);
+        assert_eq!(path, vec![(10, 10)]);
+    }
+
+    #[test]
+    fn jittered_duration_with_zero_randomness_equals_the_base() {
+        let base = Duration::from_millis(1000);
+        assert_eq!(jittered_duration(base, 0.3, 0.0), base);
+    }
+
+    #[test]
+    fn jittered_duration_at_the_positive_extreme_applies_the_full_jitter_fraction() {
+        let base = Duration::from_millis(1000);
+        let jittered = jittered_duration(base, 0.3, 1.0);
+        assert_eq!(jittered, Duration::from_millis(1300));
+    }
+
+    #[test]
+    fn jittered_duration_at_the_negative_extreme_applies_the_full_jitter_fraction() {
+        let base = Duration::from_millis(1000);
+        let jittered = jittered_duration(base, 0.3, -1.0);
+        assert_eq!(jittered, Duration::from_millis(700));
+    }
+
+    #[test]
+    fn jittered_duration_never_goes_negative_even_with_a_jitter_fraction_over_one() {
+        let base = Duration::from_millis(100);
+        let jittered = jittered_duration(base, 2.0, -1.0);
+        assert!(jittered.as_secs_f64() >= 0.0);
+    }
+
+    #[test]
+    fn jittered_duration_clamps_random_input_outside_the_expected_unit_range() {
+        let base = Duration::from_millis(1000);
+        // A caller passing something outside [-1.0, 1.0] (a bug in the
+        // caller, not this function) shouldn't produce a wilder result
+        // than the documented ±jitter_fraction bound.
+        assert_eq!(jittered_duration(base, 0.3, 5.0), jittered_duration(base, 0.3, 1.0));
+        assert_eq!(jittered_duration(base, 0.3, -5.0), jittered_duration(base, 0.3, -1.0));
+    }
 
     #[test]
     fn parse_agent_action_reads_a_click() {
