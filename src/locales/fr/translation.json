@@ -215,6 +215,7 @@
     "custom": "(personnalisé)",
     "agentNamePlaceholder": "Nom de l'Agent",
     "applySuggestedProvider": "Appliquer le fournisseur suggéré ({{provider}})",
+    "noOllamaModelsInstalled": "Aucun modèle installé dans Ollama pour l'instant — récupérez-en un d'abord depuis Centre de contrôle IA → Modèles IA locaux.",
     "systemPromptPlaceholder": "Invite système (facultatif — rempli automatiquement par un modèle de rôle)",
     "useLatestKeyDefault": "Utiliser automatiquement la dernière clé {{provider}} (par défaut)",
     "pinTo": "Épingler à : {{label}}",

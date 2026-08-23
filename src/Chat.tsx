@@ -14,6 +14,8 @@ import type {
   Message,
   MlAccessGrant,
   MlCapabilityManifest,
+  OllamaModel,
+  OpenRouterModelsResult,
   ProviderKeyView,
   RoleTemplate,
   SemanticSearchResult,
@@ -278,7 +280,22 @@ export default function Chat() {
       setNewAgentModel(suggestedIsAvailable ? suggested : models[0]?.id ?? "");
     }
 
+    if (newAgentProvider === "ollama") {
+      // Suggesting a model the user hasn't actually pulled is worse than
+      // useless — picking it just fails outright, since Ollama has
+      // nothing to serve. Show only what's really installed on this
+      // machine, never the generic "models Ollama supports" list.
+      setNewAgentProviderKeys([]);
+      invoke<OllamaModel[]>("list_ollama_installed_models")
+        .then((models) => pickModels(models.map((m) => ({ id: m.name, label: m.name }))))
+        .catch((e) => setError(String(e)));
+      return;
+    }
+
     if (isLocalProvider(newAgentProvider)) {
+      // colibri/omniroute have no "list what's actually loaded" API to
+      // query yet, so the curated list is the best available option —
+      // still better than nothing, unlike Ollama above.
       setNewAgentProviderKeys([]);
       invoke<CuratedModel[]>("list_curated_models", { provider: newAgentProvider })
         .then(pickModels)
@@ -300,6 +317,19 @@ export default function Chat() {
         );
         if (hintedModelIds.length > 0) {
           pickModels(hintedModelIds.map((id) => ({ id, label: id })));
+          return;
+        }
+        if (newAgentProvider === "openrouter") {
+          // The live catalog is what OpenRouter actually serves right
+          // now — a real, current list, not a static snapshot that can
+          // drift from what OpenRouter's lineup has become.
+          invoke<OpenRouterModelsResult>("list_openrouter_models_live", { forceRefresh: false })
+            .then((result) => pickModels(result.models.map((m) => ({ id: m.id, label: m.name }))))
+            .catch(() =>
+              invoke<CuratedModel[]>("list_curated_models", { provider: newAgentProvider })
+                .then(pickModels)
+                .catch((e) => setError(String(e))),
+            );
           return;
         }
         invoke<CuratedModel[]>("list_curated_models", { provider: newAgentProvider })
@@ -1305,13 +1335,17 @@ export default function Chat() {
                 </button>
               );
             })()}
-            <select value={newAgentModel} onChange={(e) => setNewAgentModel(e.target.value)}>
-              {newAgentModels.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.label}
-                </option>
-              ))}
-            </select>
+            {newAgentProvider === "ollama" && newAgentModels.length === 0 ? (
+              <p className="acc-hint">{t("chat.noOllamaModelsInstalled")}</p>
+            ) : (
+              <select value={newAgentModel} onChange={(e) => setNewAgentModel(e.target.value)}>
+                {newAgentModels.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+            )}
             <textarea
               rows={3}
               placeholder={t("chat.systemPromptPlaceholder")}

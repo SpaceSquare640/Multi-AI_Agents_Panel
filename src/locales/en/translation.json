@@ -215,6 +215,7 @@
     "custom": "(custom)",
     "agentNamePlaceholder": "Agent name",
     "applySuggestedProvider": "Apply suggested provider ({{provider}})",
+    "noOllamaModelsInstalled": "No models installed in Ollama yet — pull one from AI Control Center → Local AI Models first.",
     "systemPromptPlaceholder": "System prompt (optional — filled in automatically by a role template)",
     "useLatestKeyDefault": "Use latest {{provider}} key automatically (default)",
     "pinTo": "Pin to: {{label}}",

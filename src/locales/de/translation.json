@@ -215,6 +215,7 @@
     "custom": "(benutzerdefiniert)",
     "agentNamePlaceholder": "Agentenname",
     "applySuggestedProvider": "Vorgeschlagenen Anbieter übernehmen ({{provider}})",
+    "noOllamaModelsInstalled": "In Ollama sind noch keine Modelle installiert — laden Sie zuerst eines über KI-Kontrollzentrum → Lokale KI-Modelle herunter.",
     "systemPromptPlaceholder": "Systemprompt (optional — wird durch eine Rollenvorlage automatisch ausgefüllt)",
     "useLatestKeyDefault": "Neuesten {{provider}}-Schlüssel automatisch verwenden (Standard)",
     "pinTo": "Anheften an: {{label}}",

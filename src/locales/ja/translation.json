@@ -215,6 +215,7 @@
     "custom": "（カスタム）",
     "agentNamePlaceholder": "Agent 名",
     "applySuggestedProvider": "推奨プロバイダー（{{provider}}）を適用",
+    "noOllamaModelsInstalled": "Ollama にはまだモデルがインストールされていません——先に AI コントロールセンター → ローカル AI モデル でモデルを取得してください。",
     "systemPromptPlaceholder": "システムプロンプト（任意——ロールテンプレートを使用すると自動入力されます）",
     "useLatestKeyDefault": "最新の {{provider}} キーを自動使用（デフォルト）",
     "pinTo": "固定先：{{label}}",

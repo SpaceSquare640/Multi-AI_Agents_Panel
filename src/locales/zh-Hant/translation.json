@@ -215,6 +215,7 @@
     "custom": "（自訂）",
     "agentNamePlaceholder": "Agent 名稱",
     "applySuggestedProvider": "套用建議的供應商（{{provider}}）",
+    "noOllamaModelsInstalled": "Ollama 尚未安裝任何模型——請先到 AI 控制中心 → 本地 AI 模型 拉取一個模型。",
     "systemPromptPlaceholder": "系統提示詞（選填——若使用角色範本會自動填入）",
     "useLatestKeyDefault": "自動使用最新的 {{provider}} 金鑰（預設）",
     "pinTo": "固定至：{{label}}",
