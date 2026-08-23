@@ -1,7 +1,6 @@
 //! Cloud/local provider adapters. Each adapter translates the app's
 //! internal `ChatMessage` shape to/from a specific provider's API, so the
 //! rest of the app never needs to know which provider it's talking to.
-//! Design: `Multi-AI Agent Panel Document/03 Development Notes/Architecture.md`
 
 pub mod anthropic;
 pub mod colibri;

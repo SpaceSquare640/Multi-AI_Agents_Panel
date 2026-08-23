@@ -1,5 +1,4 @@
 //! File Access: folder-level user consent gate for local filesystem reads.
-//! Design: `Multi-AI Agent Panel Document/01 Project Overview/AI Guardrails (必守規則).md`
 //!
 //! The only way a grant is created is `storage::grant_folder_access`,
 //! which the frontend only calls after the user picks a folder through the

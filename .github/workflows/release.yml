@@ -107,9 +107,7 @@ jobs:
       - name: Generate full CHANGELOG.md
         # See cliff.toml for why this includes the project's whole history
         # (not just Conventional-Commits-formatted commits) — the repo's
-        # pre-2026-08-21 commits predate that convention, and per the
-        # project's own research (Public Release Best Practices /
-        # Changelog Automation Options in the Obsidian vault) rewriting
+        # pre-2026-08-21 commits predate that convention, and rewriting
         # that history isn't worth it. Regenerated fresh on every tag so
         # CHANGELOG.md never drifts from the actual git log.
         uses: orhun/git-cliff-action@v4

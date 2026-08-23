@@ -24,10 +24,9 @@ footer = ""
 [git]
 # This project's commit history predates any Conventional Commits
 # convention (~100+ commits before 2026-08-21 use free-form messages like
-# "Add X"/"Fix Y"/"Implement Z"). Per the project's research into this
-# (see Multi-AI Agent Panel Document/05 Research/Changelog Automation
-# Options.md), rewriting that history is not recommended and not
-# necessary — instead of filtering unconventional commits out (git-cliff's
+# "Add X"/"Fix Y"/"Implement Z"). Rewriting that history is not
+# recommended and not necessary — instead of filtering unconventional
+# commits out (git-cliff's
 # default), everything that doesn't match a recognized prefix falls
 # through to a single "Changes" bucket below, so the changelog stays
 # complete from the project's actual start rather than silently starting

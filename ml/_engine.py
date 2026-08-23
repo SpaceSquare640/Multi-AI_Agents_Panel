@@ -2,9 +2,7 @@
 HTTP — the machine-learning counterpart of `skills/_bridge.py`.
 
 Spawned as a **separate** child process from the Skills bridge by the
-Rust `ml_engine` module — see Source_Code/src-tauri/src/ml_engine/mod.rs
-and the design note in
-Multi-AI Agent Panel Document/04 Agents & Orchestration/ML Engine Design.md.
+Rust `ml_engine` module — see Source_Code/src-tauri/src/ml_engine/mod.rs.
 Kept as its own process (not merged into `skills/_bridge.py`) because ML
 packages like `sentence-transformers`/PyTorch have much longer startup
 time and memory footprint than the plain-stdlib Skills bridge — mixing

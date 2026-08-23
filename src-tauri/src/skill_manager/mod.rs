@@ -1,7 +1,6 @@
 //! Skill Manager: per-agent skill allowlists and dispatch to the Python
-//! skill runtime over the local HTTP/JSON-RPC bridge.
-//! Design: `Multi-AI Agent Panel Document/03 Development Notes/Architecture.md`,
-//! `01 Project Overview/Tech Stack.md` ("Rust 殼層 ↔ Python Skills").
+//! skill runtime over the local HTTP/JSON-RPC bridge ("Rust 殼層 ↔
+//! Python Skills").
 //!
 //! The bridge is a Python subprocess (`skills/_bridge.py`) speaking
 //! JSON-RPC 2.0 over a localhost-only HTTP server on a random port,

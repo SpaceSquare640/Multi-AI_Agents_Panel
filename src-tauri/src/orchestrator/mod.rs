@@ -1,7 +1,5 @@
-//! Orchestrator: multi-agent coordination for Group Chats.
-//! Design: `Multi-AI Agent Panel Document/04 Agents & Orchestration/Orchestration Design.md`,
-//! `04 Agents & Orchestration/Session Types.md` (conflict resolution,
-//! meeting summarization).
+//! Orchestrator: multi-agent coordination for Group Chats (conflict
+//! resolution, meeting summarization).
 //!
 //! This module implements the part of `Orchestration Design.md` that has
 //! a real execution point today: Group Chat's loop safety-net,

@@ -1,5 +1,4 @@
-//! Live OpenRouter model catalog — implements the decisions in
-//! `Multi-AI Agent Panel Document/04 Agents & Orchestration/Model Lists (Default)/OpenRouter Default Model List.md`:
+//! Live OpenRouter model catalog —
 //! search OpenRouter's real, current model list (not just the static
 //! curated default) with per-token USD pricing, refreshed at most once
 //! every 24h (in-memory cache, see `OpenRouterCatalogState`), falling

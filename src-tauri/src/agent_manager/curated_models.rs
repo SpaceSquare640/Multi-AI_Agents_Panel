@@ -1,8 +1,6 @@
 //! Curated model lists shown in the AI Control Center's model pickers.
-//! These mirror the defaults documented in the Obsidian vault:
-//! `Ollama Default Model List.md` and `OpenRouter Default Model List.md`.
 //! They're just a starting point — the user can always type/pick a model
-//! outside this list (see those docs' "已定案" sections).
+//! outside this list.
 
 use serde::{Deserialize, Serialize};
 

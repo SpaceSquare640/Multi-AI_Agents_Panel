@@ -1,8 +1,7 @@
 name: CI
 
 # Fast checks on every push/PR to main. Full release builds are a
-# separate workflow triggered by version tags — see CI-CD Pipeline.md
-# in the Obsidian vault.
+# separate workflow triggered by version tags.
 on:
   push:
     branches: [main]

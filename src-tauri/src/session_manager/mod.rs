@@ -1,5 +1,4 @@
 //! Session Manager: independent sessions vs. group chats.
-//! Design: `Multi-AI Agent Panel Document/04 Agents & Orchestration/Session Types.md`
 //!
 //! This module holds the mechanical, deterministic half of Group Chat:
 //! who speaks next. The other half — conflict-round handoff, meeting

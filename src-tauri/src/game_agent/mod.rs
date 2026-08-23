@@ -1,6 +1,5 @@
-//! Track A of the Game-Playing Agent design (see
-//! `Multi-AI Agent Panel Document/04 Agents & Orchestration/Game-Playing Agent Design.md`,
-//! ADR 0005): a persistent screenshot → vision-model-inference →
+//! Track A of the Game-Playing Agent design (ADR 0005): a persistent
+//! screenshot → vision-model-inference →
 //! mouse/keyboard-simulation loop, managed directly by Rust rather than
 //! the Skills/ML Engine JSON-RPC pattern (this is a continuous loop, not
 //! a request/response call — see ADR 0005 for why that pattern doesn't

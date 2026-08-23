@@ -1,6 +1,5 @@
 //! Guardrails: the cross-cutting checks every module that lets an Agent do
 //! something MUST call — never a bypassable opt-in.
-//! Design: `Multi-AI Agent Panel Document/01 Project Overview/AI Guardrails (必守規則).md`
 //!
 //! This module implements checks that are meaningful now that both
 //! plain chat and Skill execution (`skill_manager::invoke_skill`) exist:

@@ -1,8 +1,7 @@
 //! Role Templates ("1 人公司") — pre-written system prompts a user can
 //! apply when creating an Agent, instead of writing one from scratch.
-//! Design: `Multi-AI Agent Panel Document/04 Agents & Orchestration/Role Templates (1人公司)/Role Templates Index.md`
 //!
-//! Two sources, per that doc's "Default vs User Custom" decision:
+//! Two sources ("Default vs User Custom"):
 //! - `default_templates()` below — the 10 built-in roles, hardcoded here
 //!   (not in Storage) so an app update can safely refresh their content
 //!   without touching anything the user wrote.

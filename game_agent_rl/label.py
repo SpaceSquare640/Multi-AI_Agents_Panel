@@ -1,6 +1,5 @@
-"""Track B (Deep RL) — labeling stage. See
-`Multi-AI Agent Panel Document/04 Agents & Orchestration/Game-Playing Agent Design.md`
-section 4, step 2 ("label"): turns one recorded session (frames +
+"""Track B (Deep RL) — labeling stage. See the Game-Playing Agent
+design notes, section 4, step 2 ("label"): turns one recorded session (frames +
 `events.jsonl`, see `record.py`) into supervised-learning examples for
 the next stage (`train-bc`, not implemented yet) — one `(frame, action)`
 pair per frame, where `action` is whichever input event happened soon

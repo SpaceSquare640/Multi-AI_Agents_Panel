@@ -1,8 +1,7 @@
 """JSON-RPC 2.0 bridge exposing installed skills over localhost HTTP.
 
 Spawned as a child process by the Rust skill_manager — see
-Source_Code/src-tauri/src/skill_manager/mod.rs and the design note in
-Multi-AI Agent Panel Document/01 Project Overview/Tech Stack.md
+Source_Code/src-tauri/src/skill_manager/mod.rs
 ("Rust 殼層 ↔ Python Skills → 本機 HTTP 服務").
 
 Only the standard library is used so this runs with any Python 3

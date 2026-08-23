@@ -1,10 +1,8 @@
 //! Optional second-pass classifier building block for the absolute-
 //! prohibition screen (`screen_outgoing_message`'s keyword list), using
-//! Meta's Llama Guard 3 run locally via Ollama — see
-//! `Multi-AI Agent Panel Document/05 Research/Guardrails & Sandboxing
-//! Upgrade Options.md` for why this was chosen over cloud moderation
-//! APIs (stays offline-first, reuses the project's existing Ollama
-//! integration, no new API key/account dependency).
+//! Meta's Llama Guard 3 run locally via Ollama — chosen over cloud
+//! moderation APIs to stay offline-first, reuse the project's existing
+//! Ollama integration, and avoid a new API key/account dependency.
 //!
 //! Wired into `send_message` via `guardrails::screen_with_llama_guard`,
 //! gated behind the `LLAMA_GUARD_MODEL` environment variable — unset by

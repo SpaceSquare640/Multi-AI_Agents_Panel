@@ -1,6 +1,5 @@
 //! ML Engine: dispatch to the local Python ML runtime (`ml/_engine.py`)
 //! over its own HTTP/JSON-RPC bridge, separate from the Skills bridge.
-//! Design: `Multi-AI Agent Panel Document/04 Agents & Orchestration/ML Engine Design.md`,
 //! ADR 0003 ("Bundle sentence-transformers for a Separate ML Engine Process").
 //!
 //! Structurally this module is `skill_manager` again, one level over:

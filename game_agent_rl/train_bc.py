@@ -1,6 +1,5 @@
-"""Track B (Deep RL) — train-bc stage (behavior cloning). See
-`Multi-AI Agent Panel Document/04 Agents & Orchestration/Game-Playing Agent Design.md`
-section 4, step 3: trains a small policy network to imitate the human
+"""Track B (Deep RL) — train-bc stage (behavior cloning). See the
+Game-Playing Agent design notes, section 4, step 3: trains a small policy network to imitate the human
 demonstration a session's `labels.jsonl` (see `label.py`) captured, as a
 starting point for later RL fine-tuning rather than training from random
 play.

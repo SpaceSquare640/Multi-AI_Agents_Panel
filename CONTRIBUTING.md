@@ -8,7 +8,10 @@ Thanks for considering a contribution to Multi-AI Agents Panel.
 - `src/` — React/TypeScript UI. `src/locales/` holds i18n translation files (see "Translations" below).
 - `skills/` — Python skills, run out-of-process via the JSON-RPC bridge (`skills/_bridge.py`).
 
-Design documents (architecture, error codes, session types, orchestration design, etc.) live in the Obsidian vault next to this repo, not in `Source_Code`. If you're proposing a design change, check there first — several decisions (Fallback ordering, Guardrails enforcement points, Session Types' conflict-resolution rules, etc.) were made deliberately and are documented with their reasoning.
+Design decisions (fallback ordering, Guardrails enforcement points,
+session conflict-resolution rules, etc.) are deliberate, not accidental
+— if you're proposing a change in one of these areas, open an issue
+first to discuss the reasoning before sending a PR.
 
 ## Setup
 
@@ -44,23 +47,18 @@ The `ml_engine::live` tests additionally need `sentence-transformers` installed 
 ## Translations (i18n)
 
 The platform is decided — [Weblate](https://weblate.org/) — but community
-translation hasn't started yet (no Weblate project has been set up; it needs
-this repo to be public first, and the maintainer's own research recommends
-waiting until UI text is relatively stable to avoid translator churn, see the
-i18n research note in the Obsidian vault). This is a deliberately narrow
-first slice, not full coverage:
+translation hasn't started yet (no Weblate project has been set up).
 
-- `src/i18n.ts` wires up [react-i18next](https://react.i18next.com/).
-- `src/locales/en/translation.json` is the only real locale — the source of
-  truth. **All 7 screens are converted** to `useTranslation()`/`t(...)`:
-  `Settings.tsx`, `Skills.tsx`, `Usage.tsx`, `Onboarding.tsx`, `Manual.tsx`,
-  `Chat.tsx`, and `AIControlCenter.tsx`. New UI text should use `t(...)`
+- `src/i18n.ts` wires up [react-i18next](https://react.i18next.com/) and
+  registers all seven locales under `src/locales/*/translation.json`.
+  `en/translation.json` is the source of truth.
+- **Only `Settings.tsx` is converted** to `useTranslation()`/`t(...)` so
+  far — the rest of the app (`Chat.tsx`, `AIControlCenter.tsx`,
+  `Skills.tsx`, `Usage.tsx`, `Onboarding.tsx`, `Manual.tsx`) still has
+  hardcoded English strings. Converting one more screen per PR is a
+  good, reviewable first contribution. New UI text should use `t(...)`
   from the start rather than hardcoded strings.
 - When Weblate setup does happen, it'll point at the `src/locales/*/translation.json` file-mask pattern (no repo-committed Weblate config file is needed for this — component setup happens in Weblate's own dashboard).
-- The `LANGUAGES` list in `Settings.tsx` intentionally shows non-English
-  languages as "coming soon" rather than offering them — picking one would
-  silently show untranslated English UI, which is worse than not offering
-  the choice at all.
 
 ## Guidelines
 

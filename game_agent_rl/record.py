@@ -1,6 +1,5 @@
-"""Track B (Deep RL) — recording stage. See
-`Multi-AI Agent Panel Document/04 Agents & Orchestration/Game-Playing Agent Design.md`
-section 4, step 1 ("record"): captures a human demonstration — periodic
+"""Track B (Deep RL) — recording stage. See the Game-Playing Agent
+design notes, section 4, step 1 ("record"): captures a human demonstration — periodic
 screen frames + a synchronized log of mouse/keyboard input events —
 saved to a session folder. This is the first pipeline stage; later
 stages (label/train-bc/train-rl/play) are not implemented yet (see the
