@@ -2,6 +2,21 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [1.4.1] - 2026-08-23
+
+### Added
+
+- Feat: Track B train-rl and play stages, completing the pipeline
+
+### Changes
+
+- Chore: update CHANGELOG.md for v1.4.0 [skip ci]
+- Chore: bump version to 1.4.1
+
+### Fixed
+
+- Fix: CI has been red since v1.2.0 — dead_code on non-Windows
+
 ## [1.4.0] - 2026-08-23
 
 ### Added
