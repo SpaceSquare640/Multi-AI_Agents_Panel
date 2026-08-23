@@ -2,6 +2,17 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.13.1-alpha] - 2026-08-23
+
+### Changes
+
+- Chore: update CHANGELOG.md for v0.13.0-alpha [skip ci]
+- Chore: bump version to 0.13.1-alpha
+
+### Fixed
+
+- Fix Skills sandbox gap: module-level code ran unsandboxed at import time
+
 ## [0.13.0-alpha] - 2026-08-23
 
 ### Added
