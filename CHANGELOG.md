@@ -2,6 +2,17 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [1.1.0] - 2026-08-23
+
+### Added
+
+- Feat: import/export custom Skills from the dedicated Skills screen
+
+### Changes
+
+- Chore: update CHANGELOG.md for v1.0.2 [skip ci]
+- Chore: bump version to 1.1.0
+
 ## [1.0.2] - 2026-08-23
 
 ### Changes
