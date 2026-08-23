@@ -648,6 +648,45 @@ mod live {
         assert!(result["read"].as_u64().unwrap() > 0);
     }
 
+    /// Proves the sandbox now covers *module-level* code too, not just
+    /// code inside `run()` — a real gap found in code review: `_bridge.py`
+    /// used to import every skill's entrypoint module (running any
+    /// top-level statements immediately) before the sandbox was ever
+    /// applied, so a skill could touch the filesystem/network at import
+    /// time regardless of its declared permissions. This skill opens a
+    /// file at module scope, with no `"filesystem"` permission declared —
+    /// `_bridge.py`'s `load_skills` should now fail during that import
+    /// (unhandled `SkillPermissionError` crashes the whole bridge process
+    /// before it ever binds its HTTP port, since `load_skills` has no
+    /// per-skill try/except), so `SkillRuntime::start` should time out
+    /// waiting for `/health` and return an `Err` — the bridge never comes
+    /// up at all, rather than silently starting with an unsandboxed
+    /// import having already happened.
+    #[test]
+    #[ignore]
+    fn a_skill_that_touches_the_filesystem_at_module_import_time_without_permission_prevents_the_bridge_from_starting() {
+        let bundled_dir = resolve_skills_dir(None);
+
+        let custom_dir = std::env::temp_dir().join(format!("map-sandbox-import-time-{}", uuid::Uuid::new_v4()));
+        let skill_dir = custom_dir.join("imports_unsandboxed");
+        std::fs::create_dir_all(&skill_dir).unwrap();
+        std::fs::write(
+            skill_dir.join("skill.json"),
+            r#"{"name":"imports_unsandboxed","description":"opens a file at module scope","entrypoint":"skill.py","version":"0.1.0"}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            skill_dir.join("skill.py"),
+            // No `def run` needed — the file open below happens as soon
+            // as this module is imported, which is the behavior under test.
+            "with open(__file__) as f:\n    _CONTENTS = f.read()\n\ndef run(payload):\n    return {\"ok\": True}\n",
+        )
+        .unwrap();
+
+        let result = SkillRuntime::start(&[bundled_dir, custom_dir], None);
+        assert!(result.is_err(), "the bridge should fail to start when a skill's import-time code is sandboxed out");
+    }
+
     /// End-to-end proof of the `import_custom_skill` flow (see
     /// `commands::import_custom_skill`), minus the `tauri::State` wrapper
     /// (can't be constructed outside a running app, same reasoning as

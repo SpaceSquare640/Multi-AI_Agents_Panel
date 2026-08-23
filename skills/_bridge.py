@@ -92,16 +92,26 @@ def load_skills(skills_dirs: list) -> dict:
     Each entry stores both the imported `module` and its declared
     `permissions` (unknown permission strings in skill.json are ignored
     rather than rejected, so a manifest is never "invalid" just because
-    it names a capability this bridge version doesn't recognize yet)."""
+    it names a capability this bridge version doesn't recognize yet).
+
+    The sandbox is applied here too, around `exec_module`, not just
+    around later `run()` calls — a module-level statement (anything
+    outside `def run(...)`) executes immediately at import time, and
+    without this it would run with the real, unrestricted `open`/
+    `socket` no matter what the skill declared. Guarded with the same
+    declared `permissions` a call to `run()` would get, so a skill that
+    legitimately needs e.g. filesystem access to load a data file at
+    import time still can, as long as it declared that permission."""
     skills = {}
     for skills_dir in skills_dirs:
         for manifest_path in sorted(skills_dir.glob("*/skill.json")):
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
             entrypoint = manifest_path.parent / manifest["entrypoint"]
+            permissions = [p for p in manifest.get("permissions", []) if p in KNOWN_PERMISSIONS]
             spec = importlib.util.spec_from_file_location(manifest["name"], entrypoint)
             module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-            permissions = [p for p in manifest.get("permissions", []) if p in KNOWN_PERMISSIONS]
+            with sandbox(permissions):
+                spec.loader.exec_module(module)
             skills[manifest["name"]] = {"module": module, "permissions": permissions}
     return skills
 
