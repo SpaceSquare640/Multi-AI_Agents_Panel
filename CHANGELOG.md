@@ -2,6 +2,23 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.16.1-beta] - 2026-08-23
+
+### Changes
+
+- Chore: update CHANGELOG.md for v0.16.0-alpha [skip ci]
+- Chore: bump version to 0.16.1-beta
+
+### Fixed
+
+- Fix app-wide hang when Agent function calling is in flight
+
+## [0.16.0-beta] - 2026-08-23
+
+### Changes
+
+- Transition to Beta: v0.16.0-alpha -> v0.16.0-beta
+
 ## [0.16.0-alpha] - 2026-08-23
 
 ### Added
