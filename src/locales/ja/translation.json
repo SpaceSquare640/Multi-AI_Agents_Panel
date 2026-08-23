@@ -381,7 +381,8 @@
       "hardwareFitLevel": "適合度",
       "hardwareFitScore": "スコア",
       "hardwareFitSpeed": "推定速度",
-      "hardwareFitQuant": "最適な量子化"
+      "hardwareFitQuant": "最適な量子化",
+      "hardwareFitMoved": "「機械学習」タブに移動しました。"
     },
     "usage": {
       "heading": "使用状況",
@@ -427,6 +428,16 @@
       "stop": "停止",
       "starting": "開始中…",
       "startRecording": "記録を開始"
+    }
+  },
+  "ml": {
+    "title": "機械学習",
+    "semanticSearch": {
+      "heading": "セマンティック検索",
+      "hint": "セマンティック検索が許可されているすべての Agent とグループチャットをここに集約——そのチャットを開かずにインデックスの再構築や検索ができます。",
+      "none": "セマンティック検索が許可されている Agent やグループチャットはまだありません——「チャット」のAgentパネルから許可してください。",
+      "agent": "Agent",
+      "groupChat": "グループチャット"
     }
   }
 }

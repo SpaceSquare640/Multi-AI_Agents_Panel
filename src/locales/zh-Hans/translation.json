@@ -381,7 +381,8 @@
       "hardwareFitLevel": "适配度",
       "hardwareFitScore": "分数",
       "hardwareFitSpeed": "预估速度",
-      "hardwareFitQuant": "最佳量化"
+      "hardwareFitQuant": "最佳量化",
+      "hardwareFitMoved": "已移至「机器学习」分页。"
     },
     "usage": {
       "heading": "使用量",
@@ -427,6 +428,16 @@
       "stop": "停止",
       "starting": "启动中…",
       "startRecording": "开始录制"
+    }
+  },
+  "ml": {
+    "title": "机器学习",
+    "semanticSearch": {
+      "heading": "语义搜索",
+      "hint": "所有已授予语义搜索能力的 Agent 与群组对话都集中在这里——不需要打开该对话即可重建索引或搜索。",
+      "none": "目前没有任何 Agent 或群组对话被授予语义搜索——请到「对话」中该 Agent 的面板授予。",
+      "agent": "Agent",
+      "groupChat": "群组对话"
     }
   }
 }

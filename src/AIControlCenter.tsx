@@ -7,7 +7,6 @@ import {
   CLOUD_PROVIDERS,
   type CuratedModel,
   type McpServer,
-  type ModelRecommendation,
   type OllamaModel,
   type OpenRouterModel,
   type ProviderKeyView,
@@ -54,8 +53,6 @@ export default function AIControlCenter() {
   const [pullingModel, setPullingModel] = useState<string | null>(null);
   const [pullProgress, setPullProgress] = useState<{ status: string; percent: number | null } | null>(null);
   const [ollamaModelsEnvHint, setOllamaModelsEnvHint] = useState<string | null | undefined>(undefined);
-  const [hardwareRecommendations, setHardwareRecommendations] = useState<ModelRecommendation[] | null>(null);
-  const [loadingHardwareRecommendations, setLoadingHardwareRecommendations] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Live OpenRouter catalog (search + real USD pricing) — only relevant
@@ -66,28 +63,6 @@ export default function AIControlCenter() {
   const [openRouterLive, setOpenRouterLive] = useState(true);
   const [openRouterQuery, setOpenRouterQuery] = useState("");
   const [openRouterLoading, setOpenRouterLoading] = useState(false);
-
-  // Game-Playing Agent (Track A): a persistent screenshot -> local
-  // vision model -> real mouse/keyboard automation loop. Off by
-  // default, only ever starts on an explicit click here — see
-  // game_agent module docs.
-  const [gameAgentRunning, setGameAgentRunning] = useState(false);
-  const [gameAgentModel, setGameAgentModel] = useState("llava");
-  const [gameAgentPrompt, setGameAgentPrompt] = useState(
-    "You are playing a game. Look at the screenshot and decide the single best next action. " +
-      'Reply with ONLY a JSON object: {"action":"click","x":<int>,"y":<int>} or ' +
-      '{"action":"key","key":"<name>"} or {"action":"wait"}.',
-  );
-  const [gameAgentBusy, setGameAgentBusy] = useState(false);
-
-  // Track B (Deep RL) — "record" pipeline stage only (see
-  // Game-Playing Agent Design.md §4): starts game_agent_rl's Python CLI
-  // as a background subprocess to capture a human demonstration
-  // session. label/train-bc/train-rl/play don't exist yet.
-  const [recording, setRecording] = useState(false);
-  const [recordingSession, setRecordingSession] = useState("session-1");
-  const [recordingOutputDir, setRecordingOutputDir] = useState("");
-  const [recordingBusy, setRecordingBusy] = useState(false);
 
   // Single-add form state.
   const [singleProvider, setSingleProvider] = useState<string>("openrouter");
@@ -216,8 +191,6 @@ export default function AIControlCenter() {
     invoke<string | null>("ollama_models_env_hint")
       .then(setOllamaModelsEnvHint)
       .catch((e) => setError(String(e)));
-    invoke<boolean>("game_agent_status").then(setGameAgentRunning).catch((e) => setError(String(e)));
-    invoke<boolean>("recording_status").then(setRecording).catch((e) => setError(String(e)));
     refreshMcpServers().catch((e) => setError(String(e)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -293,18 +266,6 @@ export default function AIControlCenter() {
     }
   }
 
-  async function handleRecommendLocalModels() {
-    setError(null);
-    setLoadingHardwareRecommendations(true);
-    try {
-      setHardwareRecommendations(await invoke<ModelRecommendation[]>("recommend_local_models", { limit: 8 }));
-    } catch (err) {
-      setError(String(err));
-    } finally {
-      setLoadingHardwareRecommendations(false);
-    }
-  }
-
   async function handlePullModel(name: string) {
     setError(null);
     setPullingModel(name);
@@ -337,55 +298,6 @@ export default function AIControlCenter() {
     try {
       await invoke("delete_ollama_model", { name });
       await refreshOllama();
-    } catch (err) {
-      setError(String(err));
-    }
-  }
-
-  async function handleStartGameAgent() {
-    setError(null);
-    setGameAgentBusy(true);
-    try {
-      await invoke("start_game_agent", { model: gameAgentModel, prompt: gameAgentPrompt });
-      setGameAgentRunning(true);
-    } catch (err) {
-      setError(String(err));
-    } finally {
-      setGameAgentBusy(false);
-    }
-  }
-
-  async function handleStopGameAgent() {
-    setError(null);
-    try {
-      await invoke("stop_game_agent");
-      setGameAgentRunning(false);
-    } catch (err) {
-      setError(String(err));
-    }
-  }
-
-  async function handleStartRecording() {
-    setError(null);
-    setRecordingBusy(true);
-    try {
-      await invoke("start_recording_session", {
-        session: recordingSession,
-        outputDir: recordingOutputDir,
-      });
-      setRecording(true);
-    } catch (err) {
-      setError(String(err));
-    } finally {
-      setRecordingBusy(false);
-    }
-  }
-
-  async function handleStopRecording() {
-    setError(null);
-    try {
-      await invoke("stop_recording_session");
-      setRecording(false);
     } catch (err) {
       setError(String(err));
     }
@@ -651,37 +563,7 @@ export default function AIControlCenter() {
           </>
         )}
 
-        <h3>{t("acc.localModels.hardwareFitHeading")}</h3>
-        <p className="acc-hint">{t("acc.localModels.hardwareFitHint")}</p>
-        <button disabled={loadingHardwareRecommendations} onClick={() => void handleRecommendLocalModels()}>
-          {loadingHardwareRecommendations ? t("acc.localModels.hardwareFitLoading") : t("acc.localModels.hardwareFitButton")}
-        </button>
-        {hardwareRecommendations && (
-          <table className="acc-table">
-            <thead>
-              <tr>
-                <th>{t("acc.localModels.tableModel")}</th>
-                <th>{t("acc.localModels.hardwareFitLevel")}</th>
-                <th>{t("acc.localModels.hardwareFitScore")}</th>
-                <th>{t("acc.localModels.hardwareFitSpeed")}</th>
-                <th>{t("acc.localModels.hardwareFitQuant")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {hardwareRecommendations.map((m) => (
-                <tr key={m.name}>
-                  <td className="acc-mono">
-                    {m.name} ({m.parameterCount})
-                  </td>
-                  <td>{m.fitLevel}</td>
-                  <td>{m.score.toFixed(0)}</td>
-                  <td>{m.estimatedTokensPerSecond.toFixed(1)} tok/s</td>
-                  <td className="acc-mono">{m.bestQuantization}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <p className="acc-hint">{t("acc.localModels.hardwareFitMoved")}</p>
       </section>
 
       <section className="acc-section">
@@ -778,68 +660,6 @@ export default function AIControlCenter() {
         </table>
       </section>
 
-      <section className="acc-section">
-        <h2>{t("acc.gameAgent.heading")}</h2>
-        <p className="acc-hint">{t("acc.gameAgent.warning")}</p>
-        <div className="acc-form-row">
-          <input
-            type="text"
-            placeholder={t("acc.gameAgent.modelPlaceholder")}
-            value={gameAgentModel}
-            onChange={(e) => setGameAgentModel(e.target.value)}
-            disabled={gameAgentRunning}
-          />
-        </div>
-        <textarea
-          rows={3}
-          value={gameAgentPrompt}
-          onChange={(e) => setGameAgentPrompt(e.target.value)}
-          disabled={gameAgentRunning}
-        />
-        <p>
-          {t("acc.gameAgent.statusLabel")}{" "}
-          {gameAgentRunning ? t("acc.gameAgent.statusRunning") : t("acc.gameAgent.statusStopped")}{" "}
-          {gameAgentRunning ? (
-            <button onClick={() => handleStopGameAgent()}>{t("acc.gameAgent.stop")}</button>
-          ) : (
-            <button disabled={gameAgentBusy} onClick={() => handleStartGameAgent()}>
-              {gameAgentBusy ? t("acc.gameAgent.starting") : t("acc.gameAgent.start")}
-            </button>
-          )}
-        </p>
-      </section>
-
-      <section className="acc-section">
-        <h2>{t("acc.recording.heading")}</h2>
-        <p className="acc-hint">{t("acc.recording.hint")}</p>
-        <div className="acc-form-row">
-          <input
-            type="text"
-            placeholder={t("acc.recording.sessionNamePlaceholder")}
-            value={recordingSession}
-            onChange={(e) => setRecordingSession(e.target.value)}
-            disabled={recording}
-          />
-          <input
-            type="text"
-            placeholder={t("acc.recording.outputDirectoryPlaceholder")}
-            value={recordingOutputDir}
-            onChange={(e) => setRecordingOutputDir(e.target.value)}
-            disabled={recording}
-          />
-        </div>
-        <p>
-          {t("acc.recording.statusLabel")}{" "}
-          {recording ? t("acc.recording.statusRecording") : t("acc.recording.statusStopped")}{" "}
-          {recording ? (
-            <button onClick={() => handleStopRecording()}>{t("acc.recording.stop")}</button>
-          ) : (
-            <button disabled={recordingBusy || !recordingOutputDir.trim()} onClick={() => handleStartRecording()}>
-              {recordingBusy ? t("acc.recording.starting") : t("acc.recording.startRecording")}
-            </button>
-          )}
-        </p>
-      </section>
     </div>
   );
 }

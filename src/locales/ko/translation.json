@@ -381,7 +381,8 @@
       "hardwareFitLevel": "적합도",
       "hardwareFitScore": "점수",
       "hardwareFitSpeed": "예상 속도",
-      "hardwareFitQuant": "최적 양자화"
+      "hardwareFitQuant": "최적 양자화",
+      "hardwareFitMoved": "「머신러닝」탭으로 이동했습니다."
     },
     "usage": {
       "heading": "사용량",
@@ -427,6 +428,16 @@
       "stop": "중지",
       "starting": "시작 중…",
       "startRecording": "녹화 시작"
+    }
+  },
+  "ml": {
+    "title": "머신러닝",
+    "semanticSearch": {
+      "heading": "시맨틱 검색",
+      "hint": "시맨틱 검색이 허용된 모든 Agent와 그룹 채팅을 한곳에 모았습니다——해당 채팅을 열지 않고도 인덱스를 재구축하거나 검색할 수 있습니다.",
+      "none": "아직 시맨틱 검색이 허용된 Agent나 그룹 채팅이 없습니다——「채팅」의 Agent 패널에서 허용하세요.",
+      "agent": "Agent",
+      "groupChat": "그룹 채팅"
     }
   }
 }

@@ -1,0 +1,40 @@
+.ml-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+  text-align: left;
+}
+
+.ml-page h1 {
+  margin: 0 0 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.ml-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.ml-index-card {
+  border: 1px solid var(--edex-cyan-dim);
+  border-radius: 2px;
+  padding: 0.9rem 1rem;
+  margin-top: 0.75rem;
+  background: var(--card-bg);
+}
+
+.ml-index-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.ml-index-label {
+  font-weight: 600;
+  font-size: 0.95rem;
+}

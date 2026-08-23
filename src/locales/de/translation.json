@@ -381,7 +381,8 @@
       "hardwareFitLevel": "Eignung",
       "hardwareFitScore": "Punktzahl",
       "hardwareFitSpeed": "Geschätzte Geschwindigkeit",
-      "hardwareFitQuant": "Beste Quantisierung"
+      "hardwareFitQuant": "Beste Quantisierung",
+      "hardwareFitMoved": "In den Tab „Maschinelles Lernen“ verschoben."
     },
     "usage": {
       "heading": "Nutzung",
@@ -427,6 +428,16 @@
       "stop": "Stopp",
       "starting": "Wird gestartet…",
       "startRecording": "Aufzeichnung starten"
+    }
+  },
+  "ml": {
+    "title": "Maschinelles Lernen",
+    "semanticSearch": {
+      "heading": "Semantische Suche",
+      "hint": "Jeder Agent und jeder Gruppenchat mit gewährter semantischer Suche, an einem Ort — Index neu erstellen oder durchsuchen, ohne diesen Chat zu öffnen.",
+      "none": "Noch keinem Agenten oder Gruppenchat wurde semantische Suche gewährt — gewähren Sie sie über das Panel eines Agenten im Chat.",
+      "agent": "Agent",
+      "groupChat": "Gruppenchat"
     }
   }
 }

@@ -381,7 +381,8 @@
       "hardwareFitLevel": "Adéquation",
       "hardwareFitScore": "Score",
       "hardwareFitSpeed": "Vitesse estimée",
-      "hardwareFitQuant": "Meilleure quantification"
+      "hardwareFitQuant": "Meilleure quantification",
+      "hardwareFitMoved": "Déplacé vers l'onglet Apprentissage automatique."
     },
     "usage": {
       "heading": "Utilisation",
@@ -427,6 +428,16 @@
       "stop": "Arrêter",
       "starting": "Démarrage…",
       "startRecording": "Démarrer l'enregistrement"
+    }
+  },
+  "ml": {
+    "title": "Apprentissage automatique",
+    "semanticSearch": {
+      "heading": "Recherche sémantique",
+      "hint": "Chaque Agent et discussion de groupe ayant reçu l'accès à la recherche sémantique, au même endroit — reconstruisez ou interrogez un index sans ouvrir cette discussion.",
+      "none": "Aucun Agent ni discussion de groupe n'a encore d'accès à la recherche sémantique — accordez-le depuis le panneau d'un Agent dans Discussion.",
+      "agent": "Agent",
+      "groupChat": "Discussion de groupe"
     }
   }
 }

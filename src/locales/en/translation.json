@@ -381,7 +381,8 @@
       "hardwareFitLevel": "Fit",
       "hardwareFitScore": "Score",
       "hardwareFitSpeed": "Est. speed",
-      "hardwareFitQuant": "Best quant"
+      "hardwareFitQuant": "Best quant",
+      "hardwareFitMoved": "Moved to the Machine Learning tab."
     },
     "usage": {
       "heading": "Usage",
@@ -427,6 +428,16 @@
       "stop": "Stop",
       "starting": "Starting…",
       "startRecording": "Start recording"
+    }
+  },
+  "ml": {
+    "title": "Machine Learning",
+    "semanticSearch": {
+      "heading": "Semantic Search",
+      "hint": "Every Agent and Group Chat that has been granted semantic search, in one place — rebuild an index or search it without opening that chat.",
+      "none": "No Agent or Group Chat has semantic search granted yet — grant it from an Agent's panel in Chat.",
+      "agent": "Agent",
+      "groupChat": "Group Chat"
     }
   }
 }
