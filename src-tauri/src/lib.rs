@@ -172,6 +172,7 @@ pub fn run() {
             commands::list_agent_fallback_providers,
             commands::remove_agent_fallback_provider,
             commands::list_sessions,
+            commands::delete_session,
             commands::create_independent_session,
             commands::list_messages,
             commands::get_session_agent_id,

@@ -58,6 +58,32 @@
   font-weight: 600;
 }
 
+.chat-session-list-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.chat-session-list-item button:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-session-delete {
+  flex-shrink: 0;
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  line-height: 1;
+  opacity: 0.6;
+}
+
+.chat-session-delete:hover {
+  opacity: 1;
+  border-color: var(--edex-orange, #ff9900);
+  color: var(--edex-orange, #ff9900);
+}
+
 .chat-template-row {
   display: flex;
   align-items: center;

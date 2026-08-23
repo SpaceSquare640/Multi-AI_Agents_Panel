@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
-import { open as openFolderPicker, save as saveFilePicker } from "@tauri-apps/plugin-dialog";
+import { ask, open as openFolderPicker, save as saveFilePicker } from "@tauri-apps/plugin-dialog";
 import type {
   Agent,
   AgentMemory,
@@ -479,6 +479,25 @@ export default function Chat() {
     if (activeSessionId === sessionId) {
       const remaining = openTabIds.filter((id) => id !== sessionId);
       setActiveSessionId(remaining[remaining.length - 1] ?? null);
+    }
+  }
+
+  /** Permanently deletes a session/group chat — there's no undo, so this
+   *  confirms with the user first. If it's currently open, close its tab
+   *  the same way the "×" button would, then refresh the sidebar list so
+   *  the deleted entry actually disappears. */
+  async function handleDeleteSession(sessionId: string, title: string) {
+    const confirmed = await ask(t("chat.deleteSessionConfirm", { title }), {
+      title: t("chat.deleteSessionConfirmTitle"),
+      kind: "warning",
+    });
+    if (!confirmed) return;
+    try {
+      await invoke("delete_session", { sessionId });
+      closeTab(sessionId);
+      await refreshSessions();
+    } catch (err) {
+      setError(String(err));
     }
   }
 
@@ -1216,10 +1235,18 @@ export default function Chat() {
         <h2>{t("chat.independentSessions")}</h2>
         <ul className="chat-session-list">
           {independentSessions.map((s) => (
-            <li key={s.id}>
+            <li key={s.id} className="chat-session-list-item">
               <button className={openTabIds.includes(s.id) ? "active" : ""} onClick={() => openTab(s.id, s.kind)}>
                 {s.title}
                 {tabs[s.id]?.hasUnseenReply && <span className="chat-unread-dot" />}
+              </button>
+              <button
+                className="chat-session-delete"
+                aria-label={t("chat.deleteSession", { title: s.title })}
+                title={t("chat.deleteSessionTitle")}
+                onClick={() => void handleDeleteSession(s.id, s.title)}
+              >
+                ×
               </button>
             </li>
           ))}
@@ -1229,10 +1256,18 @@ export default function Chat() {
         <h2>{t("chat.groupChats")}</h2>
         <ul className="chat-session-list">
           {groupSessions.map((s) => (
-            <li key={s.id}>
+            <li key={s.id} className="chat-session-list-item">
               <button className={openTabIds.includes(s.id) ? "active" : ""} onClick={() => openTab(s.id, s.kind)}>
                 {s.title}
                 {tabs[s.id]?.hasUnseenReply && <span className="chat-unread-dot" />}
+              </button>
+              <button
+                className="chat-session-delete"
+                aria-label={t("chat.deleteSession", { title: s.title })}
+                title={t("chat.deleteSessionTitle")}
+                onClick={() => void handleDeleteSession(s.id, s.title)}
+              >
+                ×
               </button>
             </li>
           ))}

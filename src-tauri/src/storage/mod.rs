@@ -653,6 +653,28 @@ impl Storage {
         Ok(session)
     }
 
+    /// Permanently deletes a session (independent or group) and every row
+    /// that references it — messages, membership, group turn/consent
+    /// state, and any `session`-scoped ML access grant. Wrapped in one
+    /// transaction so a mid-way failure can't leave orphaned rows behind
+    /// (e.g. messages surviving a session whose own row got deleted).
+    /// Per-agent grants (file access, Skills, MCP) are untouched — they
+    /// belong to the Agent, not the session, by design.
+    pub fn delete_session(&self, session_id: &str) -> rusqlite::Result<()> {
+        let mut conn = self.conn.lock().unwrap();
+        let tx = conn.transaction()?;
+        tx.execute("DELETE FROM messages WHERE session_id = ?1", params![session_id])?;
+        tx.execute("DELETE FROM session_agents WHERE session_id = ?1", params![session_id])?;
+        tx.execute("DELETE FROM group_session_state WHERE session_id = ?1", params![session_id])?;
+        tx.execute("DELETE FROM group_boundary_consent WHERE session_id = ?1", params![session_id])?;
+        tx.execute(
+            "DELETE FROM ml_access_grants WHERE scope_kind = 'session' AND scope_id = ?1",
+            params![session_id],
+        )?;
+        tx.execute("DELETE FROM sessions WHERE id = ?1", params![session_id])?;
+        tx.commit()
+    }
+
     pub fn add_agent_to_session(&self, session_id: &str, agent_id: &str) -> rusqlite::Result<()> {
         self.conn.lock().unwrap().execute(
             "INSERT OR IGNORE INTO session_agents (session_id, agent_id, joined_at) VALUES (?1, ?2, ?3)",
@@ -1596,6 +1618,54 @@ mod tests {
         assert_eq!(messages[0].role, "user");
         assert_eq!(messages[1].role, "assistant");
         assert_eq!(messages[1].agent_id.as_deref(), Some(agent.id.as_str()));
+    }
+
+    #[test]
+    fn delete_session_removes_every_row_that_references_it() {
+        let storage = Storage::open_in_memory().unwrap();
+        let agent = storage
+            .create_agent("Local Agent", None, None, "local", "ollama", "llama3.1:8b")
+            .unwrap();
+        let session = storage.create_session("group", "Test group chat").unwrap();
+        storage.add_agent_to_session(&session.id, &agent.id).unwrap();
+        storage.add_message(&session.id, None, "user", "hello").unwrap();
+        storage
+            .save_group_session_state(&GroupSessionState {
+                session_id: session.id.clone(),
+                rotation_cursor: 1,
+                consecutive_agent_turns: 2,
+            })
+            .unwrap();
+        storage.grant_local_to_cloud_consent(&session.id).unwrap();
+        storage.grant_ml_capability("session", &session.id, "semantic_search").unwrap();
+
+        storage.delete_session(&session.id).unwrap();
+
+        assert!(storage.list_sessions().unwrap().is_empty());
+        assert!(storage.list_messages(&session.id).unwrap().is_empty());
+        assert!(storage.agents_for_session(&session.id).unwrap().is_empty());
+        assert!(storage.list_ml_access_grants_for_session(&session.id).unwrap().is_empty());
+        assert!(!storage.has_local_to_cloud_consent(&session.id).unwrap());
+        // The state row's absence is itself the proof — a fresh default
+        // would silently mask a leftover row, so check for a genuine
+        // "not found" instead of trusting whatever get_group_session_state
+        // returns for a missing session.
+        assert_eq!(
+            storage
+                .conn
+                .lock()
+                .unwrap()
+                .query_row(
+                    "SELECT COUNT(*) FROM group_session_state WHERE session_id = ?1",
+                    params![session.id],
+                    |row| row.get::<_, i64>(0),
+                )
+                .unwrap(),
+            0
+        );
+        // The Agent itself is untouched — deleting a session must never
+        // cascade into deleting the agents that were in it.
+        assert!(storage.get_agent(&agent.id).unwrap().is_some());
     }
 
     #[test]

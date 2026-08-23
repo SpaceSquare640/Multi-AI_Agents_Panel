@@ -399,6 +399,15 @@ pub fn list_sessions(storage: State<Storage>) -> Result<Vec<Session>, String> {
     storage.list_sessions().map_err(|e| e.to_string())
 }
 
+/// Permanently deletes a session (independent or group), including every
+/// message in it — see `Storage::delete_session` for exactly what gets
+/// cleaned up. There is no undo; the frontend must confirm with the user
+/// before calling this.
+#[tauri::command]
+pub fn delete_session(storage: State<Storage>, session_id: String) -> Result<(), String> {
+    storage.delete_session(&session_id).map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 pub fn create_independent_session(
     storage: State<Storage>,
