@@ -256,6 +256,47 @@ pub fn delete_model(name: &str) -> Result<(), ProviderError> {
     Ok(())
 }
 
+/// Ollama's own official Windows installer, fetched fresh on every call
+/// rather than pinned to a version — Ollama doesn't publish a stable
+/// "latest" URL for older releases, only this one that always serves
+/// whatever's current. Pure so it's directly testable without a network
+/// call.
+pub(crate) fn windows_installer_url() -> &'static str {
+    "https://ollama.com/download/OllamaSetup.exe"
+}
+
+/// Downloads the real Ollama installer and hands off to it — the
+/// installer's own UI (including any Windows UAC elevation prompt) is
+/// what the user actually interacts with from here; this function only
+/// fetches it and launches it, it never runs anything silently or
+/// automatically. Only ever called from the Tauri command below, which
+/// only ever fires after the user clicks an explicit "Install Ollama"
+/// button behind its own confirmation dialog (see AIControlCenter.tsx) —
+/// there is no path that reaches this without that explicit user action.
+#[cfg(windows)]
+pub fn download_and_run_installer() -> Result<(), String> {
+    let url = windows_installer_url();
+    let response = reqwest::blocking::get(url)
+        .and_then(|r| r.error_for_status())
+        .map_err(|e| format!("failed to download the Ollama installer from {url}: {e}"))?;
+    let bytes = response.bytes().map_err(|e| format!("failed to read the downloaded installer: {e}"))?;
+
+    let temp_path = std::env::temp_dir().join("OllamaSetup.exe");
+    std::fs::write(&temp_path, &bytes).map_err(|e| format!("failed to save the installer to disk: {e}"))?;
+
+    let mut command = std::process::Command::new(&temp_path);
+    crate::bridge_support::hide_console_window(&mut command);
+    command.spawn().map_err(|e| format!("failed to launch the installer: {e}"))?;
+    Ok(())
+}
+
+#[cfg(not(windows))]
+pub fn download_and_run_installer() -> Result<(), String> {
+    Err("Automatic Ollama installation is only implemented for Windows — \
+         download it yourself from https://ollama.com/download"
+        .to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -362,6 +403,20 @@ mod tests {
         let progress = parse_pull_progress_line(line).unwrap();
         assert_eq!(progress.percent, None);
     }
+
+    #[test]
+    fn windows_installer_url_points_at_ollamas_own_domain_over_https() {
+        let url = windows_installer_url();
+        assert!(url.starts_with("https://ollama.com/"), "expected an official ollama.com URL, got {url}");
+    }
+
+    #[test]
+    #[cfg(not(windows))]
+    fn download_and_run_installer_fails_closed_on_non_windows_rather_than_attempting_anything() {
+        let result = download_and_run_installer();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("ollama.com/download"));
+    }
 }
 
 /// Live smoke tests against a real local Ollama install. Not run by
@@ -377,5 +432,24 @@ mod live {
         assert!(is_running(), "Ollama does not appear to be running on localhost:11434");
         let models = list_installed().unwrap();
         println!("installed models: {models:?}");
+    }
+
+    /// Proves the download half actually reaches a real Windows PE
+    /// executable, not just that the URL string looks plausible — checks
+    /// the "MZ" header real .exe files start with. Deliberately does NOT
+    /// call the full `download_and_run_installer` (that would actually
+    /// launch a real installer on whatever machine runs this test), so it
+    /// downloads the same URL directly instead.
+    #[test]
+    #[ignore]
+    #[cfg(windows)]
+    fn the_windows_installer_url_serves_a_real_windows_executable() {
+        let bytes = reqwest::blocking::get(windows_installer_url())
+            .and_then(|r| r.error_for_status())
+            .unwrap()
+            .bytes()
+            .unwrap();
+        assert!(bytes.len() > 1_000_000, "expected a real installer, got {} bytes", bytes.len());
+        assert_eq!(&bytes[0..2], b"MZ", "expected a Windows PE executable (MZ header)");
     }
 }

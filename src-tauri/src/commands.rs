@@ -302,6 +302,15 @@ pub fn delete_ollama_model(name: String) -> Result<(), String> {
     ollama::delete_model(&name).map_err(|e| e.to_string())
 }
 
+/// Downloads and launches the real Ollama installer — see
+/// `ollama::download_and_run_installer` for the actual mechanics and the
+/// safety reasoning (never silent, never automatic; only reachable from
+/// the frontend behind an explicit confirmation dialog).
+#[tauri::command]
+pub fn install_ollama() -> Result<(), String> {
+    ollama::download_and_run_installer()
+}
+
 /// Reads `OLLAMA_MODELS` from *this app's own process environment* —
 /// best-effort information only. Ollama is an external, independently
 /// launched service (this app only calls its `localhost:11434` API, see

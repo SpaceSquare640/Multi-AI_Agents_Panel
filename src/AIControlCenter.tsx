@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { open } from "@tauri-apps/plugin-dialog";
+import { ask, open } from "@tauri-apps/plugin-dialog";
 import {
   CLOUD_PROVIDERS,
   type CuratedModel,
@@ -47,6 +47,8 @@ export default function AIControlCenter() {
   const [modelProvider, setModelProvider] = useState<string>("openrouter");
   const [curatedModels, setCuratedModels] = useState<CuratedModel[]>([]);
   const [ollamaRunning, setOllamaRunning] = useState<boolean | null>(null);
+  const [installingOllama, setInstallingOllama] = useState(false);
+  const [ollamaInstallStarted, setOllamaInstallStarted] = useState(false);
   const [ollamaInstalled, setOllamaInstalled] = useState<OllamaModel[]>([]);
   const [ollamaCurated, setOllamaCurated] = useState<CuratedModel[]>([]);
   const [pullingModel, setPullingModel] = useState<string | null>(null);
@@ -142,6 +144,30 @@ export default function AIControlCenter() {
       setOllamaInstalled(await invoke<OllamaModel[]>("list_ollama_installed_models"));
     } else {
       setOllamaInstalled([]);
+    }
+  }
+
+  /** Downloads the real Ollama installer from ollama.com and launches
+   *  it — never silent: the user has to confirm this dialog first, and
+   *  the installer's own UI (including any Windows UAC prompt) is what
+   *  they actually interact with from there. This app doesn't know when
+   *  that installer finishes, so it just tells the user to click
+   *  Refresh once they're done rather than pretending to track it. */
+  async function handleInstallOllama() {
+    const confirmed = await ask(t("acc.localModels.installOllamaConfirm"), {
+      title: t("acc.localModels.installOllamaConfirmTitle"),
+      kind: "info",
+    });
+    if (!confirmed) return;
+    setInstallingOllama(true);
+    setError(null);
+    try {
+      await invoke("install_ollama");
+      setOllamaInstallStarted(true);
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setInstallingOllama(false);
     }
   }
 
@@ -550,7 +576,13 @@ export default function AIControlCenter() {
           <button onClick={() => refreshOllama().catch((e) => setError(String(e)))}>
             {t("acc.localModels.refresh")}
           </button>
+          {ollamaRunning === false && (
+            <button onClick={() => void handleInstallOllama()} disabled={installingOllama}>
+              {installingOllama ? t("acc.localModels.installingOllama") : t("acc.localModels.installOllama")}
+            </button>
+          )}
         </p>
+        {ollamaInstallStarted && <p className="acc-hint">{t("acc.localModels.installOllamaStarted")}</p>}
 
         <details className="acc-ollama-storage-hint">
           <summary>{t("acc.localModels.storageHintSummary")}</summary>
