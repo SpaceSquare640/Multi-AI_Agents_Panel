@@ -4,6 +4,7 @@
 
 pub mod cost;
 pub mod curated_models;
+pub mod custom_instructions;
 pub mod function_calling;
 pub mod memory;
 pub mod openrouter_catalog;

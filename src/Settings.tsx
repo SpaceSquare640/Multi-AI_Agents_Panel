@@ -79,6 +79,11 @@ export default function Settings({
   const [updateCheck, setUpdateCheck] = useState<UpdateCheckResult | null>(null);
   const [updateCheckError, setUpdateCheckError] = useState<string | null>(null);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [customInstructions, setCustomInstructions] = useState("");
+  const [savedCustomInstructions, setSavedCustomInstructions] = useState("");
+  const [savingInstructions, setSavingInstructions] = useState(false);
+  const [instructionsSaved, setInstructionsSaved] = useState(false);
+  const [instructionsError, setInstructionsError] = useState<string | null>(null);
 
   useEffect(() => {
     setThemeState(applyStoredTheme());
@@ -90,7 +95,30 @@ export default function Settings({
       // No Tauri IPC bridge available (browser preview).
       setVersion(null);
     }
+    invoke<string | null>("get_custom_instructions")
+      .then((value) => {
+        setCustomInstructions(value ?? "");
+        setSavedCustomInstructions(value ?? "");
+      })
+      .catch(() => {
+        // No Tauri IPC bridge available (browser preview) — leave blank.
+      });
   }, []);
+
+  async function saveCustomInstructions() {
+    setSavingInstructions(true);
+    setInstructionsSaved(false);
+    setInstructionsError(null);
+    try {
+      await invoke("set_custom_instructions", { content: customInstructions });
+      setSavedCustomInstructions(customInstructions);
+      setInstructionsSaved(true);
+    } catch (err) {
+      setInstructionsError(String(err));
+    } finally {
+      setSavingInstructions(false);
+    }
+  }
 
   function chooseTheme(choice: ThemeChoice) {
     localStorage.setItem(THEME_STORAGE_KEY, choice);
@@ -138,6 +166,37 @@ export default function Settings({
               </button>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section className="acc-section">
+        <h2>{t("settings.customInstructions.heading")}</h2>
+        <p className="acc-hint">{t("settings.customInstructions.hint")}</p>
+        <textarea
+          className="settings-instructions-textarea"
+          value={customInstructions}
+          onChange={(e) => {
+            setCustomInstructions(e.target.value);
+            setInstructionsSaved(false);
+          }}
+          placeholder={t("settings.customInstructions.placeholder")}
+          rows={6}
+        />
+        {instructionsError && <div className="acc-error">{instructionsError}</div>}
+        <div className="settings-row">
+          <div className="acc-hint">
+            {instructionsSaved
+              ? t("settings.customInstructions.saved")
+              : customInstructions !== savedCustomInstructions
+                ? t("settings.customInstructions.unsaved")
+                : null}
+          </div>
+          <button
+            onClick={() => void saveCustomInstructions()}
+            disabled={savingInstructions || customInstructions === savedCustomInstructions}
+          >
+            {savingInstructions ? t("settings.customInstructions.saving") : t("settings.customInstructions.save")}
+          </button>
         </div>
       </section>
 

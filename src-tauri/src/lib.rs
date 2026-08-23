@@ -210,6 +210,8 @@ pub fn run() {
             commands::add_agent_memory,
             commands::list_agent_memories,
             commands::delete_agent_memory,
+            commands::get_custom_instructions,
+            commands::set_custom_instructions,
             commands::call_mcp_tool,
             commands::run_mcp_tool_in_session,
             commands::create_group_session,

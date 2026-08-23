@@ -169,7 +169,7 @@ pub fn run(
 
     let tools = skills_to_tools(available_skills);
     let model = agent.model.clone();
-    let system = agent.system_prompt.clone();
+    let system = super::custom_instructions::combine_with_agent_prompt(storage, agent.system_prompt.as_deref());
 
     let send_fn = |raw_messages: &[Value]| anthropic::send_tooled(&secret, &model, system.as_deref(), raw_messages, &tools);
 

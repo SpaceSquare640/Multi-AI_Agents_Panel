@@ -411,6 +411,11 @@ impl Storage {
                 session_id  TEXT PRIMARY KEY REFERENCES sessions(id),
                 granted_at  TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS app_settings (
+                key    TEXT PRIMARY KEY,
+                value  TEXT NOT NULL
+            );
             ",
         )?;
         // `session_agents` predates Group Chat's need for a stable join
@@ -1211,6 +1216,32 @@ impl Storage {
         Ok(())
     }
 
+    /// One global block of freeform text, always included as context for
+    /// *every* agent on *every* call — the analogue of Claude's own
+    /// "Instructions for Claude" (language/style preferences, standing
+    /// workflow rules), not a per-agent thing like `agent_memories` and
+    /// not filtered by relevance to the current message like those are
+    /// either. A single row in `app_settings` (key `"custom_instructions"`)
+    /// rather than its own dedicated table — there's exactly one value,
+    /// not a collection, so a whole table (with an id, created_at, etc.)
+    /// would be overhead this doesn't need.
+    pub fn get_custom_instructions(&self) -> rusqlite::Result<Option<String>> {
+        self.conn
+            .lock()
+            .unwrap()
+            .query_row("SELECT value FROM app_settings WHERE key = 'custom_instructions'", [], |row| row.get(0))
+            .optional()
+    }
+
+    pub fn set_custom_instructions(&self, content: &str) -> rusqlite::Result<()> {
+        self.conn.lock().unwrap().execute(
+            "INSERT INTO app_settings (key, value) VALUES ('custom_instructions', ?1)
+             ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            params![content],
+        )?;
+        Ok(())
+    }
+
     pub fn create_mcp_server(&self, name: &str, command: &str, args: &[String]) -> rusqlite::Result<McpServer> {
         let server = McpServer {
             id: uuid::Uuid::new_v4().to_string(),
@@ -1776,6 +1807,30 @@ mod tests {
 
         storage.delete_agent_memory(&memory.id).unwrap();
         assert!(storage.list_agent_memories(&agent.id).unwrap().is_empty());
+    }
+
+    #[test]
+    fn custom_instructions_is_none_when_never_set() {
+        let storage = Storage::open_in_memory().unwrap();
+        assert_eq!(storage.get_custom_instructions().unwrap(), None);
+    }
+
+    #[test]
+    fn custom_instructions_round_trips() {
+        let storage = Storage::open_in_memory().unwrap();
+        storage.set_custom_instructions("always reply in Traditional Chinese").unwrap();
+        assert_eq!(
+            storage.get_custom_instructions().unwrap(),
+            Some("always reply in Traditional Chinese".to_string())
+        );
+    }
+
+    #[test]
+    fn custom_instructions_set_again_overwrites_rather_than_duplicating() {
+        let storage = Storage::open_in_memory().unwrap();
+        storage.set_custom_instructions("first version").unwrap();
+        storage.set_custom_instructions("second version").unwrap();
+        assert_eq!(storage.get_custom_instructions().unwrap(), Some("second version".to_string()));
     }
 
     #[test]

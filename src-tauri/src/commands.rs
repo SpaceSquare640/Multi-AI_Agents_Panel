@@ -469,10 +469,10 @@ pub fn send_chat_message(storage: State<Storage>, session_id: String, content: S
     if let Some(last) = history.last_mut() {
         last.content = expanded_content;
     }
-    // Insert order matters: memory context first (at position 0, ahead of
-    // the conversation), then the system prompt last (also at position 0,
-    // pushing memory context after it) — so the final order is system
-    // prompt, then memory context, then the actual conversation.
+    // Insert order matters — each of these inserts at position 0, so
+    // building last-to-first-wanted produces, in the end: global custom
+    // instructions, then the agent's own system prompt, then memory
+    // context, then the actual conversation.
     for (offset, message) in agent_manager::memory::context_messages(&storage, &agent_id, &content).into_iter().enumerate() {
         history.insert(offset, message);
     }
@@ -484,6 +484,9 @@ pub fn send_chat_message(storage: State<Storage>, session_id: String, content: S
                 content: system_prompt.clone(),
             },
         );
+    }
+    if let Some(instructions) = agent_manager::custom_instructions::as_system_message(&storage) {
+        history.insert(0, instructions);
     }
 
     let reply = agent_manager::send_message(&storage, &agent, &history).map_err(|e| e.to_string())?;
@@ -720,6 +723,9 @@ fn run_one_group_turn(storage: &Storage, session_id: &str, mention: Option<&str>
     if let Some(system_prompt) = &agent.system_prompt {
         history.insert(0, ChatMessage { role: "system".to_string(), content: system_prompt.clone() });
     }
+    if let Some(instructions) = agent_manager::custom_instructions::as_system_message(storage) {
+        history.insert(0, instructions);
+    }
 
     let reply = agent_manager::send_message(storage, &agent, &history).map_err(|e| e.to_string())?;
 
@@ -812,6 +818,9 @@ pub fn end_group_chat_meeting(
     });
     if let Some(system_prompt) = &summarizer.system_prompt {
         history.insert(0, ChatMessage { role: "system".to_string(), content: system_prompt.clone() });
+    }
+    if let Some(instructions) = agent_manager::custom_instructions::as_system_message(&storage) {
+        history.insert(0, instructions);
     }
 
     let summary = agent_manager::send_message(&storage, &summarizer, &history).map_err(|e| e.to_string())?;
@@ -1116,6 +1125,21 @@ pub fn list_agent_memories(storage: State<Storage>, agent_id: String) -> Result<
 #[tauri::command]
 pub fn delete_agent_memory(storage: State<Storage>, id: String) -> Result<(), String> {
     storage.delete_agent_memory(&id).map_err(|e| e.to_string())
+}
+
+// --- Global custom instructions (agent_manager::custom_instructions) —
+// one freeform block always included for every agent, the analogue of
+// Claude's own "Instructions for Claude". Distinct from the per-agent,
+// relevance-filtered memory above.
+
+#[tauri::command]
+pub fn get_custom_instructions(storage: State<Storage>) -> Result<Option<String>, String> {
+    storage.get_custom_instructions().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn set_custom_instructions(storage: State<Storage>, content: String) -> Result<(), String> {
+    storage.set_custom_instructions(&content).map_err(|e| e.to_string())
 }
 
 // --- MCP (Model Context Protocol) client — mirrors the Skills command

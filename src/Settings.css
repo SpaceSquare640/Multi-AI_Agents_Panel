@@ -18,6 +18,15 @@
   font-weight: 600;
 }
 
+.settings-instructions-textarea {
+  width: 100%;
+  font-family: var(--edex-font, monospace);
+  font-size: 0.85rem;
+  padding: 0.6rem;
+  resize: vertical;
+  margin: 0.4rem 0;
+}
+
 /* An angular segmented control (not the pill/rounded-capsule shape) —
    matches the 2px-radius button language established everywhere else
    in the eDEX-UI redesign; a fully-rounded toggle was the one leftover

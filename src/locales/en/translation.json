@@ -8,6 +8,15 @@
       "themeDark": "Dark",
       "themeLight": "Light"
     },
+    "customInstructions": {
+      "heading": "Custom Instructions",
+      "hint": "Always included as context for every agent on every message — a standing preference (e.g. tone, language, format), not something searched or filtered like an agent's own memory.",
+      "placeholder": "e.g. Always reply in Traditional Chinese. Keep answers terse.",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Saved.",
+      "unsaved": "Unsaved changes"
+    },
     "language": {
       "heading": "Language",
       "interfaceLanguage": "Interface language",
