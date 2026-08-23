@@ -2,6 +2,17 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.16.0-alpha] - 2026-08-23
+
+### Added
+
+- Add a synthetic example session for Track B's pipeline
+
+### Changes
+
+- Chore: update CHANGELOG.md for v0.15.0-alpha [skip ci]
+- Chore: bump version to 0.16.0-alpha
+
 ## [0.15.0-alpha] - 2026-08-23
 
 ### Added
