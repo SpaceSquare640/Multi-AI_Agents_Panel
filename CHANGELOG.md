@@ -2,6 +2,17 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.15.0-alpha] - 2026-08-23
+
+### Added
+
+- Add hardware-aware local model recommendations via llmfit
+
+### Changes
+
+- Chore: update CHANGELOG.md for v0.14.0-alpha [skip ci]
+- Chore: bump version to 0.15.0-alpha
+
 ## [0.14.0-alpha] - 2026-08-23
 
 ### Changes
