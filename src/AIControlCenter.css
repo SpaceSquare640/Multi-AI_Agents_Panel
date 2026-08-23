@@ -161,6 +161,21 @@ textarea:focus {
   list-style: none;
   padding: 0;
   margin: 0.75rem 0 0;
+  /* Cap to ~10 visible rows and scroll internally instead of pushing
+     the rest of the page (and its own other sections) down — a list
+     like the full OpenRouter catalog can run past a hundred rows. */
+  max-height: 22rem;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--edex-cyan-dim) transparent;
+}
+
+.acc-model-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.acc-model-list::-webkit-scrollbar-thumb {
+  background: var(--edex-cyan-dim);
 }
 
 .acc-model-list li {

@@ -269,22 +269,44 @@ export default function Chat() {
   useEffect(() => {
     if (!showNewAgent) return;
     const selectedTemplate = roleTemplates.find((t) => t.id === newAgentTemplateId);
-    invoke<CuratedModel[]>("list_curated_models", { provider: newAgentProvider })
-      .then((models) => {
-        setNewAgentModels(models);
-        const suggested = selectedTemplate?.suggestedModel;
-        const suggestedIsAvailable = suggested && models.some((m) => m.id === suggested);
-        setNewAgentModel(suggestedIsAvailable ? suggested : models[0]?.id ?? "");
-      })
-      .catch((e) => setError(String(e)));
     setNewAgentPinnedKeyId("");
+
+    function pickModels(models: CuratedModel[]) {
+      setNewAgentModels(models);
+      const suggested = selectedTemplate?.suggestedModel;
+      const suggestedIsAvailable = suggested && models.some((m) => m.id === suggested);
+      setNewAgentModel(suggestedIsAvailable ? suggested : models[0]?.id ?? "");
+    }
+
     if (isLocalProvider(newAgentProvider)) {
       setNewAgentProviderKeys([]);
-    } else {
-      invoke<ProviderKeyView[]>("list_provider_keys")
-        .then((keys) => setNewAgentProviderKeys(keys.filter((k) => k.provider === newAgentProvider)))
+      invoke<CuratedModel[]>("list_curated_models", { provider: newAgentProvider })
+        .then(pickModels)
         .catch((e) => setError(String(e)));
+      return;
     }
+
+    invoke<ProviderKeyView[]>("list_provider_keys")
+      .then((keys) => {
+        const providerKeys = keys.filter((k) => k.provider === newAgentProvider);
+        setNewAgentProviderKeys(providerKeys);
+        // Prefer models the user has actually configured a key/hint for
+        // over dumping the entire static/live catalog — a Group Chat with
+        // several free-tier OpenRouter keys shouldn't default an Agent to
+        // a flagship model none of those keys can actually afford (see
+        // E3001 "requires more credits" errors this was causing).
+        const hintedModelIds = Array.from(
+          new Set(providerKeys.map((k) => k.modelHint).filter((h): h is string => !!h)),
+        );
+        if (hintedModelIds.length > 0) {
+          pickModels(hintedModelIds.map((id) => ({ id, label: id })));
+          return;
+        }
+        invoke<CuratedModel[]>("list_curated_models", { provider: newAgentProvider })
+          .then(pickModels)
+          .catch((e) => setError(String(e)));
+      })
+      .catch((e) => setError(String(e)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showNewAgent, newAgentProvider]);
 
@@ -1211,9 +1233,7 @@ export default function Chat() {
                 </label>
               ))}
             </div>
-            <button type="submit" disabled={agents.length === 0}>
-              {t("chat.startMeeting")}
-            </button>
+            <button type="submit">{t("chat.startMeeting")}</button>
           </form>
         )}
 
@@ -1233,9 +1253,7 @@ export default function Chat() {
             value={newSessionTitle}
             onChange={(e) => setNewSessionTitle(e.target.value)}
           />
-          <button type="submit" disabled={agents.length === 0}>
-            {t("chat.start")}
-          </button>
+          <button type="submit">{t("chat.start")}</button>
         </form>
 
         <button
