@@ -1,0 +1,416 @@
+{
+  "settings": {
+    "appearance": {
+      "heading": "Apparence",
+      "theme": "Thème",
+      "themeHint": "Le mode sombre est l'esthétique par défaut ; le mode clair est également entièrement pris en charge.",
+      "themeSystem": "Système",
+      "themeDark": "Sombre",
+      "themeLight": "Clair"
+    },
+    "customInstructions": {
+      "heading": "Instructions personnalisées",
+      "hint": "Toujours incluses comme contexte pour chaque Agent, à chaque message — une préférence permanente (ton, langue, format…), et non un élément recherché ou filtré comme la mémoire propre d'un Agent.",
+      "placeholder": "ex. Répondre toujours en français. Garder les réponses concises.",
+      "save": "Enregistrer",
+      "saving": "Enregistrement…",
+      "saved": "Enregistré.",
+      "unsaved": "Modifications non enregistrées"
+    },
+    "language": {
+      "heading": "Langue",
+      "interfaceLanguage": "Langue de l'interface",
+      "hintBeforeLink": "Par défaut : anglais. Les traductions manquantes retombent sur l'anglais — voir",
+      "hintAfterLink": "pour aider à traduire.",
+      "contributingLink": "CONTRIBUTING",
+      "statusSelected": "sélectionné",
+      "statusComingSoon": "bientôt disponible"
+    },
+    "safety": {
+      "heading": "Sécurité",
+      "guardrails": "Garde-fous IA",
+      "guardrailsHint": "Les règles non négociables que chaque Agent suit toujours — affichées une fois au premier lancement.",
+      "viewSummaryAgain": "Revoir le résumé",
+      "llamaGuardTitle": "Contrôle de second passage Llama Guard 3 (avancé)",
+      "llamaGuardHint": "Désactivé par défaut — le contrôle par mots-clés ci-dessus s'exécute toujours, quoi qu'il arrive. Pour ajouter un véritable classificateur local en plus, installez Ollama, récupérez un modèle Llama Guard 3 (ex. `ollama pull llama-guard3:1b`), puis définissez la variable d'environnement LLAMA_GUARD_MODEL avec le nom de ce modèle (ex. `llama-guard3:1b`) avant de démarrer cette application, et redémarrez. Si le modèle devient injoignable ensuite, ce contrôle échoue de façon permissive (ignoré, non bloquant) plutôt que de bloquer chaque message."
+    },
+    "about": {
+      "heading": "À propos",
+      "version": "Version",
+      "userManual": "Manuel utilisateur",
+      "open": "Ouvrir →",
+      "checkForUpdates": "Vérifier les mises à jour",
+      "checking": "Vérification…",
+      "upToDate": "Vous utilisez la dernière version.",
+      "updateAvailable": "Une nouvelle version ({{version}}) est disponible.",
+      "viewRelease": "Voir la version →",
+      "checkFailed": "Impossible de vérifier les mises à jour : {{error}}"
+    }
+  },
+  "skills": {
+    "title": "Compétences",
+    "refresh": "Actualiser",
+    "refreshing": "Actualisation…",
+    "hint": "L'accès aux compétences est accordé par Agent — ouvrez la session d'un Agent dans Discussion pour lui accorder ou révoquer une compétence. Cette page montre simplement ce qui est actuellement utilisé par tous les Agents.",
+    "noneDiscovered": "Aucune compétence détectée.",
+    "noPermissions": "Aucune permission demandée",
+    "sourceCustom": "Personnalisée",
+    "sourceBuiltin": "Intégrée",
+    "usedByNone": "Non utilisée par aucun Agent",
+    "usedByCount_one": "Utilisée par {{count}} Agent",
+    "usedByCount_other": "Utilisée par {{count}} Agents"
+  },
+  "usage": {
+    "title": "Utilisation",
+    "refresh": "Actualiser",
+    "refreshing": "Actualisation…",
+    "totalCalls": "Appels totaux",
+    "failedCalls": "Appels échoués",
+    "failureRate": "Taux d'échec",
+    "estimatedCost": "Coût estimé",
+    "estimatedCostHint": "OpenRouter uniquement, appels à coût connu",
+    "softBudget": "Budget d'appels indicatif",
+    "unset": "non défini",
+    "softBudgetHint": "appels — un simple rappel local, ne bloque rien",
+    "budgetWarning": "⚠ Vous avez atteint votre budget indicatif de {{cap}} appels ({{total}} jusqu'ici). Ceci n'est qu'un rappel — les Agents cloud continuent de fonctionner.",
+    "costHint": "Le coût estimé n'est pas encore affiché — cette application n'enregistre pas aujourd'hui le nombre de tokens ni la tarification par modèle, il n'y a donc rien de réel à partir de quoi le calculer. Voir la répartition par clé ci-dessous (également sur la page Centre de contrôle IA) pour les décomptes bruts de succès/échec.",
+    "noneRecorded": "Aucune utilisation enregistrée pour le moment.",
+    "callsByProvider": "Appels par fournisseur",
+    "systemStatus": "État du système",
+    "agentsLocal": "Agents locaux",
+    "agentsCloud": "Agents cloud",
+    "sessionsIndependent": "Sessions",
+    "sessionsGroup": "Discussions de groupe",
+    "providersActive": "Fournisseurs utilisés"
+  },
+  "onboarding": {
+    "title": "Avant votre premier Agent",
+    "lead": "Chaque Agent de cette application — local ou cloud, quel que soit le modèle de rôle qui lui est attribué — suit un ensemble fixe de règles qui ne peuvent être désactivées, remplacées par un modèle de rôle, ni contournées par aucune instruction, y compris les vôtres.",
+    "confirmLabel": "J'ai lu ce résumé et je comprends que ces règles s'appliquent toujours.",
+    "continue": "Continuer →",
+    "categories": [
+      {
+        "title": "Sécurité et confidentialité",
+        "points": [
+          "Aucune lecture ni téléversement de vos fichiers sans votre autorisation explicite.",
+          "Les actions destructrices ou irréversibles (suppression de fichiers, push forcé, effacement de données) nécessitent toujours votre confirmation préalable.",
+          "Les clés API, mots de passe et jetons ne sont jamais journalisés en clair ni envoyés ailleurs que là où vous l'avez spécifié."
+        ]
+      },
+      {
+        "title": "Légal et sécurité — absolu, sans exception",
+        "points": [
+          "Aucune aide pour des cyberattaques, des armes, l'automutilation, ou pour attaquer autrui.",
+          "Aucun contenu sexuel impliquant des représentations réelles ou fictives.",
+          "Ces règles ne s'assouplissent pas pour le jeu de rôle, « ce n'est qu'un test », ou le contexte d'une discussion de groupe."
+        ]
+      },
+      {
+        "title": "Comportement et collaboration",
+        "points": [
+          "Les discussions de groupe ne peuvent pas boucler ou spammer indéfiniment — il existe une limite de tours et un mécanisme de fin/résumé.",
+          "Les décisions majeures (changements d'architecture, déploiements, argent) reviennent toujours vers vous, même en plein flux de travail multi-Agents.",
+          "Un Agent ne peut pas se faire passer pour un autre Agent, pour vous, ou pour un véritable tiers."
+        ]
+      },
+      {
+        "title": "Qualité de sortie",
+        "points": [
+          "Les affirmations incertaines sont indiquées comme telles, et non présentées comme des faits.",
+          "Les modifications de code restent traçables dans le contrôle de version — pas d'écrasement silencieux."
+        ]
+      }
+    ]
+  },
+  "manual": {
+    "searchPlaceholder": "Rechercher dans le manuel…",
+    "noMatch": "Aucun article ne correspond à « {{query}} ».",
+    "minRead": "{{minutes}} min de lecture",
+    "categoryLabels": {
+      "gettingStarted": "Prise en main",
+      "agents": "Agents",
+      "safety": "Sécurité"
+    },
+    "articles": [
+      {
+        "id": "independent-vs-group",
+        "title": "Sessions indépendantes vs Discussion de groupe",
+        "category": "gettingStarted",
+        "minutes": 2,
+        "paragraphs": [
+          "Une session indépendante correspond à un Agent, une conversation — comme une fenêtre de discussion classique. Utilisez-la lorsque vous avez simplement besoin qu'un modèle travaille sur une seule tâche.",
+          "Une discussion de groupe réunit plusieurs Agents qui discutent dans la même session, sur une seule chronologie, en prenant la parole à tour de rôle selon l'ordre dans lequel ils ont rejoint. Vous pouvez taper @NomDeLAgent pour laisser un Agent spécifique intervenir hors tour sans perturber l'ordre de passage.",
+          "Les discussions de groupe disposent d'un filet de sécurité anti-boucle : après plusieurs tours d'Agents consécutifs sans nouveau message de votre part, la conversation se met en pause afin que vous gardiez toujours le contrôle. « Les laisser continuer » avance manuellement d'un tour supplémentaire ; « Terminer la réunion » demande à un Agent résumeur de conclure la discussion."
+        ]
+      },
+      {
+        "id": "local-vs-cloud",
+        "title": "Configurer un modèle local (Ollama)",
+        "category": "gettingStarted",
+        "minutes": 3,
+        "paragraphs": [
+          "Les Agents locaux s'exécutent entièrement sur votre propre appareil via Ollama — rien de ce que vous leur envoyez ne quitte votre machine, et il n'y a aucun coût par appel.",
+          "Installez d'abord Ollama lui-même (cette application ne l'inclut pas). Une fois qu'il fonctionne, la section « Modèles IA locaux (Ollama) » du Centre de contrôle IA affiche ce qui est installé et vous permet de récupérer de nouveaux modèles par leur nom — sans terminal.",
+          "Lors de la création d'un Agent, choisissez « local » comme type de fournisseur et sélectionnez un modèle installé. Les modèles plus volumineux nécessitent plus de RAM/VRAM ; si un modèle est trop volumineux pour votre matériel, il s'exécutera simplement très lentement ou échouera à se charger.",
+          "« colibri » est une seconde option de fournisseur local, pour colibrì (github.com/JustVugg/colibri) — un moteur d'inférence distinct, sans dépendances, pour de très grands modèles MoE qui diffusent leurs poids entre VRAM/RAM/disque. Le même principe qu'Ollama s'applique : installez-le et exécutez-le vous-même (démarrez-le avec `coli serve`), et cette application communique avec lui via localhost — rien n'est inclus, rien n'est envoyé hors de votre machine."
+        ]
+      },
+      {
+        "id": "cloud-api-keys",
+        "title": "Ajouter une clé API cloud",
+        "category": "gettingStarted",
+        "minutes": 2,
+        "paragraphs": [
+          "Les Agents cloud appellent un fournisseur — Anthropic, OpenAI ou OpenRouter — en utilisant une clé API que vous fournissez vous-même. Cette application ne fournit jamais ses propres clés partagées et ne vous facture jamais directement.",
+          "Ajoutez une clé dans la section « Modèles IA cloud » du Centre de contrôle IA. Les clés sont stockées localement via le magasin d'identifiants de votre système d'exploitation, et ne sont jamais envoyées ailleurs qu'au fournisseur que vous appelez.",
+          "Vous pouvez ajouter plusieurs clés par fournisseur et éventuellement épingler un Agent spécifique à une clé spécifique. Sans épinglage, la clé ajoutée le plus récemment pour ce fournisseur est essayée en premier, avec repli sur les clés plus anciennes si un appel échoue."
+        ]
+      },
+      {
+        "id": "role-templates",
+        "title": "Utiliser les modèles de rôle",
+        "category": "agents",
+        "minutes": 2,
+        "paragraphs": [
+          "Un modèle de rôle est une invite système préécrite qui confère à un Agent un métier précis — Responsable produit, Architecte principal, Développeur full-stack, et d'autres modelés sur une petite entreprise unipersonnelle.",
+          "Les modèles par défaut sont fournis avec l'application et se réinitialisent à la dernière version à chaque mise à jour — ne les modifiez pas directement. Pour en personnaliser un, dupliquez-le d'abord dans « Personnalisés utilisateur » ; tout ce qui s'y trouve vous appartient définitivement et survit aux mises à jour de l'application.",
+          "Chaque modèle peut suggérer un type de fournisseur (par ex. « Développeur full-stack » suggère le cloud, « Gestionnaire de tickets » suggère le local) — ce n'est qu'une suggestion par défaut lors de la création d'un Agent, jamais une exigence stricte."
+        ]
+      },
+      {
+        "id": "guardrails",
+        "title": "Que sont les garde-fous",
+        "category": "safety",
+        "minutes": 2,
+        "paragraphs": [
+          "Les garde-fous sont un ensemble fixe de règles que chaque Agent suit — local ou cloud, quel que soit le modèle de rôle utilisé. Ils ne peuvent pas être désactivés, remplacés par un modèle de rôle, ni contournés par aucune instruction, y compris les vôtres.",
+          "Ils couvrent notamment : ne jamais lire vos fichiers sans autorisation explicite, toujours confirmer avant une action irréversible, refuser d'aider à des attaques ou des activités illégales, et ne pas boucler indéfiniment dans une discussion de groupe.",
+          "Vous en avez vu un résumé au premier lancement (Paramètres → Sécurité → « Revoir le résumé » si vous souhaitez le relire). Si un Agent refuse une partie d'une demande, c'est en raison de l'une de ces règles — il vous indiquera laquelle."
+        ]
+      }
+    ]
+  },
+  "chat": {
+    "independentSessions": "Sessions indépendantes",
+    "noSessions": "Aucune session pour le moment.",
+    "groupChats": "Discussions de groupe",
+    "noGroupChats": "Aucune discussion de groupe pour le moment.",
+    "cancel": "Annuler",
+    "newGroupChat": "+ Nouvelle discussion de groupe",
+    "meetingTitlePlaceholder": "Titre de la réunion (facultatif)",
+    "noAgentsYet": "Aucun Agent pour le moment.",
+    "startMeeting": "Démarrer la réunion",
+    "newSession": "Nouvelle session",
+    "noAgentsYetOption": "Aucun Agent pour le moment",
+    "sessionTitlePlaceholder": "Titre de la session (facultatif)",
+    "start": "Démarrer",
+    "newAgent": "+ Nouvel Agent",
+    "noRoleTemplate": "Aucun modèle de rôle (rédigez votre propre invite)",
+    "custom": "(personnalisé)",
+    "agentNamePlaceholder": "Nom de l'Agent",
+    "applySuggestedProvider": "Appliquer le fournisseur suggéré ({{provider}})",
+    "systemPromptPlaceholder": "Invite système (facultatif — rempli automatiquement par un modèle de rôle)",
+    "useLatestKeyDefault": "Utiliser automatiquement la dernière clé {{provider}} (par défaut)",
+    "pinTo": "Épingler à : {{label}}",
+    "fallbackLabel": "Repli (essayés dans l'ordre, uniquement si le fournisseur principal échoue) :",
+    "noneConfigured": "aucun configuré",
+    "removeFallbackStep": "Supprimer l'étape de repli {{step}}",
+    "remove": "Supprimer",
+    "modelIdPlaceholder": "ID du modèle",
+    "addFallback": "+ Ajouter un repli",
+    "createAgent": "Créer l'Agent",
+    "customRoleTemplates": "Modèles de rôle personnalisés",
+    "edit": "Modifier",
+    "export": "Exporter",
+    "delete": "Supprimer",
+    "noCustomTemplates": "Aucun modèle personnalisé pour le moment.",
+    "newRoleTemplate": "+ Nouveau modèle de rôle",
+    "importTemplate": "+ Importer un modèle…",
+    "templateNamePlaceholder": "Nom du modèle",
+    "shortDescriptionPlaceholder": "Description courte",
+    "systemPromptPlainPlaceholder": "Invite système",
+    "saveChanges": "Enregistrer les modifications",
+    "saveTemplate": "Enregistrer le modèle",
+    "copyErrorDetails": "Copier les détails de l'erreur",
+    "dismissError": "Fermer l'erreur",
+    "closeTab": "Fermer l'onglet {{title}}",
+    "closeTabTitle": "Fermer l'onglet",
+    "pickOrStartSession": "Choisissez ou démarrez une session à gauche. Vous pouvez en ouvrir plusieurs à la fois — chacune continue de discuter indépendamment, même en arrière-plan.",
+    "chattingWith": "En discussion avec",
+    "files": "Fichiers :",
+    "noFoldersGranted": "aucun dossier accordé",
+    "revokeAccessToFolder": "Révoquer l'accès au dossier {{folderPath}}",
+    "revokeAccess": "Révoquer l'accès",
+    "grantFolder": "+ Accorder un dossier…",
+    "skills": "Compétences :",
+    "noneGranted": "aucune accordée",
+    "revokeAccessToSkill": "Révoquer l'accès à la compétence {{skillName}}",
+    "grantASkill": "Accorder une compétence…",
+    "grant": "+ Accorder",
+    "importingSkill": "Importation…",
+    "importCustomSkill": "+ Importer une compétence personnalisée…",
+    "skillImportWarning": "⚠ Importer une compétence exécute son code Python avec le même niveau de confiance qu'une compétence intégrée. Elle est liée aux permissions déclarées dans son skill.json (voir les badges ci-dessus) — une capacité de système de fichiers/réseau non déclarée est réellement bloquée, pas seulement signalée — mais n'importez des compétences que depuis des sources en qui vous avez confiance.",
+    "letAgentCallSkills": "Laisser cet Agent décider seul quand appeler une compétence accordée (Anthropic uniquement)",
+    "memories": "Mémoire (entre sessions)",
+    "noMemoriesYet": "aucun souvenir pour le moment",
+    "rememberSomethingPlaceholder": "ex. l'utilisateur préfère des réponses concises",
+    "remember": "+ Mémoriser",
+    "forgetThis": "Oublier ceci",
+    "forgetMemory": "Oublier le souvenir : {{content}}",
+    "runASkill": "Exécuter une compétence…",
+    "jsonPayloadPlaceholder": "Charge utile JSON, ex. {\"action\":\"search\",\"indexName\":\"notes\",\"query\":\"...\"}",
+    "running": "Exécution…",
+    "run": "Exécuter",
+    "mcpServers": "Serveurs MCP :",
+    "revokeAccessToMcpServer": "Révoquer l'accès au serveur MCP {{serverName}}",
+    "grantAnMcpServer": "Accorder un serveur MCP…",
+    "runAnMcpTool": "Exécuter un outil sur…",
+    "loadingTools": "Chargement des outils…",
+    "selectTool": "Sélectionner un outil…",
+    "semanticSearchLabel": "Recherche sémantique :",
+    "notGranted": "non accordé",
+    "revokeAccessToCapability": "Révoquer l'accès à {{capabilityName}}",
+    "grantMlCapability": "Accorder une capacité ML…",
+    "indexing": "Indexation…",
+    "rebuildIndex": "Reconstruire l'index",
+    "rebuildIndexTitle": "Réanalyser les dossiers accordés et reconstruire l'index de recherche",
+    "searchFilesPlaceholder": "Rechercher les fichiers accordés par sens…",
+    "searching": "Recherche…",
+    "search": "Rechercher",
+    "noResults": "Aucun résultat.",
+    "groupChatLabel": "Discussion de groupe : {{members}}",
+    "noMembers": "(aucun membre)",
+    "letThemContinue": "Les laisser continuer →",
+    "autoContinueTitle": "Nombre de tours à exécuter avant de s'arrêter",
+    "continueTurns": "Continuer {{turns}} tours →→",
+    "continueTurnsTitle": "Exécute jusqu'à ce nombre de tours d'affilée — la limite de boucle E6001 du backend (6 tours sans votre intervention) s'applique toujours et arrête plus tôt si atteinte",
+    "endMeeting": "Terminer la réunion (résumer)",
+    "boundaryConfirmTitle": "E6004 — Confirmer avant l'envoi à un fournisseur cloud :",
+    "boundaryConfirmBody": "la réponse d'un Agent local dans cette discussion de groupe serait envoyée à un Agent cloud. Aperçu du contenu local :",
+    "sendToCloud": "Envoyer au fournisseur cloud",
+    "filesSharedWithMeeting": "Fichiers (partagés avec cette réunion) :",
+    "noMessagesYet": "Aucun message pour le moment — dites bonjour.",
+    "messagePlaceholderGroup": "Tapez un message… (utilisez @NomDeLAgent pour interpeller quelqu'un en particulier)",
+    "messagePlaceholderIndependent": "Tapez un message… (utilisez @file:C:\\chemin\\vers\\fichier.txt pour joindre un fichier accordé)",
+    "sending": "Envoi…",
+    "send": "Envoyer",
+    "defaultSessionTitle": "Discussion avec {{agentName}}",
+    "defaultAgentName": "agent",
+    "defaultGroupChatTitle": "Discussion de groupe",
+    "createAnAgentFirst": "Créez d'abord un Agent.",
+    "pickAtLeastOneAgent": "Choisissez au moins un Agent pour la discussion de groupe.",
+    "skillPayloadMustBeJson": "La charge utile de la compétence doit être un JSON valide."
+  },
+  "acc": {
+    "title": "Centre de contrôle IA",
+    "dismissError": "Fermer l'erreur",
+    "apiKeys": {
+      "heading": "Clés API",
+      "addOne": "En ajouter une",
+      "apiKeyPlaceholder": "Clé API",
+      "labelOptionalPlaceholder": "Libellé (facultatif)",
+      "modelHintOptionalPlaceholder": "Indice de modèle (facultatif)",
+      "add": "Ajouter",
+      "addInBulk": "Ajouter en masse",
+      "bulkHintBeforeCode": "Une clé par ligne : ",
+      "bulkHintAfterCode": " — le libellé et l'indice de modèle sont facultatifs.",
+      "bulkNoValidLines": "Aucune ligne valide trouvée. Format : provider,secret[,label[,modelHint]] — une par ligne.",
+      "importAll": "Tout importer",
+      "importFromFilesHint": "Sélectionnez plusieurs fichiers : le nom de chaque fichier devient le libellé, son contenu complet (nettoyé) devient la clé. Tous les fichiers utilisent le même fournisseur.",
+      "importFromFiles": "Importer depuis des fichiers",
+      "chooseFiles": "Choisir des fichiers…",
+      "importing": "Importation…",
+      "tableProvider": "Fournisseur",
+      "tableLabel": "Libellé",
+      "tableModelHint": "Indice de modèle",
+      "tableKey": "Clé",
+      "tableLastUsed": "Dernière utilisation",
+      "noKeysYet": "Aucune clé API pour le moment.",
+      "never": "jamais",
+      "delete": "Supprimer"
+    },
+    "cloudModels": {
+      "heading": "Modèles IA cloud",
+      "searchPlaceholder": "Rechercher tous les modèles OpenRouter…",
+      "refreshing": "Actualisation…",
+      "refreshFromOpenRouter": "Actualiser depuis OpenRouter",
+      "liveCatalogUnavailable": "⚠ Impossible d'accéder au catalogue en direct d'OpenRouter — affichage de la liste par défaut intégrée à la place. Les prix et disponibilités affichés ici peuvent ne pas être à jour ; vérifiez votre connexion réseau.",
+      "pricing": " (${{promptPrice}} en entrée / ${{completionPrice}} en sortie par million de tokens)"
+    },
+    "localModels": {
+      "heading": "Modèles IA locaux (Ollama)",
+      "statusLabel": "Statut :",
+      "statusChecking": "vérification…",
+      "statusRunning": "en cours d'exécution",
+      "statusNotRunning": "arrêté",
+      "refresh": "Actualiser",
+      "storageHintSummary": "Où les modèles d'Ollama sont-ils stockés ?",
+      "storageHintIntro": "Ollama est un programme distinct que cette application ne contrôle ni n'installe — il est simplement appelé via {{endpoint}}. Cette application ne déplace ni ne gère elle-même les fichiers de modèles d'Ollama.",
+      "storageHintEnvSet": "Le processus de cette application voit OLLAMA_MODELS={{path}}. Cela peut correspondre ou non à ce qu'utilise réellement le service Ollama, s'il a été démarré depuis un environnement différent.",
+      "storageHintEnvUnset": "Aucune substitution OLLAMA_MODELS n'est visible par cette application (Ollama utilise probablement son emplacement par défaut). Pour changer où Ollama stocke ses modèles, définissez vous-même la variable d'environnement OLLAMA_MODELS et redémarrez le service Ollama :",
+      "storageHintWindows": "Windows (PowerShell, en tant qu'utilisateur) : {{command}}, puis redémarrez Ollama",
+      "storageHintUnix": "macOS/Linux : ajoutez {{command}} à votre profil shell, puis redémarrez Ollama",
+      "installedHeading": "Installés",
+      "tableModel": "Modèle",
+      "tableSize": "Taille",
+      "noModelsInstalled": "Aucun modèle installé pour le moment.",
+      "remove": "Supprimer",
+      "availableHeading": "Disponibles à l'installation",
+      "install": "Installer",
+      "installing": "Installation…",
+      "hardwareFitHeading": "Quel modèle convient à mon matériel ?",
+      "hardwareFitHint": "Détecte la RAM/CPU/GPU de cette machine et évalue chaque modèle de la base de données intégrée de llmfit en conséquence — une réponse réelle fondée sur votre matériel, pas une supposition.",
+      "hardwareFitButton": "Vérifier mon matériel",
+      "hardwareFitLoading": "Détection du matériel…",
+      "hardwareFitLevel": "Adéquation",
+      "hardwareFitScore": "Score",
+      "hardwareFitSpeed": "Vitesse estimée",
+      "hardwareFitQuant": "Meilleure quantification"
+    },
+    "usage": {
+      "heading": "Utilisation",
+      "tableProvider": "Fournisseur",
+      "tableLabel": "Libellé",
+      "tableSuccess": "Succès",
+      "tableFailure": "Échec",
+      "tableLastUsed": "Dernière utilisation",
+      "noUsageYet": "Aucune utilisation enregistrée pour le moment.",
+      "never": "jamais"
+    },
+    "mcp": {
+      "heading": "Serveurs MCP",
+      "hint": "Les serveurs MCP (Model Context Protocol) s'exécutent comme des sous-processus locaux, avec le même niveau de confiance qu'une compétence — sans isolement (sandboxing). N'ajoutez que des serveurs en qui vous avez confiance. Accordez à un Agent spécifique l'accès à un serveur depuis le panneau de cet Agent dans Discussion.",
+      "namePlaceholder": "Nom (ex. Filesystem)",
+      "commandPlaceholder": "Commande (ex. npx)",
+      "argsPlaceholder": "Arguments, séparés par des espaces (ex. -y @modelcontextprotocol/server-filesystem /chemin)",
+      "add": "Ajouter un serveur",
+      "tableName": "Nom",
+      "tableCommand": "Commande",
+      "noneYet": "Aucun serveur MCP ajouté pour le moment.",
+      "delete": "Supprimer"
+    },
+    "gameAgent": {
+      "heading": "Agent joueur de jeux vidéo (expérimental)",
+      "warning": "⚠ Le démarrer fait en sorte que l'application prenne de véritables captures d'écran et simule de véritables entrées souris/clavier sur cet ordinateur, en boucle, jusqu'à ce que vous cliquiez sur Arrêter. Il ne démarre que lorsque vous cliquez sur « Démarrer » ci-dessous — rien ne le déclenche automatiquement. Nécessite un modèle capable de vision déjà récupéré dans Ollama (ex. llava).",
+      "modelPlaceholder": "Modèle de vision Ollama (ex. llava)",
+      "statusLabel": "Statut :",
+      "statusRunning": "en cours d'exécution",
+      "statusStopped": "arrêté",
+      "stop": "Arrêter",
+      "starting": "Démarrage…",
+      "start": "Démarrer"
+    },
+    "recording": {
+      "heading": "RL profond : Enregistrer une démonstration (expérimental)",
+      "hint": "Piste B (voir le document de conception de l'Agent joueur de jeux vidéo) — seule l'étape « enregistrement » du pipeline existe pour l'instant. Cela capture des captures d'écran et vos entrées souris/clavier dans un dossier pour un entraînement ultérieur ; cela n'automatise rien en soi. Nécessite Python avec game_agent_rl/requirements.txt installé.",
+      "sessionNamePlaceholder": "Nom de la session",
+      "outputDirectoryPlaceholder": "Répertoire de sortie",
+      "statusLabel": "Statut :",
+      "statusRecording": "enregistrement",
+      "statusStopped": "arrêté",
+      "stop": "Arrêter",
+      "starting": "Démarrage…",
+      "startRecording": "Démarrer l'enregistrement"
+    }
+  }
+}

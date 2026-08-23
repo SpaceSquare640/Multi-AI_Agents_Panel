@@ -1,0 +1,416 @@
+{
+  "settings": {
+    "appearance": {
+      "heading": "外観",
+      "theme": "テーマ",
+      "themeHint": "デフォルトはダークテーマですが、ライトテーマも完全にサポートしています。",
+      "themeSystem": "システム",
+      "themeDark": "ダーク",
+      "themeLight": "ライト"
+    },
+    "customInstructions": {
+      "heading": "カスタム指示",
+      "hint": "すべてのメッセージで、すべての Agent の常時コンテキストとして含まれます——トーンや言語、形式などの常設の好み設定であり、Agent 自身の記憶のように検索・フィルタリングされるものではありません。",
+      "placeholder": "例：常に日本語で返信してください。回答は簡潔にしてください。",
+      "save": "保存",
+      "saving": "保存中…",
+      "saved": "保存しました。",
+      "unsaved": "未保存の変更があります"
+    },
+    "language": {
+      "heading": "言語",
+      "interfaceLanguage": "インターフェース言語",
+      "hintBeforeLink": "デフォルト：英語。未翻訳の項目は英語にフォールバックします——翻訳にご協力いただける方は",
+      "hintAfterLink": "をご覧ください。",
+      "contributingLink": "CONTRIBUTING",
+      "statusSelected": "選択中",
+      "statusComingSoon": "近日対応予定"
+    },
+    "safety": {
+      "heading": "安全性",
+      "guardrails": "AI ガードレール",
+      "guardrailsHint": "すべての Agent が常に従う、交渉不可能なルール——初回起動時に一度概要が表示されます。",
+      "viewSummaryAgain": "概要をもう一度見る",
+      "llamaGuardTitle": "Llama Guard 3 セカンドパス審査（上級者向け）",
+      "llamaGuardHint": "デフォルトでオフです——上記のキーワードベースの審査は常に実行されます。その上にローカルの実分類器を追加するには、Ollama をインストールし、Llama Guard 3 モデルを取得（例：`ollama pull llama-guard3:1b`）した上で、このアプリを起動する前に環境変数 LLAMA_GUARD_MODEL をそのモデル名（例：`llama-guard3:1b`）に設定して再起動してください。その後モデルに接続できなくなった場合、このチェックはフェイルオープン（ブロックせずスキップ）となり、すべてのメッセージをブロックすることはありません。"
+    },
+    "about": {
+      "heading": "アプリについて",
+      "version": "バージョン",
+      "userManual": "ユーザーマニュアル",
+      "open": "開く →",
+      "checkForUpdates": "更新を確認",
+      "checking": "確認中…",
+      "upToDate": "最新版を使用しています。",
+      "updateAvailable": "新しいバージョン（{{version}}）が利用可能です。",
+      "viewRelease": "リリースを見る →",
+      "checkFailed": "更新を確認できませんでした：{{error}}"
+    }
+  },
+  "skills": {
+    "title": "スキル",
+    "refresh": "更新",
+    "refreshing": "更新中…",
+    "hint": "スキルへのアクセスは Agent ごとに付与されます——「チャット」で Agent のセッションを開き、そのスキルを付与または取り消してください。このページでは、すべての Agent で現在使用中のスキルを表示しているだけです。",
+    "noneDiscovered": "スキルが見つかりませんでした。",
+    "noPermissions": "権限は要求されていません",
+    "sourceCustom": "カスタム",
+    "sourceBuiltin": "組み込み",
+    "usedByNone": "どの Agent にも使用されていません",
+    "usedByCount_one": "{{count}} 個の Agent が使用中",
+    "usedByCount_other": "{{count}} 個の Agent が使用中"
+  },
+  "usage": {
+    "title": "使用状況",
+    "refresh": "更新",
+    "refreshing": "更新中…",
+    "totalCalls": "合計呼び出し数",
+    "failedCalls": "失敗数",
+    "failureRate": "失敗率",
+    "estimatedCost": "推定コスト",
+    "estimatedCostHint": "OpenRouter のみ、コストが判明している呼び出し",
+    "softBudget": "ソフト呼び出し予算",
+    "unset": "未設定",
+    "softBudgetHint": "回の呼び出し——ローカルの目安表示のみで、何かをブロックすることはありません",
+    "budgetWarning": "⚠ ソフト予算の上限 {{cap}} 回に達しました（現在 {{total}} 回）。これは目安の表示のみです——クラウド Agent は引き続き動作します。",
+    "costHint": "推定コストはまだ表示されていません——このアプリは現在、トークン数やモデルごとの価格を記録していないため、算出する実データがありません。下記（AI コントロールセンターのページにも表示）のキー別の生の成功／失敗数をご確認ください。",
+    "noneRecorded": "まだ使用記録がありません。",
+    "callsByProvider": "プロバイダー別呼び出し数",
+    "systemStatus": "システムステータス",
+    "agentsLocal": "ローカル Agent",
+    "agentsCloud": "クラウド Agent",
+    "sessionsIndependent": "セッション",
+    "sessionsGroup": "グループチャット",
+    "providersActive": "使用中のプロバイダー"
+  },
+  "onboarding": {
+    "title": "最初の Agent を作成する前に",
+    "lead": "このアプリのすべての Agent は——ローカルでもクラウドでも、どのロールテンプレートを使用していても——オフにしたり、ロールテンプレートで上書きしたり、あなたの指示を含むいかなる指示によっても回避できない、固定のルールセットに従います。",
+    "confirmLabel": "この概要を読み、これらのルールが常に適用されることを理解しました。",
+    "continue": "続ける →",
+    "categories": [
+      {
+        "title": "セキュリティとプライバシー",
+        "points": [
+          "あなたの明示的な許可なく、ファイルを読み取ったりアップロードしたりすることはありません。",
+          "破壊的または不可逆的な操作（ファイル削除、強制プッシュ、データ消去）は、常に事前の確認が必要です。",
+          "API キー、パスワード、トークンは、平文でログに記録されたり、指定していない場所に送信されたりすることはありません。"
+        ]
+      },
+      {
+        "title": "法律と安全——絶対的なルール、例外なし",
+        "points": [
+          "サイバー攻撃、武器、自傷行為、他者への攻撃に協力することはありません。",
+          "実在または架空の人物を描写する性的コンテンツは提供しません。",
+          "これらはロールプレイや「テストだから」、グループチャットの文脈であっても緩和されません。"
+        ]
+      },
+      {
+        "title": "行動と協働",
+        "points": [
+          "グループチャットは無限にループしたりスパムしたりしません——ターン数の上限と終了／要約の仕組みがあります。",
+          "重要な決定（アーキテクチャの変更、デプロイ、金銭関連）は、複数 Agent によるワークフローの途中であっても、常にあなたに戻されます。",
+          "Agent は他の Agent、あなた、または実在する第三者になりすますことはできません。"
+        ]
+      },
+      {
+        "title": "出力品質",
+        "points": [
+          "不確実な主張は事実として述べるのではなく、不確実であると明記されます。",
+          "コードの変更はバージョン管理で追跡可能な状態を保ちます——無断上書きはしません。"
+        ]
+      }
+    ]
+  },
+  "manual": {
+    "searchPlaceholder": "マニュアルを検索…",
+    "noMatch": "「{{query}}」に一致する記事はありません。",
+    "minRead": "読了時間 約 {{minutes}} 分",
+    "categoryLabels": {
+      "gettingStarted": "はじめに",
+      "agents": "Agent",
+      "safety": "安全性"
+    },
+    "articles": [
+      {
+        "id": "independent-vs-group",
+        "title": "独立セッション vs グループチャット",
+        "category": "gettingStarted",
+        "minutes": 2,
+        "paragraphs": [
+          "独立セッションは、1 つの Agent と 1 つの会話——通常のチャットウィンドウのようなものです。1 つのモデルに 1 つのタスクを任せたいだけのときに使用します。",
+          "グループチャットでは、複数の Agent が同一セッション、同一タイムライン内で会話し、参加した順にラウンドロビン方式で発言します。@AgentName と入力すると、次の発言順を乱すことなく特定の Agent を割り込ませることができます。",
+          "グループチャットにはループ防止のセーフティネットがあります：あなたから新しいメッセージがないまま連続して複数の Agent のターンが続くと、会話は一時停止し、常にあなたが主導権を保てるようになっています。「続行させる」で手動であと 1 ターン進め、「会議を終了」で要約担当の Agent に議論をまとめさせます。"
+        ]
+      },
+      {
+        "id": "local-vs-cloud",
+        "title": "ローカルモデルの設定（Ollama）",
+        "category": "gettingStarted",
+        "minutes": 3,
+        "paragraphs": [
+          "ローカル Agent はすべて Ollama を通じてあなた自身のデバイス上で完全に動作します——送信した内容がマシンの外に出ることはなく、呼び出しごとの料金も発生しません。",
+          "まず Ollama 自体をインストールしてください（このアプリには同梱されていません）。起動後は、AI コントロールセンターの「ローカル AI モデル（Ollama）」セクションでインストール済みモデルを確認したり、名前を指定して新しいモデルを取得したりできます——ターミナルは不要です。",
+          "Agent 作成時に、プロバイダー種別として「ローカル」を選び、インストール済みモデルを選択してください。大きいモデルほど多くの RAM/VRAM が必要です。ハードウェアに対してモデルが大きすぎる場合、単に非常に遅く動作するか、読み込みに失敗します。",
+          "「colibri」は colibrì（github.com/JustVugg/colibri）向けの、もう一つのローカルプロバイダーの選択肢です——VRAM/RAM/ディスクをまたいで重みをストリーミングする非常に大きな MoE モデル向けの、独立した依存関係なしの推論エンジンです。考え方は Ollama と同じで、自分でインストールして実行し（`coli serve` で起動）、このアプリは localhost 経由でそれと通信します——何も同梱されておらず、マシンの外に何も送信されません。"
+        ]
+      },
+      {
+        "id": "cloud-api-keys",
+        "title": "クラウド API キーの追加",
+        "category": "gettingStarted",
+        "minutes": 2,
+        "paragraphs": [
+          "クラウド Agent は、あなた自身が提供する API キーを使って、Anthropic、OpenAI、OpenRouter のいずれかのプロバイダーを呼び出します。このアプリは独自の共有キーを提供したり、直接あなたに課金したりすることは一切ありません。",
+          "AI コントロールセンターの「クラウド AI モデル」セクションでキーを追加してください。キーは OS の資格情報ストアを通じてローカルに保存され、呼び出し先のプロバイダー以外に送信されることはありません。",
+          "プロバイダーごとに複数のキーを追加でき、任意で特定の Agent を特定のキーに固定することもできます。固定していない場合、そのプロバイダーで最後に追加されたキーが最初に試され、呼び出しが失敗すると古いキーにフォールバックします。"
+        ]
+      },
+      {
+        "id": "role-templates",
+        "title": "ロールテンプレートの使い方",
+        "category": "agents",
+        "minutes": 2,
+        "paragraphs": [
+          "ロールテンプレートは、Agent に特定の役割を与える、あらかじめ用意されたシステムプロンプトです——プロダクトリード、リードアーキテクト、フルスタック開発者など、小さな一人企業をモデルにした役割があります。",
+          "デフォルトのテンプレートはアプリに同梱されており、更新のたびに最新版にリセットされます——直接編集しないでください。カスタマイズするには、まず「ユーザーカスタム」に複製してください。「ユーザーカスタム」内のものは永続的にあなたのものであり、アプリの更新後も維持されます。",
+          "各テンプレートはプロバイダー種別を提案できます（例：「フルスタック開発者」はクラウドを、「課題管理者」はローカルを提案）——これは Agent 作成時のデフォルトの提案にすぎず、厳密な要件ではありません。"
+        ]
+      },
+      {
+        "id": "guardrails",
+        "title": "ガードレールとは",
+        "category": "safety",
+        "minutes": 2,
+        "paragraphs": [
+          "ガードレールは、すべての Agent が従う固定のルールセットです——ローカルでもクラウドでも、どのロールテンプレートを使用していても関係ありません。オフにしたり、ロールテンプレートで上書きしたり、あなたの指示を含むいかなる指示によっても回避したりすることはできません。",
+          "内容には次のようなものが含まれます：明示的な許可なくあなたのファイルを読み取らない、不可逆的な操作の前には常に確認する、攻撃や違法行為への協力を拒否する、グループチャットで無限にループしない、など。",
+          "これらの概要は初回起動時に一度表示されています（もう一度読みたい場合は「設定 → 安全性 →「概要をもう一度見る」）。Agent がリクエストの一部を拒否した場合、これらのルールのいずれかが理由です——どのルールかを Agent が伝えます。"
+        ]
+      }
+    ]
+  },
+  "chat": {
+    "independentSessions": "独立セッション",
+    "noSessions": "まだセッションがありません。",
+    "groupChats": "グループチャット",
+    "noGroupChats": "まだグループチャットがありません。",
+    "cancel": "キャンセル",
+    "newGroupChat": "+ 新しいグループチャット",
+    "meetingTitlePlaceholder": "会議タイトル（任意）",
+    "noAgentsYet": "まだ Agent がいません。",
+    "startMeeting": "会議を開始",
+    "newSession": "新しいセッション",
+    "noAgentsYetOption": "まだ Agent がいません",
+    "sessionTitlePlaceholder": "セッションタイトル（任意）",
+    "start": "開始",
+    "newAgent": "+ 新しい Agent",
+    "noRoleTemplate": "ロールテンプレートなし（自分でプロンプトを書く）",
+    "custom": "（カスタム）",
+    "agentNamePlaceholder": "Agent 名",
+    "applySuggestedProvider": "推奨プロバイダー（{{provider}}）を適用",
+    "systemPromptPlaceholder": "システムプロンプト（任意——ロールテンプレートを使用すると自動入力されます）",
+    "useLatestKeyDefault": "最新の {{provider}} キーを自動使用（デフォルト）",
+    "pinTo": "固定先：{{label}}",
+    "fallbackLabel": "フォールバック（順番に試行、プライマリプロバイダーが失敗した場合のみ）：",
+    "noneConfigured": "未設定",
+    "removeFallbackStep": "フォールバックステップ {{step}} を削除",
+    "remove": "削除",
+    "modelIdPlaceholder": "モデル ID",
+    "addFallback": "+ フォールバックを追加",
+    "createAgent": "Agent を作成",
+    "customRoleTemplates": "カスタムロールテンプレート",
+    "edit": "編集",
+    "export": "エクスポート",
+    "delete": "削除",
+    "noCustomTemplates": "まだカスタムテンプレートがありません。",
+    "newRoleTemplate": "+ 新しいロールテンプレート",
+    "importTemplate": "+ テンプレートをインポート…",
+    "templateNamePlaceholder": "テンプレート名",
+    "shortDescriptionPlaceholder": "簡単な説明",
+    "systemPromptPlainPlaceholder": "システムプロンプト",
+    "saveChanges": "変更を保存",
+    "saveTemplate": "テンプレートを保存",
+    "copyErrorDetails": "エラー詳細をコピー",
+    "dismissError": "エラーを閉じる",
+    "closeTab": "タブ {{title}} を閉じる",
+    "closeTabTitle": "タブを閉じる",
+    "pickOrStartSession": "左側でセッションを選択するか、新しく開始してください。複数を同時に開くことができ、それぞれがバックグラウンドでも独立してチャットを続けます。",
+    "chattingWith": "チャット相手",
+    "files": "ファイル：",
+    "noFoldersGranted": "付与されたフォルダーはありません",
+    "revokeAccessToFolder": "フォルダー {{folderPath}} へのアクセスを取り消す",
+    "revokeAccess": "アクセスを取り消す",
+    "grantFolder": "+ フォルダーを付与…",
+    "skills": "スキル：",
+    "noneGranted": "付与されていません",
+    "revokeAccessToSkill": "スキル {{skillName}} へのアクセスを取り消す",
+    "grantASkill": "スキルを付与…",
+    "grant": "+ 付与",
+    "importingSkill": "インポート中…",
+    "importCustomSkill": "+ カスタムスキルをインポート…",
+    "skillImportWarning": "⚠ スキルをインポートすると、組み込みスキルと同じ信頼レベルでその Python コードが実行されます。skill.json で宣言された権限（上記のバッジを参照）に拘束されます——宣言されていないファイルシステム／ネットワーク機能は、単なる警告ではなく実際にブロックされます——ただし、信頼できるソースからのみスキルをインポートしてください。",
+    "letAgentCallSkills": "付与されたスキルをいつ呼び出すかをこの Agent が自ら判断できるようにする（Anthropic のみ）",
+    "memories": "記憶（セッションをまたいで）",
+    "noMemoriesYet": "まだ記憶がありません",
+    "rememberSomethingPlaceholder": "例：ユーザーは簡潔な返信を好む",
+    "remember": "+ 記憶する",
+    "forgetThis": "これを忘れる",
+    "forgetMemory": "記憶を忘れる：{{content}}",
+    "runASkill": "スキルを実行…",
+    "jsonPayloadPlaceholder": "JSON ペイロード、例：{\"action\":\"search\",\"indexName\":\"notes\",\"query\":\"...\"}",
+    "running": "実行中…",
+    "run": "実行",
+    "mcpServers": "MCP サーバー：",
+    "revokeAccessToMcpServer": "MCP サーバー {{serverName}} へのアクセスを取り消す",
+    "grantAnMcpServer": "MCP サーバーを付与…",
+    "runAnMcpTool": "ツールを実行…",
+    "loadingTools": "ツールを読み込み中…",
+    "selectTool": "ツールを選択…",
+    "semanticSearchLabel": "セマンティック検索：",
+    "notGranted": "付与されていません",
+    "revokeAccessToCapability": "{{capabilityName}} へのアクセスを取り消す",
+    "grantMlCapability": "ML 機能を付与…",
+    "indexing": "インデックス作成中…",
+    "rebuildIndex": "インデックスを再構築",
+    "rebuildIndexTitle": "付与されたフォルダーを再スキャンし、検索インデックスを再構築する",
+    "searchFilesPlaceholder": "付与されたファイルを意味で検索…",
+    "searching": "検索中…",
+    "search": "検索",
+    "noResults": "結果がありません。",
+    "groupChatLabel": "グループチャット：{{members}}",
+    "noMembers": "（メンバーなし）",
+    "letThemContinue": "続行させる →",
+    "autoContinueTitle": "停止するまでに実行するターン数",
+    "continueTurns": "{{turns}} ターン継続 →→",
+    "continueTurnsTitle": "連続で実行する最大ターン数——バックエンドの E6001 ループ上限（あなたが関与しないまま 6 ターン）が引き続き適用され、到達すると早期に停止します",
+    "endMeeting": "会議を終了（要約）",
+    "boundaryConfirmTitle": "E6004 — クラウドプロバイダーへ送信する前に確認：",
+    "boundaryConfirmBody": "このグループチャットにおけるローカル Agent の返信がクラウド Agent に送信されます。ローカルコンテンツのプレビュー：",
+    "sendToCloud": "クラウドプロバイダーへ送信",
+    "filesSharedWithMeeting": "ファイル（この会議と共有）：",
+    "noMessagesYet": "まだメッセージがありません——挨拶してみましょう。",
+    "messagePlaceholderGroup": "メッセージを入力……（@AgentName で特定の相手を呼び出せます）",
+    "messagePlaceholderIndependent": "メッセージを入力……（@file:C:\\path\\to\\file.txt で付与済みのファイルを添付できます）",
+    "sending": "送信中…",
+    "send": "送信",
+    "defaultSessionTitle": "{{agentName}} とのチャット",
+    "defaultAgentName": "agent",
+    "defaultGroupChatTitle": "グループチャット",
+    "createAnAgentFirst": "まず Agent を作成してください。",
+    "pickAtLeastOneAgent": "グループチャットには少なくとも 1 つの Agent を選んでください。",
+    "skillPayloadMustBeJson": "スキルのペイロードは有効な JSON である必要があります。"
+  },
+  "acc": {
+    "title": "AI コントロールセンター",
+    "dismissError": "エラーを閉じる",
+    "apiKeys": {
+      "heading": "API キー",
+      "addOne": "1 件追加",
+      "apiKeyPlaceholder": "API キー",
+      "labelOptionalPlaceholder": "ラベル（任意）",
+      "modelHintOptionalPlaceholder": "モデルヒント（任意）",
+      "add": "追加",
+      "addInBulk": "一括追加",
+      "bulkHintBeforeCode": "1 行につき 1 つのキー：",
+      "bulkHintAfterCode": " ——ラベルとモデルヒントは任意です。",
+      "bulkNoValidLines": "有効な行が見つかりません。形式：provider,secret[,label[,modelHint]]——1 行につき 1 件。",
+      "importAll": "すべてインポート",
+      "importFromFiles": "ファイルからインポート",
+      "importFromFilesHint": "複数ファイルを選択：各ファイル名がラベルに、内容（トリム済み）がキーになります。すべてのファイルで同じプロバイダーを使用します。",
+      "chooseFiles": "ファイルを選択…",
+      "importing": "インポート中…",
+      "tableProvider": "プロバイダー",
+      "tableLabel": "ラベル",
+      "tableModelHint": "モデルヒント",
+      "tableKey": "キー",
+      "tableLastUsed": "最終使用",
+      "noKeysYet": "まだ API キーがありません。",
+      "never": "未使用",
+      "delete": "削除"
+    },
+    "cloudModels": {
+      "heading": "クラウド AI モデル",
+      "searchPlaceholder": "すべての OpenRouter モデルを検索…",
+      "refreshing": "更新中…",
+      "refreshFromOpenRouter": "OpenRouter から更新",
+      "liveCatalogUnavailable": "⚠ OpenRouter のライブカタログに接続できませんでした——代わりに組み込みのデフォルトリストを表示しています。ここに表示されている価格や在庫は最新でない可能性があります。ネットワーク接続をご確認ください。",
+      "pricing": "（100 万トークンあたり 入力 ${{promptPrice}} / 出力 ${{completionPrice}}）"
+    },
+    "localModels": {
+      "heading": "ローカル AI モデル（Ollama）",
+      "statusLabel": "ステータス：",
+      "statusChecking": "確認中…",
+      "statusRunning": "実行中",
+      "statusNotRunning": "停止中",
+      "refresh": "更新",
+      "storageHintSummary": "Ollama のモデルはどこに保存されていますか？",
+      "storageHintIntro": "Ollama はこのアプリが制御もインストールもしない別のプログラムです——{{endpoint}} 経由でのみ呼び出されます。このアプリ自体は Ollama のモデルファイルを移動したり管理したりしません。",
+      "storageHintEnvSet": "このアプリのプロセスからは OLLAMA_MODELS={{path}} が見えています。実際の Ollama サービスが別の環境から起動された場合、これは実際に使用されているものと一致しない可能性があります。",
+      "storageHintEnvUnset": "このアプリからは OLLAMA_MODELS のオーバーライドが確認できません（Ollama はおそらくデフォルトの場所を使用しています）。Ollama のモデル保存先を変更するには、自分で OLLAMA_MODELS 環境変数を設定し、Ollama サービスを再起動してください：",
+      "storageHintWindows": "Windows（PowerShell、あなたのユーザーとして）：{{command}}、その後 Ollama を再起動",
+      "storageHintUnix": "macOS/Linux：シェルプロファイルに {{command}} を追加し、その後 Ollama を再起動",
+      "installedHeading": "インストール済み",
+      "tableModel": "モデル",
+      "tableSize": "サイズ",
+      "noModelsInstalled": "まだモデルがインストールされていません。",
+      "remove": "削除",
+      "availableHeading": "インストール可能",
+      "install": "インストール",
+      "installing": "インストール中…",
+      "hardwareFitHeading": "私のハードウェアに合うモデルは？",
+      "hardwareFitHint": "このマシンの RAM/CPU/GPU を検出し、llmfit の内蔵データベース内のすべてのモデルをそれに照らしてスコアリングします——推測ではなく、あなたのハードウェアに基づいた実際の答えです。",
+      "hardwareFitButton": "ハードウェアを確認",
+      "hardwareFitLoading": "ハードウェアを検出中…",
+      "hardwareFitLevel": "適合度",
+      "hardwareFitScore": "スコア",
+      "hardwareFitSpeed": "推定速度",
+      "hardwareFitQuant": "最適な量子化"
+    },
+    "usage": {
+      "heading": "使用状況",
+      "tableProvider": "プロバイダー",
+      "tableLabel": "ラベル",
+      "tableSuccess": "成功",
+      "tableFailure": "失敗",
+      "tableLastUsed": "最終使用",
+      "noUsageYet": "まだ使用記録がありません。",
+      "never": "未使用"
+    },
+    "mcp": {
+      "heading": "MCP サーバー",
+      "hint": "MCP（Model Context Protocol）サーバーはローカルのサブプロセスとして実行され、信頼レベルはスキルと同じです——サンドボックス化はされません。信頼できるサーバーのみを追加してください。「チャット」のその Agent のパネルから、特定の Agent に特定のサーバーへのアクセスを付与できます。",
+      "namePlaceholder": "名前（例：Filesystem）",
+      "commandPlaceholder": "コマンド（例：npx）",
+      "argsPlaceholder": "引数（スペース区切り、例：-y @modelcontextprotocol/server-filesystem /path）",
+      "add": "サーバーを追加",
+      "tableName": "名前",
+      "tableCommand": "コマンド",
+      "noneYet": "まだ MCP サーバーが追加されていません。",
+      "delete": "削除"
+    },
+    "gameAgent": {
+      "heading": "ゲームプレイ Agent（実験的）",
+      "warning": "⚠ これを開始すると、このアプリはこのコンピューター上で「停止」をクリックするまでループで実際のスクリーンショットを撮影し、実際のマウス／キーボード入力をシミュレートします。下の「開始」をクリックしたときにのみ開始します——自動的にトリガーされることはありません。Ollama で視覚対応モデル（例：llava）を取得済みである必要があります。",
+      "modelPlaceholder": "Ollama ビジョンモデル（例：llava）",
+      "statusLabel": "ステータス：",
+      "statusRunning": "実行中",
+      "statusStopped": "停止中",
+      "stop": "停止",
+      "starting": "開始中…",
+      "start": "開始"
+    },
+    "recording": {
+      "heading": "深層強化学習：デモンストレーションの記録（実験的）",
+      "hint": "トラック B（ゲームプレイ Agent 設計ドキュメント参照）——今のところ「記録」パイプラインステージのみが存在します。これはスクリーンショットとあなたのマウス／キーボード入力を後のトレーニング用にフォルダーへキャプチャします。それ自体は何も自動化しません。game_agent_rl/requirements.txt がインストールされた Python が必要です。",
+      "sessionNamePlaceholder": "セッション名",
+      "outputDirectoryPlaceholder": "出力ディレクトリ",
+      "statusLabel": "ステータス：",
+      "statusRecording": "記録中",
+      "statusStopped": "停止中",
+      "stop": "停止",
+      "starting": "開始中…",
+      "startRecording": "記録を開始"
+    }
+  }
+}

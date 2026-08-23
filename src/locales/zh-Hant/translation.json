@@ -1,0 +1,416 @@
+{
+  "settings": {
+    "appearance": {
+      "heading": "外觀",
+      "theme": "主題",
+      "themeHint": "預設為深色風格；淺色模式也完整支援。",
+      "themeSystem": "系統",
+      "themeDark": "深色",
+      "themeLight": "淺色"
+    },
+    "customInstructions": {
+      "heading": "自訂指示",
+      "hint": "每則訊息都會作為每個 Agent 的固定上下文——是一個常駐偏好設定（例如語氣、語言、格式），不像 Agent 自身的記憶會被搜尋或篩選。",
+      "placeholder": "例如：一律以繁體中文回覆，回答保持精簡。",
+      "save": "儲存",
+      "saving": "儲存中…",
+      "saved": "已儲存。",
+      "unsaved": "有未儲存的變更"
+    },
+    "language": {
+      "heading": "語言",
+      "interfaceLanguage": "介面語言",
+      "hintBeforeLink": "預設：英文。缺少的翻譯會回退為英文——請參閱",
+      "hintAfterLink": "以協助翻譯。",
+      "contributingLink": "CONTRIBUTING",
+      "statusSelected": "已選擇",
+      "statusComingSoon": "即將推出"
+    },
+    "safety": {
+      "heading": "安全",
+      "guardrails": "AI 防護機制",
+      "guardrailsHint": "每個 Agent 一律遵守、不可協商的規則——首次啟動時會顯示一次摘要。",
+      "viewSummaryAgain": "再次查看摘要",
+      "llamaGuardTitle": "Llama Guard 3 二次審查（進階）",
+      "llamaGuardHint": "預設關閉——上方以關鍵字為基礎的審查一律會執行。若要加上真正的本地分類器，請安裝 Ollama，拉取一個 Llama Guard 3 模型（例如 `ollama pull llama-guard3:1b`），然後在啟動本應用程式前將 LLAMA_GUARD_MODEL 環境變數設為該模型名稱（例如 `llama-guard3:1b`）並重新啟動。若之後無法連線到該模型，此檢查會直接放行（略過，而非阻擋），不會封鎖每一則訊息。"
+    },
+    "about": {
+      "heading": "關於",
+      "version": "版本",
+      "userManual": "使用手冊",
+      "open": "開啟 →",
+      "checkForUpdates": "檢查更新",
+      "checking": "檢查中…",
+      "upToDate": "您已使用最新版本。",
+      "updateAvailable": "有新版本（{{version}}）可用。",
+      "viewRelease": "查看發行版本 →",
+      "checkFailed": "無法檢查更新：{{error}}"
+    }
+  },
+  "skills": {
+    "title": "技能",
+    "refresh": "重新整理",
+    "refreshing": "重新整理中…",
+    "hint": "技能存取權限是以每個 Agent 為單位授予——請在「對話」中開啟某個 Agent 的工作階段以授予或撤銷該技能。此頁面僅顯示目前所有 Agent 使用中的技能。",
+    "noneDiscovered": "未發現任何技能。",
+    "noPermissions": "未要求任何權限",
+    "sourceCustom": "自訂",
+    "sourceBuiltin": "內建",
+    "usedByNone": "未被任何 Agent 使用",
+    "usedByCount_one": "被 {{count}} 個 Agent 使用",
+    "usedByCount_other": "被 {{count}} 個 Agent 使用"
+  },
+  "usage": {
+    "title": "使用量",
+    "refresh": "重新整理",
+    "refreshing": "重新整理中…",
+    "totalCalls": "總呼叫次數",
+    "failedCalls": "失敗次數",
+    "failureRate": "失敗率",
+    "estimatedCost": "預估費用",
+    "estimatedCostHint": "僅限 OpenRouter，已知費用的呼叫",
+    "softBudget": "軟性呼叫預算",
+    "unset": "未設定",
+    "softBudgetHint": "次呼叫——僅作為本機提醒，不會封鎖任何動作",
+    "budgetWarning": "⚠ 已達到軟性預算上限 {{cap}} 次呼叫（目前已 {{total}} 次）。這僅是提醒——雲端 Agent 仍會繼續運作。",
+    "costHint": "目前尚未顯示預估費用——本應用程式目前不記錄權杖數量或各模型定價，因此沒有實際資料可供計算。請參閱下方（也在 AI 控制中心頁面）依金鑰劃分的原始成功／失敗次數。",
+    "noneRecorded": "尚未記錄任何使用量。",
+    "callsByProvider": "各供應商呼叫次數",
+    "systemStatus": "系統狀態",
+    "agentsLocal": "本地 Agent",
+    "agentsCloud": "雲端 Agent",
+    "sessionsIndependent": "工作階段",
+    "sessionsGroup": "群組對話",
+    "providersActive": "已使用的供應商"
+  },
+  "onboarding": {
+    "title": "在建立第一個 Agent 之前",
+    "lead": "本應用程式中的每個 Agent——無論本地或雲端、套用何種角色範本——都遵循一組固定規則，這些規則無法關閉、無法被角色範本覆寫，也無法被任何指令（包括您的指令）繞過。",
+    "confirmLabel": "我已閱讀本摘要，並理解這些規則永遠適用。",
+    "continue": "繼續 →",
+    "categories": [
+      {
+        "title": "安全與隱私",
+        "points": [
+          "未經您明確授權，不會讀取或上傳您的檔案。",
+          "破壞性或不可逆的動作（刪除檔案、強制推送、清除資料）一律需要您事先確認。",
+          "API 金鑰、密碼與權杖絕不會以明文記錄，也不會傳送到您未指定的任何地方。"
+        ]
+      },
+      {
+        "title": "法律與安全——絕對規則，無例外",
+        "points": [
+          "不協助網路攻擊、武器、自我傷害，或攻擊他人。",
+          "不提供涉及真實或虛構人物的性相關內容。",
+          "這些規則不會因為角色扮演、「只是測試」或群組對話情境而放寬。"
+        ]
+      },
+      {
+        "title": "行為與協作",
+        "points": [
+          "群組對話不會無限循環或洗版——設有回合上限與結束／摘要機制。",
+          "重大決策（架構變更、部署、金錢相關）即使在多 Agent 工作流程進行中，也一律會交由您決定。",
+          "Agent 不得冒充其他 Agent、您本人，或真實的第三方。"
+        ]
+      },
+      {
+        "title": "輸出品質",
+        "points": [
+          "不確定的說法會被標示為不確定，而非當作事實陳述。",
+          "程式碼變更會保留在版本控制中可追蹤——不會靜默覆寫。"
+        ]
+      }
+    ]
+  },
+  "manual": {
+    "searchPlaceholder": "搜尋手冊…",
+    "noMatch": "沒有符合「{{query}}」的文章。",
+    "minRead": "閱讀約 {{minutes}} 分鐘",
+    "categoryLabels": {
+      "gettingStarted": "入門指南",
+      "agents": "Agent",
+      "safety": "安全"
+    },
+    "articles": [
+      {
+        "id": "independent-vs-group",
+        "title": "獨立工作階段 vs 群組對話",
+        "category": "gettingStarted",
+        "minutes": 2,
+        "paragraphs": [
+          "獨立工作階段是一個 Agent、一段對話——就像一般聊天視窗。當您只需要一個模型處理一項任務時使用它。",
+          "群組對話則是多個 Agent 在同一個工作階段、同一條時間軸中對話，依加入順序輪流發言。您可以輸入 @AgentName 讓特定 Agent 插話，而不打亂原本的輪流順序。",
+          "群組對話設有循環安全機制：連續多個 Agent 回合、您都沒有發出新訊息時，對話會暫停，確保您始終掌控全局。「讓他們繼續」會手動再進行一回合；「結束會議」會請一個摘要 Agent 為討論做總結。"
+        ]
+      },
+      {
+        "id": "local-vs-cloud",
+        "title": "設定本地模型（Ollama）",
+        "category": "gettingStarted",
+        "minutes": 3,
+        "paragraphs": [
+          "本地 Agent 完全在您自己的裝置上透過 Ollama 執行——您傳送給它們的內容不會離開您的機器，也沒有每次呼叫的費用。",
+          "請先自行安裝 Ollama（本應用程式未內建）。安裝並執行後，AI 控制中心的「本地 AI 模型（Ollama）」區塊會顯示已安裝的模型，並可讓您以名稱拉取新模型——無需開啟終端機。",
+          "建立 Agent 時，將其供應商類型選為「本地」並選擇已安裝的模型。較大的模型需要更多 RAM/VRAM；若模型對您的硬體來說過大，只會執行得非常緩慢或載入失敗。",
+          "「colibri」是另一種本地供應商選項，對應 colibrì（github.com/JustVugg/colibri）——一個獨立、無額外相依套件的推論引擎，適用於能跨 VRAM/RAM/磁碟串流權重的超大型 MoE 模型。概念與 Ollama 相同：請自行安裝並執行（以 `coli serve` 啟動），本應用程式會透過 localhost 與其溝通——不內建任何東西，也不會傳出您的機器。"
+        ]
+      },
+      {
+        "id": "cloud-api-keys",
+        "title": "新增雲端 API 金鑰",
+        "category": "gettingStarted",
+        "minutes": 2,
+        "paragraphs": [
+          "雲端 Agent 會呼叫某個供應商——Anthropic、OpenAI 或 OpenRouter——使用您自行提供的 API 金鑰。本應用程式絕不提供自己的共用金鑰，也不會直接向您收費。",
+          "請在 AI 控制中心的「雲端 AI 模型」區塊新增金鑰。金鑰會透過您作業系統的憑證存放區保存在本機，除了您所呼叫的供應商外，不會傳送到任何地方。",
+          "每個供應商可新增多個金鑰，也可選擇將特定 Agent 固定到特定金鑰。若未固定，會優先嘗試該供應商最近新增的金鑰，若呼叫失敗則回退使用較舊的金鑰。"
+        ]
+      },
+      {
+        "id": "role-templates",
+        "title": "使用角色範本",
+        "category": "agents",
+        "minutes": 2,
+        "paragraphs": [
+          "角色範本是預先撰寫的系統提示詞，賦予 Agent 特定職責——例如產品負責人、首席架構師、全端開發者等，以小型一人公司的角色設定為藍本。",
+          "預設範本隨應用程式提供，每次更新都會重設為最新版本——請勿直接編輯它們。若要自訂，請先複製到「使用者自訂」；「使用者自訂」中的內容永久屬於您，並且不受應用程式更新影響。",
+          "每個範本可建議一種供應商類型（例如「全端開發者」建議雲端，「議題管理者」建議本地）——這僅是建立 Agent 時的預設建議，並非硬性規定。"
+        ]
+      },
+      {
+        "id": "guardrails",
+        "title": "什麼是防護機制",
+        "category": "safety",
+        "minutes": 2,
+        "paragraphs": [
+          "防護機制是每個 Agent 都遵循的一組固定規則——無論本地或雲端、使用何種角色範本。這些規則無法關閉、無法被角色範本覆寫，也無法被任何指令（包括您的指令）繞過。",
+          "涵蓋內容包括：未經明確授權絕不讀取您的檔案、不可逆動作前一律先確認、拒絕協助攻擊或非法活動，以及不會在群組對話中無限循環。",
+          "您在首次啟動時已看過這些規則的摘要（若想重新閱讀，可至「設定 → 安全 → 再次查看摘要」）。若 Agent 拒絕部分請求，是因為觸犯了這些規則之一——它會告訴您是哪一條。"
+        ]
+      }
+    ]
+  },
+  "chat": {
+    "independentSessions": "獨立工作階段",
+    "noSessions": "尚無工作階段。",
+    "groupChats": "群組對話",
+    "noGroupChats": "尚無群組對話。",
+    "cancel": "取消",
+    "newGroupChat": "+ 新增群組對話",
+    "meetingTitlePlaceholder": "會議標題（選填）",
+    "noAgentsYet": "尚無 Agent。",
+    "startMeeting": "開始會議",
+    "newSession": "新增工作階段",
+    "noAgentsYetOption": "尚無 Agent",
+    "sessionTitlePlaceholder": "工作階段標題（選填）",
+    "start": "開始",
+    "newAgent": "+ 新增 Agent",
+    "noRoleTemplate": "無角色範本（自行撰寫提示詞）",
+    "custom": "（自訂）",
+    "agentNamePlaceholder": "Agent 名稱",
+    "applySuggestedProvider": "套用建議的供應商（{{provider}}）",
+    "systemPromptPlaceholder": "系統提示詞（選填——若使用角色範本會自動填入）",
+    "useLatestKeyDefault": "自動使用最新的 {{provider}} 金鑰（預設）",
+    "pinTo": "固定至：{{label}}",
+    "fallbackLabel": "備援（依序嘗試，僅在主要供應商失敗時）：",
+    "noneConfigured": "尚未設定",
+    "removeFallbackStep": "移除備援步驟 {{step}}",
+    "remove": "移除",
+    "modelIdPlaceholder": "模型 ID",
+    "addFallback": "+ 新增備援",
+    "createAgent": "建立 Agent",
+    "customRoleTemplates": "自訂角色範本",
+    "edit": "編輯",
+    "export": "匯出",
+    "delete": "刪除",
+    "noCustomTemplates": "尚無自訂範本。",
+    "newRoleTemplate": "+ 新增角色範本",
+    "importTemplate": "+ 匯入範本…",
+    "templateNamePlaceholder": "範本名稱",
+    "shortDescriptionPlaceholder": "簡短說明",
+    "systemPromptPlainPlaceholder": "系統提示詞",
+    "saveChanges": "儲存變更",
+    "saveTemplate": "儲存範本",
+    "copyErrorDetails": "複製錯誤詳情",
+    "dismissError": "關閉錯誤",
+    "closeTab": "關閉分頁 {{title}}",
+    "closeTabTitle": "關閉分頁",
+    "pickOrStartSession": "在左側選擇或開始一個工作階段。您可以同時開啟多個——每個都會獨立繼續對話，即使在背景中也一樣。",
+    "chattingWith": "正在與……對話",
+    "files": "檔案：",
+    "noFoldersGranted": "尚未授予任何資料夾",
+    "revokeAccessToFolder": "撤銷資料夾 {{folderPath}} 的存取權限",
+    "revokeAccess": "撤銷存取權限",
+    "grantFolder": "+ 授予資料夾…",
+    "skills": "技能：",
+    "noneGranted": "尚未授予",
+    "revokeAccessToSkill": "撤銷技能 {{skillName}} 的存取權限",
+    "grantASkill": "授予技能…",
+    "grant": "+ 授予",
+    "importingSkill": "匯入中…",
+    "importCustomSkill": "+ 匯入自訂技能…",
+    "skillImportWarning": "⚠ 匯入技能會以與內建技能相同的信任等級執行其 Python 程式碼。其行為受 skill.json 中宣告的權限約束（見上方徽章）——未宣告的檔案系統／網路能力會被真正封鎖，而不僅是警告——但請僅從您信任的來源匯入技能。",
+    "letAgentCallSkills": "允許此 Agent 自行決定何時呼叫已授予的技能（僅限 Anthropic）",
+    "memories": "記憶（跨工作階段）",
+    "noMemoriesYet": "尚無記憶",
+    "rememberSomethingPlaceholder": "例如：使用者偏好簡潔的回覆",
+    "remember": "+ 記住",
+    "forgetThis": "忘記此項",
+    "forgetMemory": "忘記記憶：{{content}}",
+    "runASkill": "執行技能…",
+    "jsonPayloadPlaceholder": "JSON 內容，例如 {\"action\":\"search\",\"indexName\":\"notes\",\"query\":\"...\"}",
+    "running": "執行中…",
+    "run": "執行",
+    "mcpServers": "MCP 伺服器：",
+    "revokeAccessToMcpServer": "撤銷 MCP 伺服器 {{serverName}} 的存取權限",
+    "grantAnMcpServer": "授予 MCP 伺服器…",
+    "runAnMcpTool": "在……執行工具",
+    "loadingTools": "載入工具中…",
+    "selectTool": "選擇工具…",
+    "semanticSearchLabel": "語意搜尋：",
+    "notGranted": "尚未授予",
+    "revokeAccessToCapability": "撤銷 {{capabilityName}} 的存取權限",
+    "grantMlCapability": "授予 ML 能力…",
+    "indexing": "建立索引中…",
+    "rebuildIndex": "重建索引",
+    "rebuildIndexTitle": "重新掃描已授予的資料夾並重建搜尋索引",
+    "searchFilesPlaceholder": "依語意搜尋已授予的檔案…",
+    "searching": "搜尋中…",
+    "search": "搜尋",
+    "noResults": "沒有結果。",
+    "groupChatLabel": "群組對話：{{members}}",
+    "noMembers": "（無成員）",
+    "letThemContinue": "讓他們繼續 →",
+    "autoContinueTitle": "停止前要執行的回合數",
+    "continueTurns": "繼續 {{turns}} 回合 →→",
+    "continueTurnsTitle": "最多連續執行這麼多回合——後端的 E6001 循環上限（連續 6 回合未經您參與）仍會生效並提前停止",
+    "endMeeting": "結束會議（總結）",
+    "boundaryConfirmTitle": "E6004 — 傳送給雲端供應商前請確認：",
+    "boundaryConfirmBody": "此群組對話中某本地 Agent 的回覆將傳送給雲端 Agent。本地內容預覽：",
+    "sendToCloud": "傳送給雲端供應商",
+    "filesSharedWithMeeting": "檔案（與此會議共用）：",
+    "noMessagesYet": "尚無訊息——打聲招呼吧。",
+    "messagePlaceholderGroup": "輸入訊息……（使用 @AgentName 呼叫特定對象）",
+    "messagePlaceholderIndependent": "輸入訊息……（使用 @file:C:\\path\\to\\file.txt 附加已授予的檔案）",
+    "sending": "傳送中…",
+    "send": "傳送",
+    "defaultSessionTitle": "與 {{agentName}} 對話",
+    "defaultAgentName": "agent",
+    "defaultGroupChatTitle": "群組對話",
+    "createAnAgentFirst": "請先建立一個 Agent。",
+    "pickAtLeastOneAgent": "請為群組對話至少選擇一個 Agent。",
+    "skillPayloadMustBeJson": "技能內容必須是有效的 JSON。"
+  },
+  "acc": {
+    "title": "AI 控制中心",
+    "dismissError": "關閉錯誤",
+    "apiKeys": {
+      "heading": "API 金鑰",
+      "addOne": "新增一個",
+      "apiKeyPlaceholder": "API 金鑰",
+      "labelOptionalPlaceholder": "標籤（選填）",
+      "modelHintOptionalPlaceholder": "模型提示（選填）",
+      "add": "新增",
+      "addInBulk": "批次新增",
+      "bulkHintBeforeCode": "每行一個金鑰：",
+      "bulkHintAfterCode": " ——標籤與模型提示為選填。",
+      "bulkNoValidLines": "找不到有效的行。格式為：provider,secret[,label[,modelHint]]——每行一筆。",
+      "importAll": "全部匯入",
+      "importFromFiles": "從檔案匯入",
+      "importFromFilesHint": "選擇多個檔案：檔名將作為標籤，其內容（去除前後空白）將作為金鑰。所有檔案使用相同供應商。",
+      "chooseFiles": "選擇檔案…",
+      "importing": "匯入中…",
+      "tableProvider": "供應商",
+      "tableLabel": "標籤",
+      "tableModelHint": "模型提示",
+      "tableKey": "金鑰",
+      "tableLastUsed": "上次使用",
+      "noKeysYet": "尚無 API 金鑰。",
+      "never": "從未",
+      "delete": "刪除"
+    },
+    "cloudModels": {
+      "heading": "雲端 AI 模型",
+      "searchPlaceholder": "搜尋所有 OpenRouter 模型…",
+      "refreshing": "重新整理中…",
+      "refreshFromOpenRouter": "從 OpenRouter 重新整理",
+      "liveCatalogUnavailable": "⚠ 無法連線至 OpenRouter 的即時目錄——改為顯示內建的預設清單。此處顯示的價格與可用性可能非最新，請檢查您的網路連線。",
+      "pricing": "（每百萬 token 輸入 ${{promptPrice}} / 輸出 ${{completionPrice}}）"
+    },
+    "localModels": {
+      "heading": "本地 AI 模型（Ollama）",
+      "statusLabel": "狀態：",
+      "statusChecking": "檢查中…",
+      "statusRunning": "執行中",
+      "statusNotRunning": "未執行",
+      "refresh": "重新整理",
+      "storageHintSummary": "Ollama 的模型儲存在哪裡？",
+      "storageHintIntro": "Ollama 是本應用程式不控制也不安裝的獨立程式——僅透過 {{endpoint}} 呼叫。本應用程式本身不會移動或管理 Ollama 的模型檔案。",
+      "storageHintEnvSet": "本應用程式的程序可看到 OLLAMA_MODELS={{path}}。若實際的 Ollama 服務是從不同環境啟動，此值可能與其實際使用的不一致。",
+      "storageHintEnvUnset": "本應用程式未偵測到 OLLAMA_MODELS 覆寫（Ollama 很可能使用其預設位置）。若要變更 Ollama 儲存模型的位置，請自行設定 OLLAMA_MODELS 環境變數並重新啟動 Ollama 服務：",
+      "storageHintWindows": "Windows（PowerShell，以您的使用者身分）：{{command}}，然後重新啟動 Ollama",
+      "storageHintUnix": "macOS/Linux：將 {{command}} 加入您的 shell 設定檔，然後重新啟動 Ollama",
+      "installedHeading": "已安裝",
+      "tableModel": "模型",
+      "tableSize": "大小",
+      "noModelsInstalled": "尚未安裝任何模型。",
+      "remove": "移除",
+      "availableHeading": "可供安裝",
+      "install": "安裝",
+      "installing": "安裝中…",
+      "hardwareFitHeading": "哪個模型適合我的硬體？",
+      "hardwareFitHint": "偵測此機器的 RAM/CPU/GPU，並依此為 llmfit 內建資料庫中的每個模型評分——這是根據您實際硬體得出的真實答案，而非猜測。",
+      "hardwareFitButton": "檢查我的硬體",
+      "hardwareFitLoading": "偵測硬體中…",
+      "hardwareFitLevel": "適配度",
+      "hardwareFitScore": "分數",
+      "hardwareFitSpeed": "預估速度",
+      "hardwareFitQuant": "最佳量化"
+    },
+    "usage": {
+      "heading": "使用量",
+      "tableProvider": "供應商",
+      "tableLabel": "標籤",
+      "tableSuccess": "成功",
+      "tableFailure": "失敗",
+      "tableLastUsed": "上次使用",
+      "noUsageYet": "尚無使用記錄。",
+      "never": "從未"
+    },
+    "mcp": {
+      "heading": "MCP 伺服器",
+      "hint": "MCP（Model Context Protocol）伺服器以本地子行程執行，信任等級與技能相同——不會被沙盒隔離。請僅新增您信任的伺服器。可在「對話」中該 Agent 的面板授予特定 Agent 存取特定伺服器的權限。",
+      "namePlaceholder": "名稱（例如 Filesystem）",
+      "commandPlaceholder": "指令（例如 npx）",
+      "argsPlaceholder": "參數，以空格分隔（例如 -y @modelcontextprotocol/server-filesystem /path）",
+      "add": "新增伺服器",
+      "tableName": "名稱",
+      "tableCommand": "指令",
+      "noneYet": "尚未新增任何 MCP 伺服器。",
+      "delete": "刪除"
+    },
+    "gameAgent": {
+      "heading": "遊戲操作 Agent（實驗性）",
+      "warning": "⚠ 啟動後，此應用程式會在本機持續進行真實螢幕截圖並模擬真實滑鼠／鍵盤輸入，直到您點擊「停止」為止。僅在您點擊下方「開始」時才會啟動——不會自動觸發。需要在 Ollama 中已拉取具視覺能力的模型（例如 llava）。",
+      "modelPlaceholder": "Ollama 視覺模型（例如 llava）",
+      "statusLabel": "狀態：",
+      "statusRunning": "執行中",
+      "statusStopped": "已停止",
+      "stop": "停止",
+      "starting": "啟動中…",
+      "start": "開始"
+    },
+    "recording": {
+      "heading": "深度強化學習：錄製示範（實驗性）",
+      "hint": "軌道 B（詳見遊戲操作 Agent 設計文件）——目前僅實作「錄製」此一流程階段。此功能會將螢幕截圖與您的滑鼠／鍵盤輸入擷取至資料夾以供日後訓練使用；本身不會自動執行任何操作。需要已安裝 game_agent_rl/requirements.txt 的 Python 環境。",
+      "sessionNamePlaceholder": "工作階段名稱",
+      "outputDirectoryPlaceholder": "輸出目錄",
+      "statusLabel": "狀態：",
+      "statusRecording": "錄製中",
+      "statusStopped": "已停止",
+      "stop": "停止",
+      "starting": "啟動中…",
+      "startRecording": "開始錄製"
+    }
+  }
+}

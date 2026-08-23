@@ -1,0 +1,416 @@
+{
+  "settings": {
+    "appearance": {
+      "heading": "Erscheinungsbild",
+      "theme": "Design",
+      "themeHint": "Dunkel ist die Standardästhetik; Hell wird ebenfalls vollständig unterstützt.",
+      "themeSystem": "System",
+      "themeDark": "Dunkel",
+      "themeLight": "Hell"
+    },
+    "customInstructions": {
+      "heading": "Benutzerdefinierte Anweisungen",
+      "hint": "Wird bei jeder Nachricht stets als Kontext für jeden Agenten einbezogen — eine dauerhafte Präferenz (z. B. Tonfall, Sprache, Format), nicht etwas, das wie das eigene Gedächtnis eines Agenten durchsucht oder gefiltert wird.",
+      "placeholder": "z. B. Immer auf Deutsch antworten. Antworten kurz halten.",
+      "save": "Speichern",
+      "saving": "Wird gespeichert…",
+      "saved": "Gespeichert.",
+      "unsaved": "Nicht gespeicherte Änderungen"
+    },
+    "language": {
+      "heading": "Sprache",
+      "interfaceLanguage": "Oberflächensprache",
+      "hintBeforeLink": "Standard: Englisch. Fehlende Übersetzungen fallen auf Englisch zurück — siehe",
+      "hintAfterLink": "um beim Übersetzen zu helfen.",
+      "contributingLink": "CONTRIBUTING",
+      "statusSelected": "ausgewählt",
+      "statusComingSoon": "demnächst verfügbar"
+    },
+    "safety": {
+      "heading": "Sicherheit",
+      "guardrails": "KI-Leitplanken",
+      "guardrailsHint": "Die nicht verhandelbaren Regeln, denen jeder Agent stets folgt — beim ersten Start einmal als Zusammenfassung angezeigt.",
+      "viewSummaryAgain": "Zusammenfassung erneut ansehen",
+      "llamaGuardTitle": "Llama Guard 3 Zweitprüfung (erweitert)",
+      "llamaGuardHint": "Standardmäßig deaktiviert — die obige stichwortbasierte Prüfung läuft immer, unabhängig davon. Um zusätzlich einen echten lokalen Klassifikator einzusetzen, installieren Sie Ollama, laden Sie ein Llama-Guard-3-Modell herunter (z. B. `ollama pull llama-guard3:1b`), setzen Sie dann vor dem Start dieser App die Umgebungsvariable LLAMA_GUARD_MODEL auf den Namen dieses Modells (z. B. `llama-guard3:1b`) und starten Sie neu. Ist das Modell danach nicht erreichbar, schlägt diese Prüfung offen fehl (übersprungen, nicht blockierend), statt jede Nachricht zu blockieren."
+    },
+    "about": {
+      "heading": "Über",
+      "version": "Version",
+      "userManual": "Benutzerhandbuch",
+      "open": "Öffnen →",
+      "checkForUpdates": "Nach Updates suchen",
+      "checking": "Wird geprüft…",
+      "upToDate": "Sie verwenden die neueste Version.",
+      "updateAvailable": "Eine neue Version ({{version}}) ist verfügbar.",
+      "viewRelease": "Release ansehen →",
+      "checkFailed": "Update-Prüfung fehlgeschlagen: {{error}}"
+    }
+  },
+  "skills": {
+    "title": "Fähigkeiten",
+    "refresh": "Aktualisieren",
+    "refreshing": "Wird aktualisiert…",
+    "hint": "Der Zugriff auf Fähigkeiten wird pro Agent gewährt — öffnen Sie die Sitzung eines Agenten im Chat, um ihm eine Fähigkeit zu gewähren oder zu entziehen. Diese Seite zeigt lediglich, was derzeit über alle Agenten hinweg verwendet wird.",
+    "noneDiscovered": "Keine Fähigkeiten gefunden.",
+    "noPermissions": "Keine Berechtigungen angefordert",
+    "sourceCustom": "Benutzerdefiniert",
+    "sourceBuiltin": "Integriert",
+    "usedByNone": "Von keinem Agenten verwendet",
+    "usedByCount_one": "Von {{count}} Agent verwendet",
+    "usedByCount_other": "Von {{count}} Agenten verwendet"
+  },
+  "usage": {
+    "title": "Nutzung",
+    "refresh": "Aktualisieren",
+    "refreshing": "Wird aktualisiert…",
+    "totalCalls": "Aufrufe gesamt",
+    "failedCalls": "Fehlgeschlagene Aufrufe",
+    "failureRate": "Fehlerquote",
+    "estimatedCost": "Geschätzte Kosten",
+    "estimatedCostHint": "Nur OpenRouter, Aufrufe mit bekannten Kosten",
+    "softBudget": "Weiches Aufrufbudget",
+    "unset": "nicht festgelegt",
+    "softBudgetHint": "Aufrufe — nur eine lokale Erinnerung, blockiert nichts",
+    "budgetWarning": "⚠ Sie haben Ihr weiches Budget von {{cap}} Aufrufen erreicht ({{total}} bisher). Dies ist nur eine Erinnerung — Cloud-Agenten arbeiten weiter.",
+    "costHint": "Geschätzte Kosten werden noch nicht angezeigt — diese App erfasst derzeit weder Token-Anzahlen noch modellspezifische Preise, es gibt also nichts Reales, woraus sich diese berechnen ließen. Siehe die Aufschlüsselung nach Schlüssel unten (auch auf der Seite KI-Kontrollzentrum) für rohe Erfolgs-/Fehlerzahlen.",
+    "noneRecorded": "Noch keine Nutzung erfasst.",
+    "callsByProvider": "Aufrufe nach Anbieter",
+    "systemStatus": "Systemstatus",
+    "agentsLocal": "Lokale Agenten",
+    "agentsCloud": "Cloud-Agenten",
+    "sessionsIndependent": "Sitzungen",
+    "sessionsGroup": "Gruppenchats",
+    "providersActive": "Verwendete Anbieter"
+  },
+  "onboarding": {
+    "title": "Vor Ihrem ersten Agenten",
+    "lead": "Jeder Agent in dieser App — lokal oder Cloud, unabhängig von der zugewiesenen Rollenvorlage — folgt einem festen Regelwerk, das nicht deaktiviert, durch eine Rollenvorlage überschrieben oder durch irgendeine Anweisung, einschließlich Ihrer eigenen, umgangen werden kann.",
+    "confirmLabel": "Ich habe diese Zusammenfassung gelesen und verstehe, dass diese Regeln immer gelten.",
+    "continue": "Weiter →",
+    "categories": [
+      {
+        "title": "Sicherheit & Datenschutz",
+        "points": [
+          "Kein Lesen oder Hochladen Ihrer Dateien ohne Ihre ausdrückliche Genehmigung.",
+          "Zerstörerische oder unumkehrbare Aktionen (Dateien löschen, Force-Push, Daten löschen) erfordern immer zuerst Ihre Bestätigung.",
+          "API-Schlüssel, Passwörter und Tokens werden nie im Klartext protokolliert oder an einen von Ihnen nicht angegebenen Ort gesendet."
+        ]
+      },
+      {
+        "title": "Recht & Sicherheit — absolut, keine Ausnahmen",
+        "points": [
+          "Keine Hilfe bei Cyberangriffen, Waffen, Selbstverletzung oder Angriffen auf andere.",
+          "Keine sexuellen Inhalte mit realen oder fiktiven Darstellungen.",
+          "Diese Regeln lockern sich nicht für Rollenspiele, „es ist nur ein Test“ oder den Kontext eines Gruppenchats."
+        ]
+      },
+      {
+        "title": "Verhalten & Zusammenarbeit",
+        "points": [
+          "Gruppenchats können nicht endlos in Schleife laufen oder spammen — es gibt eine Rundenbegrenzung sowie einen Beendigungs-/Zusammenfassungsmechanismus.",
+          "Wichtige Entscheidungen (Architekturänderungen, Deployments, Geld) kommen immer zu Ihnen zurück, selbst mitten in einem Multi-Agenten-Workflow.",
+          "Ein Agent kann sich nicht als anderer Agent, als Sie oder als reale dritte Partei ausgeben."
+        ]
+      },
+      {
+        "title": "Ausgabequalität",
+        "points": [
+          "Unsichere Behauptungen werden als unsicher gekennzeichnet, nicht als Tatsache dargestellt.",
+          "Codeänderungen bleiben in der Versionskontrolle nachvollziehbar — keine stillen Überschreibungen."
+        ]
+      }
+    ]
+  },
+  "manual": {
+    "searchPlaceholder": "Handbuch durchsuchen…",
+    "noMatch": "Keine Artikel entsprechen „{{query}}“.",
+    "minRead": "{{minutes}} Min. Lesezeit",
+    "categoryLabels": {
+      "gettingStarted": "Erste Schritte",
+      "agents": "Agenten",
+      "safety": "Sicherheit"
+    },
+    "articles": [
+      {
+        "id": "independent-vs-group",
+        "title": "Unabhängige Sitzungen vs. Gruppenchat",
+        "category": "gettingStarted",
+        "minutes": 2,
+        "paragraphs": [
+          "Eine unabhängige Sitzung ist ein Agent, eine Unterhaltung — wie ein normales Chatfenster. Nutzen Sie sie, wenn nur ein Modell an einer Aufgabe arbeiten soll.",
+          "Ein Gruppenchat vereint mehrere Agenten, die in derselben Sitzung, auf einer einzigen Zeitachse, im Rundlauf in der Reihenfolge ihres Beitritts sprechen. Sie können @AgentName eingeben, um einen bestimmten Agenten außer der Reihe einspringen zu lassen, ohne die Reihenfolge zu stören.",
+          "Gruppenchats verfügen über ein Schleifen-Sicherheitsnetz: Nach mehreren aufeinanderfolgenden Agentenrunden ohne neue Nachricht von Ihnen pausiert die Unterhaltung, damit Sie stets die Kontrolle behalten. „Weitermachen lassen“ führt manuell eine weitere Runde durch; „Besprechung beenden“ bittet einen zusammenfassenden Agenten, die Diskussion abzuschließen."
+        ]
+      },
+      {
+        "id": "local-vs-cloud",
+        "title": "Ein lokales Modell einrichten (Ollama)",
+        "category": "gettingStarted",
+        "minutes": 3,
+        "paragraphs": [
+          "Lokale Agenten laufen vollständig auf Ihrem eigenen Gerät über Ollama — nichts, was Sie ihnen senden, verlässt Ihre Maschine, und es entstehen keine Kosten pro Aufruf.",
+          "Installieren Sie zunächst Ollama selbst (diese App bringt es nicht mit). Sobald es läuft, zeigt der Abschnitt „Lokale KI-Modelle (Ollama)“ im KI-Kontrollzentrum, was installiert ist, und ermöglicht das Herunterladen neuer Modelle per Namen — kein Terminal nötig.",
+          "Wählen Sie beim Erstellen eines Agenten „lokal“ als Anbietertyp und wählen Sie ein installiertes Modell. Größere Modelle benötigen mehr RAM/VRAM; ist ein Modell für Ihre Hardware zu groß, läuft es einfach sehr langsam oder lässt sich nicht laden.",
+          "„colibri“ ist eine zweite lokale Anbieteroption für colibrì (github.com/JustVugg/colibri) — eine separate, abhängigkeitsfreie Inferenz-Engine für sehr große MoE-Modelle, die Gewichte über VRAM/RAM/Festplatte streamen. Gleiches Prinzip wie bei Ollama: Selbst installieren und ausführen (mit `coli serve` starten), und diese App kommuniziert über localhost damit — nichts ist mitgeliefert, nichts verlässt Ihre Maschine."
+        ]
+      },
+      {
+        "id": "cloud-api-keys",
+        "title": "Einen Cloud-API-Schlüssel hinzufügen",
+        "category": "gettingStarted",
+        "minutes": 2,
+        "paragraphs": [
+          "Cloud-Agenten rufen einen Anbieter auf — Anthropic, OpenAI oder OpenRouter — mit einem API-Schlüssel, den Sie selbst bereitstellen. Diese App stellt niemals eigene gemeinsame Schlüssel bereit und berechnet Ihnen niemals direkt Kosten.",
+          "Fügen Sie einen Schlüssel im Abschnitt „Cloud-KI-Modelle“ des KI-Kontrollzentrums hinzu. Schlüssel werden lokal über den Anmeldeinformationsspeicher Ihres Betriebssystems gespeichert und niemals irgendwohin außer an den aufgerufenen Anbieter gesendet.",
+          "Sie können mehrere Schlüssel pro Anbieter hinzufügen und optional einen bestimmten Agenten an einen bestimmten Schlüssel anheften. Ohne Anheftung wird zuerst der zuletzt hinzugefügte Schlüssel für diesen Anbieter versucht, bei einem fehlgeschlagenen Aufruf wird auf ältere zurückgegriffen."
+        ]
+      },
+      {
+        "id": "role-templates",
+        "title": "Rollenvorlagen verwenden",
+        "category": "agents",
+        "minutes": 2,
+        "paragraphs": [
+          "Eine Rollenvorlage ist ein vorgefertigter Systemprompt, der einem Agenten eine bestimmte Aufgabe zuweist — Produktverantwortlicher, Lead-Architekt, Full-Stack-Entwickler und weitere, modelliert nach einem kleinen Ein-Personen-Unternehmen.",
+          "Standardvorlagen werden mit der App ausgeliefert und bei jedem Update auf die neueste Version zurückgesetzt — bearbeiten Sie sie nicht direkt. Um eine anzupassen, duplizieren Sie sie zunächst in „Benutzerdefiniert“; alles darin gehört Ihnen dauerhaft und übersteht App-Updates.",
+          "Jede Vorlage kann einen Anbietertyp vorschlagen (z. B. schlägt „Full-Stack-Entwickler“ Cloud vor, „Issue-Manager“ lokal) — dies ist nur ein Standardvorschlag bei der Erstellung eines Agenten, niemals eine feste Anforderung."
+        ]
+      },
+      {
+        "id": "guardrails",
+        "title": "Was Leitplanken sind",
+        "category": "safety",
+        "minutes": 2,
+        "paragraphs": [
+          "Leitplanken sind ein festes Regelwerk, dem jeder Agent folgt — lokal oder Cloud, unabhängig von der verwendeten Rollenvorlage. Sie können nicht deaktiviert, durch eine Rollenvorlage überschrieben oder durch irgendeine Anweisung, einschließlich Ihrer eigenen, umgangen werden.",
+          "Sie umfassen unter anderem: niemals Ihre Dateien ohne ausdrückliche Genehmigung lesen, stets vor einer unumkehrbaren Aktion bestätigen, Hilfe bei Angriffen oder illegalen Aktivitäten verweigern und in einem Gruppenchat nicht endlos in Schleife laufen.",
+          "Sie haben beim ersten Start eine Zusammenfassung davon gesehen (Einstellungen → Sicherheit → „Zusammenfassung erneut ansehen“, wenn Sie sie erneut lesen möchten). Lehnt ein Agent einen Teil einer Anfrage ab, liegt das an einer dieser Regeln — er wird Ihnen mitteilen, welche."
+        ]
+      }
+    ]
+  },
+  "chat": {
+    "independentSessions": "Unabhängige Sitzungen",
+    "noSessions": "Noch keine Sitzungen.",
+    "groupChats": "Gruppenchats",
+    "noGroupChats": "Noch keine Gruppenchats.",
+    "cancel": "Abbrechen",
+    "newGroupChat": "+ Neuer Gruppenchat",
+    "meetingTitlePlaceholder": "Besprechungstitel (optional)",
+    "noAgentsYet": "Noch keine Agenten.",
+    "startMeeting": "Besprechung starten",
+    "newSession": "Neue Sitzung",
+    "noAgentsYetOption": "Noch keine Agenten",
+    "sessionTitlePlaceholder": "Sitzungstitel (optional)",
+    "start": "Starten",
+    "newAgent": "+ Neuer Agent",
+    "noRoleTemplate": "Keine Rollenvorlage (eigenen Prompt schreiben)",
+    "custom": "(benutzerdefiniert)",
+    "agentNamePlaceholder": "Agentenname",
+    "applySuggestedProvider": "Vorgeschlagenen Anbieter übernehmen ({{provider}})",
+    "systemPromptPlaceholder": "Systemprompt (optional — wird durch eine Rollenvorlage automatisch ausgefüllt)",
+    "useLatestKeyDefault": "Neuesten {{provider}}-Schlüssel automatisch verwenden (Standard)",
+    "pinTo": "Anheften an: {{label}}",
+    "fallbackLabel": "Fallback (der Reihe nach versucht, nur wenn der primäre Anbieter fehlschlägt):",
+    "noneConfigured": "keiner konfiguriert",
+    "removeFallbackStep": "Fallback-Schritt {{step}} entfernen",
+    "remove": "Entfernen",
+    "modelIdPlaceholder": "Modell-ID",
+    "addFallback": "+ Fallback hinzufügen",
+    "createAgent": "Agent erstellen",
+    "customRoleTemplates": "Benutzerdefinierte Rollenvorlagen",
+    "edit": "Bearbeiten",
+    "export": "Exportieren",
+    "delete": "Löschen",
+    "noCustomTemplates": "Noch keine benutzerdefinierten Vorlagen.",
+    "newRoleTemplate": "+ Neue Rollenvorlage",
+    "importTemplate": "+ Vorlage importieren…",
+    "templateNamePlaceholder": "Vorlagenname",
+    "shortDescriptionPlaceholder": "Kurzbeschreibung",
+    "systemPromptPlainPlaceholder": "Systemprompt",
+    "saveChanges": "Änderungen speichern",
+    "saveTemplate": "Vorlage speichern",
+    "copyErrorDetails": "Fehlerdetails kopieren",
+    "dismissError": "Fehler schließen",
+    "closeTab": "Tab {{title}} schließen",
+    "closeTabTitle": "Tab schließen",
+    "pickOrStartSession": "Wählen oder starten Sie links eine Sitzung. Sie können mehrere gleichzeitig öffnen — jede chattet unabhängig weiter, auch im Hintergrund.",
+    "chattingWith": "Im Gespräch mit",
+    "files": "Dateien:",
+    "noFoldersGranted": "keine Ordner gewährt",
+    "revokeAccessToFolder": "Zugriff auf Ordner {{folderPath}} widerrufen",
+    "revokeAccess": "Zugriff widerrufen",
+    "grantFolder": "+ Ordner gewähren…",
+    "skills": "Fähigkeiten:",
+    "noneGranted": "keine gewährt",
+    "revokeAccessToSkill": "Zugriff auf Fähigkeit {{skillName}} widerrufen",
+    "grantASkill": "Fähigkeit gewähren…",
+    "grant": "+ Gewähren",
+    "importingSkill": "Wird importiert…",
+    "importCustomSkill": "+ Benutzerdefinierte Fähigkeit importieren…",
+    "skillImportWarning": "⚠ Das Importieren einer Fähigkeit führt deren Python-Code mit derselben Vertrauensstufe wie eine integrierte Fähigkeit aus. Sie ist an die in ihrer skill.json deklarierten Berechtigungen gebunden (siehe Abzeichen oben) — eine nicht deklarierte Dateisystem-/Netzwerkfähigkeit wird tatsächlich blockiert, nicht nur gewarnt — importieren Sie Fähigkeiten jedoch nur aus vertrauenswürdigen Quellen.",
+    "letAgentCallSkills": "Diesen Agenten selbst entscheiden lassen, wann eine gewährte Fähigkeit aufgerufen wird (nur Anthropic)",
+    "memories": "Gedächtnis (sitzungsübergreifend)",
+    "noMemoriesYet": "noch keine Erinnerungen",
+    "rememberSomethingPlaceholder": "z. B. der Benutzer bevorzugt knappe Antworten",
+    "remember": "+ Merken",
+    "forgetThis": "Dies vergessen",
+    "forgetMemory": "Erinnerung vergessen: {{content}}",
+    "runASkill": "Eine Fähigkeit ausführen…",
+    "jsonPayloadPlaceholder": "JSON-Nutzlast, z. B. {\"action\":\"search\",\"indexName\":\"notes\",\"query\":\"...\"}",
+    "running": "Wird ausgeführt…",
+    "run": "Ausführen",
+    "mcpServers": "MCP-Server:",
+    "revokeAccessToMcpServer": "Zugriff auf MCP-Server {{serverName}} widerrufen",
+    "grantAnMcpServer": "MCP-Server gewähren…",
+    "runAnMcpTool": "Ein Tool ausführen auf…",
+    "loadingTools": "Tools werden geladen…",
+    "selectTool": "Tool auswählen…",
+    "semanticSearchLabel": "Semantische Suche:",
+    "notGranted": "nicht gewährt",
+    "revokeAccessToCapability": "Zugriff auf {{capabilityName}} widerrufen",
+    "grantMlCapability": "ML-Fähigkeit gewähren…",
+    "indexing": "Wird indexiert…",
+    "rebuildIndex": "Index neu erstellen",
+    "rebuildIndexTitle": "Die gewährten Ordner erneut scannen und den Suchindex neu erstellen",
+    "searchFilesPlaceholder": "Gewährte Dateien nach Bedeutung durchsuchen…",
+    "searching": "Wird gesucht…",
+    "search": "Suchen",
+    "noResults": "Keine Ergebnisse.",
+    "groupChatLabel": "Gruppenchat: {{members}}",
+    "noMembers": "(keine Mitglieder)",
+    "letThemContinue": "Weitermachen lassen →",
+    "autoContinueTitle": "Wie viele Runden vor dem Anhalten ausgeführt werden sollen",
+    "continueTurns": "{{turns}} Runden fortsetzen →→",
+    "continueTurnsTitle": "Führt bis zu dieser Anzahl an Runden hintereinander aus — die E6001-Schleifenobergrenze des Backends (6 Runden ohne Ihre Beteiligung) gilt weiterhin und stoppt vorzeitig, falls erreicht",
+    "endMeeting": "Besprechung beenden (zusammenfassen)",
+    "boundaryConfirmTitle": "E6004 — Vor dem Senden an einen Cloud-Anbieter bestätigen:",
+    "boundaryConfirmBody": "die Antwort eines lokalen Agenten in diesem Gruppenchat würde an einen Cloud-Agenten gesendet. Vorschau des lokalen Inhalts:",
+    "sendToCloud": "An Cloud-Anbieter senden",
+    "filesSharedWithMeeting": "Dateien (mit dieser Besprechung geteilt):",
+    "noMessagesYet": "Noch keine Nachrichten — sagen Sie Hallo.",
+    "messagePlaceholderGroup": "Nachricht eingeben… (verwenden Sie @AgentName, um jemand Bestimmten anzusprechen)",
+    "messagePlaceholderIndependent": "Nachricht eingeben… (verwenden Sie @file:C:\\pfad\\zur\\datei.txt, um eine gewährte Datei anzuhängen)",
+    "sending": "Wird gesendet…",
+    "send": "Senden",
+    "defaultSessionTitle": "Chat mit {{agentName}}",
+    "defaultAgentName": "agent",
+    "defaultGroupChatTitle": "Gruppenchat",
+    "createAnAgentFirst": "Erstellen Sie zuerst einen Agenten.",
+    "pickAtLeastOneAgent": "Wählen Sie mindestens einen Agenten für den Gruppenchat.",
+    "skillPayloadMustBeJson": "Die Nutzlast der Fähigkeit muss gültiges JSON sein."
+  },
+  "acc": {
+    "title": "KI-Kontrollzentrum",
+    "dismissError": "Fehler schließen",
+    "apiKeys": {
+      "heading": "API-Schlüssel",
+      "addOne": "Einen hinzufügen",
+      "apiKeyPlaceholder": "API-Schlüssel",
+      "labelOptionalPlaceholder": "Bezeichnung (optional)",
+      "modelHintOptionalPlaceholder": "Modellhinweis (optional)",
+      "add": "Hinzufügen",
+      "addInBulk": "Massenhinzufügung",
+      "bulkHintBeforeCode": "Ein Schlüssel pro Zeile: ",
+      "bulkHintAfterCode": " — Bezeichnung und Modellhinweis sind optional.",
+      "bulkNoValidLines": "Keine gültigen Zeilen gefunden. Format: provider,secret[,label[,modelHint]] — eine pro Zeile.",
+      "importAll": "Alle importieren",
+      "importFromFiles": "Aus Dateien importieren",
+      "importFromFilesHint": "Mehrere Dateien auswählen: Der Dateiname wird zur Bezeichnung, der vollständige Inhalt (getrimmt) zum Schlüssel. Alle Dateien verwenden denselben Anbieter.",
+      "chooseFiles": "Dateien auswählen…",
+      "importing": "Wird importiert…",
+      "tableProvider": "Anbieter",
+      "tableLabel": "Bezeichnung",
+      "tableModelHint": "Modellhinweis",
+      "tableKey": "Schlüssel",
+      "tableLastUsed": "Zuletzt verwendet",
+      "noKeysYet": "Noch keine API-Schlüssel.",
+      "never": "nie",
+      "delete": "Löschen"
+    },
+    "cloudModels": {
+      "heading": "Cloud-KI-Modelle",
+      "searchPlaceholder": "Alle OpenRouter-Modelle durchsuchen…",
+      "refreshing": "Wird aktualisiert…",
+      "refreshFromOpenRouter": "Von OpenRouter aktualisieren",
+      "liveCatalogUnavailable": "⚠ Der Live-Katalog von OpenRouter konnte nicht erreicht werden — stattdessen wird die integrierte Standardliste angezeigt. Preise und Verfügbarkeit hier sind möglicherweise nicht aktuell; prüfen Sie Ihre Netzwerkverbindung.",
+      "pricing": " (${{promptPrice}} Eingabe / ${{completionPrice}} Ausgabe pro 1 Mio. Token)"
+    },
+    "localModels": {
+      "heading": "Lokale KI-Modelle (Ollama)",
+      "statusLabel": "Status:",
+      "statusChecking": "wird geprüft…",
+      "statusRunning": "läuft",
+      "statusNotRunning": "läuft nicht",
+      "refresh": "Aktualisieren",
+      "storageHintSummary": "Wo werden Ollamas Modelle gespeichert?",
+      "storageHintIntro": "Ollama ist ein separates Programm, das diese App weder steuert noch installiert — es wird nur über {{endpoint}} aufgerufen. Diese App verschiebt oder verwaltet die Modelldateien von Ollama nicht selbst.",
+      "storageHintEnvSet": "Der Prozess dieser App sieht OLLAMA_MODELS={{path}}. Dies muss nicht mit dem übereinstimmen, was der eigentliche Ollama-Dienst verwendet, falls er aus einer anderen Umgebung gestartet wurde.",
+      "storageHintEnvUnset": "Für diese App ist keine OLLAMA_MODELS-Überschreibung sichtbar (Ollama verwendet wahrscheinlich seinen Standardspeicherort). Um zu ändern, wo Ollama Modelle speichert, setzen Sie selbst die Umgebungsvariable OLLAMA_MODELS und starten Sie den Ollama-Dienst neu:",
+      "storageHintWindows": "Windows (PowerShell, als Ihr Benutzer): {{command}}, dann Ollama neu starten",
+      "storageHintUnix": "macOS/Linux: {{command}} zu Ihrem Shell-Profil hinzufügen, dann Ollama neu starten",
+      "installedHeading": "Installiert",
+      "tableModel": "Modell",
+      "tableSize": "Größe",
+      "noModelsInstalled": "Noch keine Modelle installiert.",
+      "remove": "Entfernen",
+      "availableHeading": "Zur Installation verfügbar",
+      "install": "Installieren",
+      "installing": "Wird installiert…",
+      "hardwareFitHeading": "Welches Modell passt zu meiner Hardware?",
+      "hardwareFitHint": "Erkennt RAM/CPU/GPU dieses Rechners und bewertet jedes Modell in llmfits integrierter Datenbank entsprechend — eine echte, auf Ihrer Hardware basierende Antwort, keine Vermutung.",
+      "hardwareFitButton": "Meine Hardware prüfen",
+      "hardwareFitLoading": "Hardware wird erkannt…",
+      "hardwareFitLevel": "Eignung",
+      "hardwareFitScore": "Punktzahl",
+      "hardwareFitSpeed": "Geschätzte Geschwindigkeit",
+      "hardwareFitQuant": "Beste Quantisierung"
+    },
+    "usage": {
+      "heading": "Nutzung",
+      "tableProvider": "Anbieter",
+      "tableLabel": "Bezeichnung",
+      "tableSuccess": "Erfolg",
+      "tableFailure": "Fehler",
+      "tableLastUsed": "Zuletzt verwendet",
+      "noUsageYet": "Noch keine Nutzung erfasst.",
+      "never": "nie"
+    },
+    "mcp": {
+      "heading": "MCP-Server",
+      "hint": "MCP-Server (Model Context Protocol) laufen als lokale Unterprozesse, mit derselben Vertrauensstufe wie eine Fähigkeit — ohne Sandboxing. Fügen Sie nur Server hinzu, denen Sie vertrauen. Gewähren Sie einem bestimmten Agenten den Zugriff auf einen Server über dessen Panel im Chat.",
+      "namePlaceholder": "Name (z. B. Filesystem)",
+      "commandPlaceholder": "Befehl (z. B. npx)",
+      "argsPlaceholder": "Argumente, durch Leerzeichen getrennt (z. B. -y @modelcontextprotocol/server-filesystem /pfad)",
+      "add": "Server hinzufügen",
+      "tableName": "Name",
+      "tableCommand": "Befehl",
+      "noneYet": "Noch keine MCP-Server hinzugefügt.",
+      "delete": "Löschen"
+    },
+    "gameAgent": {
+      "heading": "Spielenden Agent (experimentell)",
+      "warning": "⚠ Der Start führt dazu, dass die App auf diesem Computer echte Screenshots aufnimmt und echte Maus-/Tastatureingaben simuliert, in einer Schleife, bis Sie auf Stopp klicken. Er startet ausschließlich, wenn Sie unten auf „Start“ klicken — nichts löst ihn automatisch aus. Erfordert ein bereits in Ollama heruntergeladenes bildfähiges Modell (z. B. llava).",
+      "modelPlaceholder": "Ollama-Vision-Modell (z. B. llava)",
+      "statusLabel": "Status:",
+      "statusRunning": "läuft",
+      "statusStopped": "gestoppt",
+      "stop": "Stopp",
+      "starting": "Wird gestartet…",
+      "start": "Start"
+    },
+    "recording": {
+      "heading": "Deep RL: Demonstration aufzeichnen (experimentell)",
+      "hint": "Spur B (siehe Design-Dokument des spielenden Agenten) — bisher existiert nur die „Aufzeichnungs“-Pipeline-Stufe. Dies erfasst Screenshots sowie Ihre Maus-/Tastatureingaben in einem Ordner für späteres Training; es automatisiert selbst nichts. Erfordert Python mit installiertem game_agent_rl/requirements.txt.",
+      "sessionNamePlaceholder": "Sitzungsname",
+      "outputDirectoryPlaceholder": "Ausgabeverzeichnis",
+      "statusLabel": "Status:",
+      "statusRecording": "wird aufgezeichnet",
+      "statusStopped": "gestoppt",
+      "stop": "Stopp",
+      "starting": "Wird gestartet…",
+      "startRecording": "Aufzeichnung starten"
+    }
+  }
+}

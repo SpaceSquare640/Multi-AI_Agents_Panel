@@ -4,6 +4,7 @@ import { getVersion } from "@tauri-apps/api/app";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import i18n, { LANGUAGE_STORAGE_KEY } from "./i18n";
 import "./Settings.css";
 
 type UpdateCheckResult = {
@@ -52,18 +53,15 @@ function applyTheme(choice: ThemeChoice) {
 }
 
 /** Language options per Design Principles — English is the source of
- *  truth and the only one with real strings today. The rest are listed
- *  so users can see what's planned, not because they work yet: picking
- *  one would silently show untranslated English UI, which is worse than
- *  not offering the choice at all. */
+ *  truth; all seven now have real translation files (see i18n.ts). */
 const LANGUAGES = [
-  { code: "en", label: "English", ready: true },
-  { code: "zh-Hant", label: "繁體中文", ready: false },
-  { code: "zh-Hans", label: "简体中文", ready: false },
-  { code: "fr", label: "Français", ready: false },
-  { code: "de", label: "Deutsch", ready: false },
-  { code: "ja", label: "日本語", ready: false },
-  { code: "ko", label: "한국어", ready: false },
+  { code: "en", label: "English" },
+  { code: "zh-Hant", label: "繁體中文" },
+  { code: "zh-Hans", label: "简体中文" },
+  { code: "fr", label: "Français" },
+  { code: "de", label: "Deutsch" },
+  { code: "ja", label: "日本語" },
+  { code: "ko", label: "한국어" },
 ];
 
 export default function Settings({
@@ -124,6 +122,11 @@ export default function Settings({
     localStorage.setItem(THEME_STORAGE_KEY, choice);
     applyTheme(choice);
     setThemeState(choice);
+  }
+
+  function chooseLanguage(code: string) {
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, code);
+    void i18n.changeLanguage(code);
   }
 
   async function checkForUpdate() {
@@ -218,11 +221,14 @@ export default function Settings({
           {LANGUAGES.map((lang) => (
             <li key={lang.code}>
               <span>{lang.label}</span>
-              {lang.ready ? (
-                <span className="lang-tag active">{t("settings.language.statusSelected")}</span>
-              ) : (
-                <span className="lang-tag">{t("settings.language.statusComingSoon")}</span>
-              )}
+              <button
+                className={i18n.resolvedLanguage === lang.code ? "lang-tag active" : "lang-tag"}
+                onClick={() => chooseLanguage(lang.code)}
+              >
+                {i18n.resolvedLanguage === lang.code
+                  ? t("settings.language.statusSelected")
+                  : lang.code}
+              </button>
             </li>
           ))}
         </ul>
