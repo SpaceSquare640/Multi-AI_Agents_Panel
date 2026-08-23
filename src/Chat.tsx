@@ -1236,7 +1236,11 @@ export default function Chat() {
         <ul className="chat-session-list">
           {independentSessions.map((s) => (
             <li key={s.id} className="chat-session-list-item">
-              <button className={openTabIds.includes(s.id) ? "active" : ""} onClick={() => openTab(s.id, s.kind)}>
+              <button
+                className={openTabIds.includes(s.id) ? "active" : ""}
+                title={s.title}
+                onClick={() => openTab(s.id, s.kind)}
+              >
                 {s.title}
                 {tabs[s.id]?.hasUnseenReply && <span className="chat-unread-dot" />}
               </button>
@@ -1257,7 +1261,11 @@ export default function Chat() {
         <ul className="chat-session-list">
           {groupSessions.map((s) => (
             <li key={s.id} className="chat-session-list-item">
-              <button className={openTabIds.includes(s.id) ? "active" : ""} onClick={() => openTab(s.id, s.kind)}>
+              <button
+                className={openTabIds.includes(s.id) ? "active" : ""}
+                title={s.title}
+                onClick={() => openTab(s.id, s.kind)}
+              >
                 {s.title}
                 {tabs[s.id]?.hasUnseenReply && <span className="chat-unread-dot" />}
               </button>

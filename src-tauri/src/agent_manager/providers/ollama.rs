@@ -261,6 +261,7 @@ pub fn delete_model(name: &str) -> Result<(), ProviderError> {
 /// "latest" URL for older releases, only this one that always serves
 /// whatever's current. Pure so it's directly testable without a network
 /// call.
+#[cfg(windows)]
 pub(crate) fn windows_installer_url() -> &'static str {
     "https://ollama.com/download/OllamaSetup.exe"
 }
@@ -405,6 +406,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(windows)]
     fn windows_installer_url_points_at_ollamas_own_domain_over_https() {
         let url = windows_installer_url();
         assert!(url.starts_with("https://ollama.com/"), "expected an official ollama.com URL, got {url}");
