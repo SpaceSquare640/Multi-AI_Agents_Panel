@@ -27,28 +27,6 @@ function App() {
   // themselves aren't optional but re-reading them should always be.
   const [showOnboarding, setShowOnboarding] = useState(() => !hasAcknowledgedGuardrails());
 
-  function renderTab() {
-    switch (tab) {
-      case "chat":
-        return <Chat />;
-      case "control-center":
-        return <AIControlCenter />;
-      case "skills":
-        return <Skills />;
-      case "usage":
-        return <Usage />;
-      case "manual":
-        return <Manual />;
-      case "settings":
-        return (
-          <Settings
-            onShowGuardrailsSummary={() => setShowOnboarding(true)}
-            onOpenManual={() => setTab("manual")}
-          />
-        );
-    }
-  }
-
   return (
     <div className="app-shell">
       <nav className="app-tabs">
@@ -58,7 +36,50 @@ function App() {
           </button>
         ))}
       </nav>
-      <div className="app-tab-content">{renderTab()}</div>
+      {/* Every page stays mounted the whole time the app is open — only
+       *  `hidden` toggles, never a conditional-render swap. Found via
+       *  code inspection (not a guess): the old `renderTab()` switch
+       *  returned exactly one page component, so React fully unmounted
+       *  whichever page you left and mounted the next one from scratch
+       *  on every single tab click. That meant every switch paid to
+       *  rebuild the whole component tree AND re-fired every mount
+       *  effect as a fresh round of Tauri IPC calls (Chat re-fetches
+       *  agents/sessions/role templates; AI Control Center re-fetches
+       *  keys/usage/Ollama status; Skills re-lists skills — all of it,
+       *  every time, even switching back to a tab you'd just left).
+       *  Combined with a slow in-flight call from the page you're
+       *  leaving (e.g. Agent function calling's multi-round Anthropic
+       *  conversation — see the mutex fix this session already
+       *  shipped), the freshly-mounted page's own new IPC calls would
+       *  queue up behind whatever backend lock the old page's abandoned
+       *  call was still holding — this is what "switching pages
+       *  sometimes causes no response" actually was. `hidden` keeps
+       *  every page's state (and its one-time mount effects) alive
+       *  permanently instead: switching tabs becomes a plain CSS
+       *  visibility toggle, no remount, no re-fetch, no chance of a
+       *  freshly-mounted page's IPC call getting stuck behind a
+       *  previous page's still-in-flight one. */}
+      <div className="app-tab-content" hidden={tab !== "chat"}>
+        <Chat />
+      </div>
+      <div className="app-tab-content" hidden={tab !== "control-center"}>
+        <AIControlCenter />
+      </div>
+      <div className="app-tab-content" hidden={tab !== "skills"}>
+        <Skills />
+      </div>
+      <div className="app-tab-content" hidden={tab !== "usage"}>
+        <Usage />
+      </div>
+      <div className="app-tab-content" hidden={tab !== "manual"}>
+        <Manual />
+      </div>
+      <div className="app-tab-content" hidden={tab !== "settings"}>
+        <Settings
+          onShowGuardrailsSummary={() => setShowOnboarding(true)}
+          onOpenManual={() => setTab("manual")}
+        />
+      </div>
       {showOnboarding && <Onboarding onDismiss={() => setShowOnboarding(false)} />}
     </div>
   );
