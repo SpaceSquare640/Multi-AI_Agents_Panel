@@ -2,6 +2,18 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [1.0.2] - 2026-08-23
+
+### Changes
+
+- Chore: update CHANGELOG.md for v1.0.1 [skip ci]
+- Chore: bump version to 1.0.2
+
+### Fixed
+
+- Fix: kill Skills/ML Engine child processes on app exit
+- Fix: three real UI dead-ends found via user testing
+
 ## [1.0.1] - 2026-08-23
 
 ### Changes
