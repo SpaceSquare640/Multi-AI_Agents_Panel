@@ -2,6 +2,18 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [1.2.2] - 2026-08-23
+
+### Changes
+
+- Chore: update CHANGELOG.md for v1.2.1 [skip ci]
+- Chore: bump version to 1.2.2
+
+### Fixed
+
+- Fix: only suggest models the user can actually use
+- Fix: self-heal the installer against leftover locked files
+
 ## [1.2.1] - 2026-08-23
 
 ### Changes
