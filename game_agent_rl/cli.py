@@ -1,12 +1,13 @@
 """CLI entry point for Track B's offline tooling (see
-Game-Playing Agent Design.md section 4). `record` and `label` are
-implemented — `train-bc`/`train-rl`/`play` are future subcommands, not
-stubbed out with fake behavior (this project's convention: don't pretend
-something works when it doesn't exist yet).
+Game-Playing Agent Design.md section 4). `record`/`label`/`train-bc` are
+implemented — `train-rl`/`play` are future subcommands, not stubbed out
+with fake behavior (this project's convention: don't pretend something
+works when it doesn't exist yet).
 
 Usage:
   python -m game_agent_rl.cli record --session <name> --output-dir <dir>
   python -m game_agent_rl.cli label --session-dir <dir> [--window-seconds <n>]
+  python -m game_agent_rl.cli train-bc --session-dir <dir> --checkpoint-out <path> [--epochs <n>]
 """
 
 import argparse
@@ -70,6 +71,23 @@ def cmd_label(args: argparse.Namespace) -> None:
     )
 
 
+def cmd_train_bc(args: argparse.Namespace) -> None:
+    # Lazy import — `torch`/`Pillow` are only needed for this
+    # subcommand, same reasoning as `mss`/`pynput` being imported inside
+    # `cmd_record` rather than at module load time: `record`/`label`
+    # shouldn't require installing torch just to run.
+    from .train_bc import save_checkpoint, train
+
+    model, key_vocab, history = train(Path(args.session_dir), epochs=args.epochs, batch_size=args.batch_size)
+    save_checkpoint(model, key_vocab, Path(args.checkpoint_out))
+    loss_trace = " -> ".join(f"{loss:.4f}" for loss in history)
+    print(
+        f"Trained {args.epochs} epoch(s) on {args.session_dir} "
+        f"(loss per epoch: {loss_trace}) -> {args.checkpoint_out}",
+        file=sys.stderr,
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="game_agent_rl")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -89,6 +107,13 @@ def main() -> None:
         help="How long after a frame an input event can still count as its label (default: 1.0)",
     )
     label_parser.set_defaults(func=cmd_label)
+
+    train_bc_parser = sub.add_parser("train-bc", help="Train a behavior-cloning policy from a labeled session")
+    train_bc_parser.add_argument("--session-dir", required=True, help="A session folder produced by `label` (contains labels.jsonl)")
+    train_bc_parser.add_argument("--checkpoint-out", required=True, help="Where to write the trained policy checkpoint")
+    train_bc_parser.add_argument("--epochs", type=int, default=10, help="Training epochs (default: 10)")
+    train_bc_parser.add_argument("--batch-size", type=int, default=8, help="Training batch size (default: 8)")
+    train_bc_parser.set_defaults(func=cmd_train_bc)
 
     args = parser.parse_args()
     args.func(args)

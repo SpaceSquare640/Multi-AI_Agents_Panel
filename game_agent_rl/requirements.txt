@@ -5,3 +5,8 @@
 # checkpoints, not a capability the packaged app calls at runtime.
 mss>=9.0
 pynput>=1.7
+# train-bc stage only (not needed for record/label) — CPU-only torch is
+# fine here since this is a framework/skeleton for training on
+# whatever data the user provides, not a tuned/production model.
+torch>=2.0
+Pillow>=10.0
