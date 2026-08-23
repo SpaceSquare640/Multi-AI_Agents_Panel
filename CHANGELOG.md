@@ -2,6 +2,13 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [1.0.0] - 2026-08-23
+
+### Changes
+
+- Chore: update CHANGELOG.md for v0.18.0-beta [skip ci]
+- Chore: transition to GA — v1.0.0, no more prerelease tags
+
 ## [0.18.0-beta] - 2026-08-23
 
 ### Added
