@@ -2,6 +2,17 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [0.13.0-alpha] - 2026-08-23
+
+### Added
+
+- Add Track B (Deep RL) train-bc pipeline stage
+
+### Changes
+
+- Chore: update CHANGELOG.md for v0.12.0-alpha [skip ci]
+- Chore: bump version to 0.13.0-alpha
+
 ## [0.12.0-alpha] - 2026-08-23
 
 ### Changes
