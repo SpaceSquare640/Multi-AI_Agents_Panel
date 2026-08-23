@@ -1,13 +1,13 @@
 """CLI entry point for Track B's offline tooling (see
-Game-Playing Agent Design.md section 4). `record`/`label`/`train-bc` are
-implemented — `train-rl`/`play` are future subcommands, not stubbed out
-with fake behavior (this project's convention: don't pretend something
-works when it doesn't exist yet).
+Game-Playing Agent Design.md section 4). All five pipeline stages —
+`record`/`label`/`train-bc`/`train-rl`/`play` — are implemented.
 
 Usage:
   python -m game_agent_rl.cli record --session <name> --output-dir <dir>
   python -m game_agent_rl.cli label --session-dir <dir> [--window-seconds <n>]
   python -m game_agent_rl.cli train-bc --session-dir <dir> --checkpoint-out <path> [--epochs <n>]
+  python -m game_agent_rl.cli train-rl --session-dir <dir> --checkpoint-in <path> --checkpoint-out <path> [--epochs <n>]
+  python -m game_agent_rl.cli play --checkpoint <path> [--fps <n>] [--max-steps <n>]
   python -m game_agent_rl.cli example --output-dir <dir> [--session <name>]
 """
 
@@ -90,6 +90,39 @@ def cmd_train_bc(args: argparse.Namespace) -> None:
     )
 
 
+def cmd_train_rl(args: argparse.Namespace) -> None:
+    from .train_rl import fine_tune, save_checkpoint
+
+    model, key_vocab, history = fine_tune(
+        Path(args.session_dir),
+        Path(args.checkpoint_in),
+        epochs=args.epochs,
+        batch_size=args.batch_size,
+        temperature=args.temperature,
+    )
+    save_checkpoint(model, key_vocab, Path(args.checkpoint_out))
+    loss_trace = " -> ".join(f"{loss:.4f}" for loss in history)
+    print(
+        f"Fine-tuned {args.epochs} epoch(s) on {args.session_dir} "
+        f"(loss per epoch: {loss_trace}) -> {args.checkpoint_out}",
+        file=sys.stderr,
+    )
+
+
+def cmd_play(args: argparse.Namespace) -> None:
+    from .play import run
+
+    print(
+        f"Playing live from {args.checkpoint} at {args.fps} fps — Ctrl+C to stop. "
+        "Only run this against a game/account where automated input is actually allowed.",
+        file=sys.stderr,
+    )
+    try:
+        run(Path(args.checkpoint), fps=args.fps, max_steps=args.max_steps)
+    except KeyboardInterrupt:
+        pass
+
+
 def cmd_example(args: argparse.Namespace) -> None:
     session_path = generate_example_session(Path(args.output_dir), args.session)
     print(
@@ -125,6 +158,21 @@ def main() -> None:
     train_bc_parser.add_argument("--epochs", type=int, default=10, help="Training epochs (default: 10)")
     train_bc_parser.add_argument("--batch-size", type=int, default=8, help="Training batch size (default: 8)")
     train_bc_parser.set_defaults(func=cmd_train_bc)
+
+    train_rl_parser = sub.add_parser("train-rl", help="Fine-tune a checkpoint using per-frame rewards (reward-weighted regression)")
+    train_rl_parser.add_argument("--session-dir", required=True, help="A session folder produced by `label` (contains labels.jsonl); optionally rewards.jsonl too")
+    train_rl_parser.add_argument("--checkpoint-in", required=True, help="A checkpoint produced by `train-bc` or a previous `train-rl` run")
+    train_rl_parser.add_argument("--checkpoint-out", required=True, help="Where to write the fine-tuned checkpoint")
+    train_rl_parser.add_argument("--epochs", type=int, default=5, help="Fine-tuning epochs (default: 5)")
+    train_rl_parser.add_argument("--batch-size", type=int, default=8, help="Training batch size (default: 8)")
+    train_rl_parser.add_argument("--temperature", type=float, default=1.0, help="Reward-weighting temperature — higher flattens the weights toward plain BC (default: 1.0)")
+    train_rl_parser.set_defaults(func=cmd_train_rl)
+
+    play_parser = sub.add_parser("play", help="Run a trained checkpoint live: screenshot in, real mouse/keyboard input out")
+    play_parser.add_argument("--checkpoint", required=True, help="A checkpoint produced by `train-bc` or `train-rl`")
+    play_parser.add_argument("--fps", type=float, default=2.0, help="Decision rate (default: 2)")
+    play_parser.add_argument("--max-steps", type=int, default=None, help="Stop after this many actions (default: run until Ctrl+C)")
+    play_parser.set_defaults(func=cmd_play)
 
     example_parser = sub.add_parser(
         "example", help="Generate a small synthetic (non-real) example session to try the pipeline against"
