@@ -1,4 +1,4 @@
-//! One-click installer for CherryTree (https://github.com/giuspen/cherrytree),
+//! One-click installer for CherryTree (<https://github.com/giuspen/cherrytree>),
 //! a standalone hierarchical note-taking app — offered as a companion
 //! option next to this app's own native Notes feature (see `storage::Note`)
 //! for users who want CherryTree's fuller feature set (rich text, code
