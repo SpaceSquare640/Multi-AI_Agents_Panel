@@ -11,7 +11,7 @@
    shared cyan-dim background stands in for a divider between the two
    bordered "windows" instead of a single border rule. */
 .manual-toc {
-  width: 260px;
+  width: 300px;
   flex: 0 0 auto;
   padding: 1.25rem 0.9rem;
   overflow-y: auto;
@@ -40,8 +40,12 @@
   box-shadow: none;
   border: none;
   border-radius: 2px;
-  padding: 0.45rem 0.6rem;
-  font-size: 0.85rem;
+  padding: 0.5rem 0.6rem;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: break-word;
   margin-bottom: 2px;
 }
 

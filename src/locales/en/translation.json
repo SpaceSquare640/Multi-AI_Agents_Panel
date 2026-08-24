@@ -238,16 +238,16 @@
         "id": "game-agent-track-b",
         "title": "How to: train and run your own game-playing model (Track B)",
         "category": "machineLearning",
-        "minutes": 4,
+        "minutes": 3,
         "paragraphs": [
-          "This is command-line, not clicking around the app — five steps, run in order. No recording yet? Skip to the tip at the end.",
-          "1. Record: Machine Learning → Deep RL → name your session, pick an output folder, click \"Start recording\", play the game, click \"Stop\".",
-          "2. Label: `python -m game_agent_rl.cli label --session-dir <your session folder>`",
-          "3. Train: `python -m game_agent_rl.cli train-bc --session-dir <dir> --checkpoint-out policy.pt --epochs 10`",
-          "4. Play it back: `python -m game_agent_rl.cli play --checkpoint policy.pt` — Ctrl+C to stop.",
-          "5. (Optional) Improve it: write a `rewards.jsonl` next to your `labels.jsonl` scoring the frames you care about, then `python -m game_agent_rl.cli train-rl --session-dir <dir> --checkpoint-in policy.pt --checkpoint-out policy-rl.pt --epochs 5` — use `policy-rl.pt` in step 4 instead.",
-          "Tip: no recording yet? `python -m game_agent_rl.cli example --output-dir <dir>` makes a fake practice session so you can try steps 2–4 right now.",
-          "Reality check: the model only plays as well as your recording taught it — a two-minute demo won't play well, and that's expected, not broken."
+          "All in the app now — no terminal needed except for one optional shortcut at the end. No recording yet? Skip to the tip.",
+          "1. Record: Machine Learning -> \"Deep RL: Record demonstration\" -> name your session, pick an output folder, click \"Start recording\", play the game, click \"Stop\".",
+          "2. Label: In \"Session folder\", paste or Browse to the folder shown after you stopped recording, then click \"Run label\".",
+          "3. Train: Set a checkpoint filename (default policy.pt) and epoch count, click \"Run train-bc\".",
+          "4. Play it back: Enter that checkpoint filename in the Play section, click \"Start playing\" -- click \"Stop\" when done.",
+          "5. (Optional) Improve it: write a rewards.jsonl next to your labels.jsonl in the session folder, scoring the frames you care about. Then set Checkpoint input to policy.pt and Checkpoint output to a new name, click \"Run train-rl\" -- use that new checkpoint in step 4 instead.",
+          "Tip: no recording yet? Run `python -m game_agent_rl.cli example --output-dir <dir>` once in a terminal to generate a fake practice session, then continue from step 2 using that folder -- this is the only step still CLI-only.",
+          "Reality check: the model only plays as well as your recording taught it -- a two-minute demo won't play well, and that's expected, not broken."
         ]
       }
     ]
@@ -483,7 +483,10 @@
       "statusStopped": "stopped",
       "stop": "Stop",
       "starting": "Starting…",
-      "startRecording": "Start recording"
+      "startRecording": "Start recording",
+      "browse": "Browse…",
+      "sessionDirLabel": "Session folder (use this for the CLI steps):",
+      "copyPath": "Copy"
     }
   },
   "ml": {
@@ -494,6 +497,27 @@
       "none": "No Agent or Group Chat has semantic search granted yet — grant it from an Agent's panel in Chat.",
       "agent": "Agent",
       "groupChat": "Group Chat"
+    },
+    "pipeline": {
+      "sessionDirHeading": "Session folder",
+      "sessionDirHint": "Point this at a session folder created by Record (or the example generator) — every step below reads from and writes to it.",
+      "sessionDirPlaceholder": "Session folder",
+      "labelHeading": "1. Label",
+      "labelHint": "Turns recorded frames + raw input events into labeled training examples.",
+      "labelRun": "Run label",
+      "running": "Running…",
+      "bcHeading": "2. Train (behavior cloning)",
+      "bcHint": "Trains a model to imitate the labeled session, writing a checkpoint file.",
+      "bcRun": "Run train-bc",
+      "checkpointOutPlaceholder": "Checkpoint output path (e.g. policy.pt)",
+      "epochsPlaceholder": "Epochs",
+      "rlHeading": "3. Improve (optional, reward-weighted fine-tuning)",
+      "rlHint": "Fine-tunes an existing checkpoint using a rewards.jsonl file placed next to labels.jsonl in the session folder.",
+      "rlRun": "Run train-rl",
+      "checkpointInPlaceholder": "Checkpoint input path (e.g. policy.pt)",
+      "playHeading": "4. Play",
+      "playHint": "Loads a trained checkpoint and runs a live loop: screenshot -> model -> real mouse/keyboard action, until you stop it.",
+      "playRun": "Start playing"
     }
   }
 }

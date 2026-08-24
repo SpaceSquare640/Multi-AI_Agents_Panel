@@ -265,6 +265,65 @@ pub fn recording_status(state: State<RecordingState>) -> bool {
     game_agent::is_recording(&state)
 }
 
+/// Runs Track B's `label` stage over an already-recorded session
+/// directory and returns the CLI's own output. Blocking but bounded —
+/// this reads a finite set of recorded frames/events, not a live loop.
+#[tauri::command]
+pub fn label_recording_session(
+    recording_dir: State<crate::RecordingDir>,
+    session_dir: String,
+) -> Result<String, String> {
+    game_agent::run_label(&recording_dir.0, &session_dir)
+}
+
+/// Runs Track B's `train-bc` stage (behavior cloning) over a labeled
+/// session directory, writing a checkpoint. Blocking — training time
+/// scales with epoch count and session size, so this can take a while
+/// for a real (non-toy) session.
+#[tauri::command]
+pub fn train_behavior_cloning(
+    recording_dir: State<crate::RecordingDir>,
+    session_dir: String,
+    checkpoint_out: String,
+    epochs: u32,
+) -> Result<String, String> {
+    game_agent::run_train_bc(&recording_dir.0, &session_dir, &checkpoint_out, epochs)
+}
+
+/// Runs Track B's `train-rl` stage (reward-weighted fine-tuning) over an
+/// existing behavior-cloning checkpoint, writing a new checkpoint.
+#[tauri::command]
+pub fn train_reinforcement(
+    recording_dir: State<crate::RecordingDir>,
+    session_dir: String,
+    checkpoint_in: String,
+    checkpoint_out: String,
+    epochs: u32,
+) -> Result<String, String> {
+    game_agent::run_train_rl(&recording_dir.0, &session_dir, &checkpoint_in, &checkpoint_out, epochs)
+}
+
+/// Starts Track B's `play` stage: loads a trained checkpoint and runs a
+/// live screenshot → model → real mouse/keyboard loop until stopped.
+#[tauri::command]
+pub fn start_play_checkpoint(
+    state: State<crate::game_agent::PlayState>,
+    recording_dir: State<crate::RecordingDir>,
+    checkpoint: String,
+) -> Result<(), String> {
+    game_agent::start_play(&state, &recording_dir.0, &checkpoint)
+}
+
+#[tauri::command]
+pub fn stop_play_checkpoint(state: State<crate::game_agent::PlayState>) -> Result<(), String> {
+    game_agent::stop_play(&state)
+}
+
+#[tauri::command]
+pub fn play_status(state: State<crate::game_agent::PlayState>) -> bool {
+    game_agent::is_playing(&state)
+}
+
 #[tauri::command]
 pub fn ollama_is_running() -> bool {
     ollama::is_running()

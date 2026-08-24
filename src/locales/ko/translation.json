@@ -238,16 +238,16 @@
         "id": "game-agent-track-b",
         "title": "사용법: 나만의 게임 플레이 모델 학습하고 실행하기(Track B)",
         "category": "machineLearning",
-        "minutes": 4,
+        "minutes": 3,
         "paragraphs": [
-          "이건 앱 안에서 클릭하는 게 아니라 명령줄 작업——순서대로 5단계. 아직 녹화한 게 없다면 마지막 팁으로 건너뛸 것.",
-          "1. 녹화: 「머신러닝」→ Deep RL → 세션 이름과 출력 폴더를 정하고 \"녹화 시작\" 클릭, 게임 플레이, 끝나면 \"중지\" 클릭.",
-          "2. 라벨링: `python -m game_agent_rl.cli label --session-dir <당신의 세션 폴더>`",
-          "3. 학습: `python -m game_agent_rl.cli train-bc --session-dir <dir> --checkpoint-out policy.pt --epochs 10`",
-          "4. 실행해보기: `python -m game_agent_rl.cli play --checkpoint policy.pt`——Ctrl+C로 중지.",
-          "5. (선택) 개선하기: `labels.jsonl` 옆에 `rewards.jsonl`을 작성해 신경 쓰는 프레임에 점수를 매기고, `python -m game_agent_rl.cli train-rl --session-dir <dir> --checkpoint-in policy.pt --checkpoint-out policy-rl.pt --epochs 5`를 실행——4단계에서는 `policy-rl.pt`를 대신 사용.",
-          "팁: 아직 녹화한 게 없나요? `python -m game_agent_rl.cli example --output-dir <dir>`로 가짜 연습용 세션을 만들면 지금 바로 2~4단계를 시도할 수 있음.",
-          "현실 체크: 모델은 당신이 가르친 만큼만 플레이한다——2분짜리 데모로는 잘 플레이하지 못하며, 이는 예상된 결과이지 고장이 아니다."
+          "이제 모두 앱 안에서 진행됩니다—마지막의 선택적 팁 하나만 터미널이 필요합니다. 아직 녹화가 없다면 팁으로 건너뛰세요.",
+          "1. 녹화: 머신러닝 → \"딥 RL: 시연 녹화\" → 세션 이름 입력, 출력 폴더 선택, \"녹화 시작\" 클릭, 게임 플레이, 완료 후 \"정지\" 클릭.",
+          "2. 라벨링: \"세션 폴더\"에 녹화를 멈춘 뒤 표시된 폴더를 붙여넣거나 \"찾아보기…\"로 선택한 다음, \"라벨링 실행\"을 클릭.",
+          "3. 학습: 체크포인트 파일명(기본값 policy.pt)과 에포크 수를 설정하고 \"train-bc 실행\"을 클릭.",
+          "4. 실행해 보기: \"4. 플레이\" 섹션에 그 체크포인트 파일명을 입력하고 \"플레이 시작\"을 클릭—완료되면 \"정지\".",
+          "5. (선택) 개선하기: 세션 폴더의 `labels.jsonl` 옆에 관심 있는 프레임을 평가하는 `rewards.jsonl`을 작성하세요. 그런 다음 체크포인트 입력을 policy.pt, 출력을 새 이름으로 설정하고 \"train-rl 실행\"을 클릭—4단계에서 그 새 체크포인트를 사용하세요.",
+          "팁: 아직 녹화가 없나요? 터미널에서 한 번 `python -m game_agent_rl.cli example --output-dir <dir>`을 실행해 가짜 연습 세션을 만든 다음, 그 폴더로 2단계부터 계속하세요—이것이 여전히 CLI가 필요한 유일한 단계입니다.",
+          "현실 점검: 모델은 당신이 가르친 녹화만큼만 플레이합니다—2분짜리 데모로는 잘 플레이되지 않으며, 이는 예상된 것이지 고장이 아닙니다."
         ]
       }
     ]
@@ -483,7 +483,10 @@
       "statusStopped": "중지됨",
       "stop": "중지",
       "starting": "시작 중…",
-      "startRecording": "녹화 시작"
+      "startRecording": "녹화 시작",
+      "browse": "찾아보기…",
+      "sessionDirLabel": "세션 폴더(이후 CLI 명령에 사용하는 경로):",
+      "copyPath": "복사"
     }
   },
   "ml": {
@@ -494,6 +497,27 @@
       "none": "아직 시맨틱 검색이 허용된 Agent나 그룹 채팅이 없습니다——「채팅」의 Agent 패널에서 허용하세요.",
       "agent": "Agent",
       "groupChat": "그룹 채팅"
+    },
+    "pipeline": {
+      "sessionDirHeading": "세션 폴더",
+      "sessionDirHint": "\"녹화\"(또는 예제 생성기)로 만든 세션 폴더를 지정하세요—아래 각 단계는 이 폴더를 읽고 씁니다.",
+      "sessionDirPlaceholder": "세션 폴더",
+      "labelHeading": "1. 라벨링",
+      "labelHint": "녹화된 프레임과 원시 입력 이벤트를 라벨이 지정된 학습 예제로 변환합니다.",
+      "labelRun": "라벨링 실행",
+      "running": "실행 중…",
+      "bcHeading": "2. 학습(행동 복제)",
+      "bcHint": "라벨링된 세션을 모방하도록 모델을 학습시켜 체크포인트 파일을 저장합니다.",
+      "bcRun": "train-bc 실행",
+      "checkpointOutPlaceholder": "체크포인트 출력 경로(예: policy.pt)",
+      "epochsPlaceholder": "에포크 수",
+      "rlHeading": "3. 개선(선택 사항, 보상 가중치 미세 조정)",
+      "rlHint": "세션 폴더에서 labels.jsonl 옆에 둔 rewards.jsonl 파일을 사용해 기존 체크포인트를 미세 조정합니다.",
+      "rlRun": "train-rl 실행",
+      "checkpointInPlaceholder": "체크포인트 입력 경로(예: policy.pt)",
+      "playHeading": "4. 플레이",
+      "playHint": "학습된 체크포인트를 불러와 중지할 때까지 스크린샷 -> 모델 -> 실제 마우스/키보드 동작 루프를 실행합니다.",
+      "playRun": "플레이 시작"
     }
   }
 }

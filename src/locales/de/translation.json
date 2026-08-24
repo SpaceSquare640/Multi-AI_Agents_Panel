@@ -238,16 +238,16 @@
         "id": "game-agent-track-b",
         "title": "Anleitung: Ihr eigenes Spielmodell trainieren und ausführen (Track B)",
         "category": "machineLearning",
-        "minutes": 4,
+        "minutes": 3,
         "paragraphs": [
-          "Dies ist Kommandozeilenarbeit, kein Klicken in der App — fünf Schritte, der Reihe nach. Noch keine Aufnahme? Springen Sie direkt zum Tipp am Ende.",
-          "1. Aufnehmen: Maschinelles Lernen → Deep RL → benennen Sie Ihre Sitzung, wählen Sie einen Ausgabeordner, klicken Sie auf „Aufzeichnung starten“, spielen Sie das Spiel, klicken Sie auf „Stopp“.",
-          "2. Beschriften: `python -m game_agent_rl.cli label --session-dir <Ihr Sitzungsordner>`",
-          "3. Trainieren: `python -m game_agent_rl.cli train-bc --session-dir <dir> --checkpoint-out policy.pt --epochs 10`",
-          "4. Ausprobieren: `python -m game_agent_rl.cli play --checkpoint policy.pt` — Strg+C zum Stoppen.",
-          "5. (Optional) Verbessern: Schreiben Sie eine `rewards.jsonl` neben Ihre `labels.jsonl` und bewerten Sie die Frames, die Ihnen wichtig sind, führen Sie dann `python -m game_agent_rl.cli train-rl --session-dir <dir> --checkpoint-in policy.pt --checkpoint-out policy-rl.pt --epochs 5` aus — verwenden Sie in Schritt 4 stattdessen `policy-rl.pt`.",
-          "Tipp: Noch keine Aufnahme? `python -m game_agent_rl.cli example --output-dir <dir>` erstellt eine gefälschte Übungssitzung, mit der Sie die Schritte 2–4 sofort ausprobieren können.",
-          "Realitätscheck: Das Modell spielt nur so gut, wie Ihre Aufnahme es gelehrt hat — eine zweiminütige Demo wird nicht gut spielen, das ist zu erwarten, kein Fehler."
+          "Jetzt alles in der App -- nur ein optionaler Trick am Ende benoetigt ein Terminal. Noch keine Aufnahme? Springen Sie zum Tipp.",
+          "1. Aufnehmen: Maschinelles Lernen -> „Deep RL: Vorfuehrung aufzeichnen“ -> benennen Sie Ihre Sitzung, waehlen Sie einen Ausgabeordner, klicken Sie auf „Aufzeichnung starten“, spielen Sie das Spiel, klicken Sie auf „Stopp“.",
+          "2. Beschriften: Fuegen Sie unter „Sitzungsordner“ den nach dem Stoppen angezeigten Ordner ein (oder waehlen Sie ihn per „Durchsuchen…“), klicken Sie dann auf „Beschriftung ausfuehren“.",
+          "3. Trainieren: Legen Sie einen Checkpoint-Dateinamen fest (Standard policy.pt) und eine Epochenzahl, klicken Sie auf „train-bc ausfuehren“.",
+          "4. Ausprobieren: Geben Sie diesen Checkpoint-Namen im Abschnitt „Abspielen“ ein, klicken Sie auf „Start“ -- klicken Sie auf „Stopp“, wenn Sie fertig sind.",
+          "5. (Optional) Verbessern: Schreiben Sie eine rewards.jsonl neben Ihre labels.jsonl im Sitzungsordner und bewerten Sie die Frames, die Ihnen wichtig sind. Setzen Sie dann den Checkpoint-Eingabepfad auf policy.pt und den Ausgabepfad auf einen neuen Namen, klicken Sie auf „train-rl ausfuehren“ -- verwenden Sie diesen neuen Checkpoint in Schritt 4.",
+          "Tipp: Noch keine Aufnahme? Fuehren Sie einmal in einem Terminal `python -m game_agent_rl.cli example --output-dir <dir>` aus, um eine Uebungssitzung zu erzeugen, und fahren Sie dann ab Schritt 2 mit diesem Ordner fort -- das ist der einzige verbleibende CLI-Schritt.",
+          "Realitaetscheck: Das Modell spielt nur so gut, wie Ihre Aufnahme es gelehrt hat -- eine zweiminuetige Demo wird nicht gut spielen, und das ist zu erwarten, kein Fehler."
         ]
       }
     ]
@@ -483,7 +483,10 @@
       "statusStopped": "gestoppt",
       "stop": "Stopp",
       "starting": "Wird gestartet…",
-      "startRecording": "Aufzeichnung starten"
+      "startRecording": "Aufzeichnung starten",
+      "browse": "Durchsuchen…",
+      "sessionDirLabel": "Sitzungsordner (für die folgenden CLI-Befehle verwenden):",
+      "copyPath": "Kopieren"
     }
   },
   "ml": {
@@ -494,6 +497,27 @@
       "none": "Noch keinem Agenten oder Gruppenchat wurde semantische Suche gewährt — gewähren Sie sie über das Panel eines Agenten im Chat.",
       "agent": "Agent",
       "groupChat": "Gruppenchat"
+    },
+    "pipeline": {
+      "sessionDirHeading": "Sitzungsordner",
+      "sessionDirHint": "Verweisen Sie hier auf einen von „Aufzeichnen“ (oder dem Beispielgenerator) erstellten Sitzungsordner — jeder Schritt unten liest und schreibt darin.",
+      "sessionDirPlaceholder": "Sitzungsordner",
+      "labelHeading": "1. Beschriften",
+      "labelHint": "Wandelt aufgezeichnete Frames und rohe Eingabeereignisse in beschriftete Trainingsbeispiele um.",
+      "labelRun": "Beschriftung ausfuehren",
+      "running": "Wird ausgefuehrt…",
+      "bcHeading": "2. Trainieren (Behavior Cloning)",
+      "bcHint": "Trainiert ein Modell, die beschriftete Sitzung nachzuahmen, und schreibt eine Checkpoint-Datei.",
+      "bcRun": "train-bc ausfuehren",
+      "checkpointOutPlaceholder": "Checkpoint-Ausgabepfad (z. B. policy.pt)",
+      "epochsPlaceholder": "Epochen",
+      "rlHeading": "3. Verbessern (optional, belohnungsgewichtetes Feintuning)",
+      "rlHint": "Feintuning eines bestehenden Checkpoints mit einer rewards.jsonl-Datei neben labels.jsonl im Sitzungsordner.",
+      "rlRun": "train-rl ausfuehren",
+      "checkpointInPlaceholder": "Checkpoint-Eingabepfad (z. B. policy.pt)",
+      "playHeading": "4. Abspielen",
+      "playHint": "Laedt einen trainierten Checkpoint und fuehrt eine Live-Schleife aus: Screenshot -> Modell -> echte Maus-/Tastaturaktion, bis Sie stoppen.",
+      "playRun": "Start"
     }
   }
 }

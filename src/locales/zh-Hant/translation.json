@@ -238,15 +238,15 @@
         "id": "game-agent-track-b",
         "title": "教學：訓練並執行您自己的遊戲操作模型（Track B）",
         "category": "machineLearning",
-        "minutes": 4,
+        "minutes": 3,
         "paragraphs": [
-          "這是命令列操作，不是在 App 裡點來點去——依序做五步。還沒錄過示範？直接跳到最後的小技巧。",
-          "1. 錄製：「機械學習」→ Deep RL → 幫工作階段命名、選輸出資料夾、點擊「開始錄製」、開始玩遊戲、玩完點擊「停止」。",
-          "2. 標記：`python -m game_agent_rl.cli label --session-dir <您的工作階段資料夾>`",
-          "3. 訓練：`python -m game_agent_rl.cli train-bc --session-dir <dir> --checkpoint-out policy.pt --epochs 10`",
-          "4. 執行看看：`python -m game_agent_rl.cli play --checkpoint policy.pt`——按 Ctrl+C 停止。",
-          "5.（選用）改良它：在 `labels.jsonl` 旁寫一個 `rewards.jsonl`，幫您在意的畫面評分，再跑 `python -m game_agent_rl.cli train-rl --session-dir <dir> --checkpoint-in policy.pt --checkpoint-out policy-rl.pt --epochs 5`——第 4 步改用 `policy-rl.pt`。",
-          "小技巧：還沒錄過示範？`python -m game_agent_rl.cli example --output-dir <dir>` 會產生一個假的練習用工作階段，讓您現在就能試試第 2–4 步。",
+          "現在全部在 App 內完成——只有最後一個選用的小技巧需要終端機。還沒錄過？直接跳到小技巧。",
+          "1. 錄製：機械學習 →「深度強化學習：錄製示範」→ 幫工作階段命名、選輸出資料夾、點擊「開始錄製」、開始玩遊戲、玩完點擊「停止」。",
+          "2. 標記：在「工作階段資料夾」貼上（或用「瀏覽…」選擇）停止錄製後顯示的那個資料夾，然後點擊「執行標記」。",
+          "3. 訓練：設定 checkpoint 檔名（預設 policy.pt）與訓練輪數，點擊「執行 train-bc」。",
+          "4. 執行看看：在「執行遊玩」區塊輸入該 checkpoint 檔名，點擊「開始遊玩」——完成後點擊「停止」。",
+          "5.（選用）改良它：在工作階段資料夾內、`labels.jsonl` 旁寫一個 `rewards.jsonl`，幫您在意的畫面評分。接著把 Checkpoint 輸入路徑設為 policy.pt、輸出路徑設為新檔名，點擊「執行 train-rl」——第 4 步改用這個新 checkpoint。",
+          "小技巧：還沒錄過範例？在終端機執行一次 `python -m game_agent_rl.cli example --output-dir <dir>` 產生一個假的練習工作階段，再從第 2 步接著用那個資料夾——這是唯一仍需要終端機的步驟。",
           "現實檢查：模型只會玩得跟您教它的一樣好——兩分鐘的示範不會訓練出會玩的模型，這是預期中的事，不是壞掉了。"
         ]
       }
@@ -483,7 +483,10 @@
       "statusStopped": "已停止",
       "stop": "停止",
       "starting": "啟動中…",
-      "startRecording": "開始錄製"
+      "startRecording": "開始錄製",
+      "browse": "瀏覽…",
+      "sessionDirLabel": "工作階段資料夾（後續 CLI 指令要用這個路徑）：",
+      "copyPath": "複製"
     }
   },
   "ml": {
@@ -494,6 +497,27 @@
       "none": "目前沒有任何 Agent 或群組對話被授予語意搜尋——請到「對話」中該 Agent 的面板授予。",
       "agent": "Agent",
       "groupChat": "群組對話"
+    },
+    "pipeline": {
+      "sessionDirHeading": "工作階段資料夾",
+      "sessionDirHint": "指向「錄製」（或範例產生器）建立的工作階段資料夾——下方每個步驟都會讀寫這個資料夾。",
+      "sessionDirPlaceholder": "工作階段資料夾",
+      "labelHeading": "1. 標記",
+      "labelHint": "把錄製的畫面影格與原始輸入事件轉成有標記的訓練樣本。",
+      "labelRun": "執行標記",
+      "running": "執行中…",
+      "bcHeading": "2. 訓練（行為克隆）",
+      "bcHint": "訓練模型模仿已標記的工作階段，寫出一個 checkpoint 檔案。",
+      "bcRun": "執行 train-bc",
+      "checkpointOutPlaceholder": "Checkpoint 輸出路徑（例如 policy.pt）",
+      "epochsPlaceholder": "訓練輪數",
+      "rlHeading": "3. 改良（選用，依獎勵加權微調）",
+      "rlHint": "用工作階段資料夾內、放在 labels.jsonl 旁的 rewards.jsonl 檔案微調既有 checkpoint。",
+      "rlRun": "執行 train-rl",
+      "checkpointInPlaceholder": "Checkpoint 輸入路徑（例如 policy.pt）",
+      "playHeading": "4. 執行遊玩",
+      "playHint": "載入訓練好的 checkpoint，跑即時迴圈：截圖 -> 模型 -> 真實滑鼠／鍵盤操作，直到您停止為止。",
+      "playRun": "開始遊玩"
     }
   }
 }

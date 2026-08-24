@@ -238,15 +238,15 @@
         "id": "game-agent-track-b",
         "title": "教程：训练并运行您自己的游戏操作模型（Track B）",
         "category": "machineLearning",
-        "minutes": 4,
+        "minutes": 3,
         "paragraphs": [
-          "这是命令行操作，不是在 App 里点来点去——依序做五步。还没录过示范？直接跳到最后的小技巧。",
-          "1. 录制：「机器学习」→ Deep RL → 给会话命名、选输出文件夹、点击「开始录制」、开始玩游戏、玩完点击「停止」。",
-          "2. 标记：`python -m game_agent_rl.cli label --session-dir <您的会话文件夹>`",
-          "3. 训练：`python -m game_agent_rl.cli train-bc --session-dir <dir> --checkpoint-out policy.pt --epochs 10`",
-          "4. 运行看看：`python -m game_agent_rl.cli play --checkpoint policy.pt`——按 Ctrl+C 停止。",
-          "5.（可选）改良它：在 `labels.jsonl` 旁写一个 `rewards.jsonl`，给您在意的画面评分，再跑 `python -m game_agent_rl.cli train-rl --session-dir <dir> --checkpoint-in policy.pt --checkpoint-out policy-rl.pt --epochs 5`——第 4 步改用 `policy-rl.pt`。",
-          "小技巧：还没录过示范？`python -m game_agent_rl.cli example --output-dir <dir>` 会生成一个假的练习用会话，让您现在就能试试第 2–4 步。",
+          "现在全部在 App 内完成——只有最后一个可选的小技巧需要终端机。还没录过？直接跳到小技巧。",
+          "1. 录制：机械学习 →「深度强化学习：录制示范」→ 帮工作阶段命名、选输出文件夹、点击「开始录制」、开始玩游戏、玩完点击「停止」。",
+          "2. 标记：在「工作阶段文件夹」粘贴（或用「浏览…」选择）停止录制后显示的那个文件夹，然后点击「执行标记」。",
+          "3. 训练：设置 checkpoint 文件名（默认 policy.pt）与训练轮数，点击「执行 train-bc」。",
+          "4. 执行看看：在「执行游玩」区块输入该 checkpoint 文件名，点击「开始游玩」——完成后点击「停止」。",
+          "5.（可选）改良它：在工作阶段文件夹内、`labels.jsonl` 旁写一个 `rewards.jsonl`，帮您在意的画面评分。接着把 Checkpoint 输入路径设为 policy.pt、输出路径设为新文件名，点击「执行 train-rl」——第 4 步改用这个新 checkpoint。",
+          "小技巧：还没录过范例？在终端机执行一次 `python -m game_agent_rl.cli example --output-dir <dir>` 生成一个假的练习工作阶段，再从第 2 步接着用那个文件夹——这是唯一仍需要终端机的步骤。",
           "现实检查：模型只会玩得跟您教它的一样好——两分钟的示范不会训练出会玩的模型，这是预期中的事，不是坏掉了。"
         ]
       }
@@ -483,7 +483,10 @@
       "statusStopped": "已停止",
       "stop": "停止",
       "starting": "启动中…",
-      "startRecording": "开始录制"
+      "startRecording": "开始录制",
+      "browse": "浏览…",
+      "sessionDirLabel": "工作阶段文件夹（后续 CLI 命令要用这个路径）：",
+      "copyPath": "复制"
     }
   },
   "ml": {
@@ -494,6 +497,27 @@
       "none": "目前没有任何 Agent 或群组对话被授予语义搜索——请到「对话」中该 Agent 的面板授予。",
       "agent": "Agent",
       "groupChat": "群组对话"
+    },
+    "pipeline": {
+      "sessionDirHeading": "工作阶段文件夹",
+      "sessionDirHint": "指向「录制」（或范例生成器）建立的工作阶段文件夹——下方每个步骤都会读写这个文件夹。",
+      "sessionDirPlaceholder": "工作阶段文件夹",
+      "labelHeading": "1. 标记",
+      "labelHint": "把录制的画面帧与原始输入事件转成带标记的训练样本。",
+      "labelRun": "执行标记",
+      "running": "执行中…",
+      "bcHeading": "2. 训练（行为克隆）",
+      "bcHint": "训练模型模仿已标记的工作阶段，写出一个 checkpoint 文件。",
+      "bcRun": "执行 train-bc",
+      "checkpointOutPlaceholder": "Checkpoint 输出路径（例如 policy.pt）",
+      "epochsPlaceholder": "训练轮数",
+      "rlHeading": "3. 改良（可选，按奖励加权微调）",
+      "rlHint": "用工作阶段文件夹内、放在 labels.jsonl 旁的 rewards.jsonl 文件微调已有 checkpoint。",
+      "rlRun": "执行 train-rl",
+      "checkpointInPlaceholder": "Checkpoint 输入路径（例如 policy.pt）",
+      "playHeading": "4. 执行游玩",
+      "playHint": "加载训练好的 checkpoint，跑实时循环：截图 -> 模型 -> 真实鼠标／键盘操作，直到您停止为止。",
+      "playRun": "开始游玩"
     }
   }
 }

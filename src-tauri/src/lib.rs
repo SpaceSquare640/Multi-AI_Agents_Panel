@@ -138,6 +138,7 @@ pub fn run() {
             // module docs).
             app.manage(GameAgentState(std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false))));
             app.manage(RecordingState(Mutex::new(None)));
+            app.manage(game_agent::PlayState(Mutex::new(None)));
             app.manage(RecordingDir(game_agent::resolve_recording_dir(app.path().resource_dir().ok())));
             Ok(())
         })
@@ -159,6 +160,12 @@ pub fn run() {
             commands::start_recording_session,
             commands::stop_recording_session,
             commands::recording_status,
+            commands::label_recording_session,
+            commands::train_behavior_cloning,
+            commands::train_reinforcement,
+            commands::start_play_checkpoint,
+            commands::stop_play_checkpoint,
+            commands::play_status,
             commands::ollama_is_running,
             commands::list_ollama_installed_models,
             commands::pull_ollama_model,
@@ -250,6 +257,20 @@ pub fn run() {
                 }
                 if let Some(state) = app_handle.try_state::<MlEngineRuntimeState>() {
                     drop(state.0.lock().unwrap().take());
+                }
+                // `record`/`play` subprocesses control real screen
+                // capture and mouse/keyboard input — an orphaned one
+                // surviving app close is worse than an orphaned bridge
+                // process, so these get the same explicit-kill treatment.
+                if let Some(state) = app_handle.try_state::<RecordingState>() {
+                    if let Some(mut child) = state.0.lock().unwrap().take() {
+                        let _ = child.kill();
+                    }
+                }
+                if let Some(state) = app_handle.try_state::<game_agent::PlayState>() {
+                    if let Some(mut child) = state.0.lock().unwrap().take() {
+                        let _ = child.kill();
+                    }
                 }
             }
         });

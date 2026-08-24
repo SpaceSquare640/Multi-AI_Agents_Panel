@@ -238,16 +238,16 @@
         "id": "game-agent-track-b",
         "title": "使い方：自分のゲームプレイモデルを訓練して動かす（Track B）",
         "category": "machineLearning",
-        "minutes": 4,
+        "minutes": 3,
         "paragraphs": [
-          "これはアプリ内のクリック操作ではなく、コマンドライン操作——5ステップを順番に実行する。まだ録画していない場合は最後のヒントへ。",
-          "1. 録画：「機械学習」→ Deep RL → セッション名と出力フォルダーを設定し、「記録を開始」をクリック、ゲームをプレイし、「停止」をクリック。",
-          "2. ラベル付け：`python -m game_agent_rl.cli label --session-dir <あなたのセッションフォルダー>`",
-          "3. 学習：`python -m game_agent_rl.cli train-bc --session-dir <dir> --checkpoint-out policy.pt --epochs 10`",
-          "4. 実行してみる：`python -m game_agent_rl.cli play --checkpoint policy.pt`——Ctrl+Cで停止。",
-          "5.（任意）改善する：`labels.jsonl` の隣に `rewards.jsonl` を書いて気になるフレームを採点し、`python -m game_agent_rl.cli train-rl --session-dir <dir> --checkpoint-in policy.pt --checkpoint-out policy-rl.pt --epochs 5` を実行する——ステップ4では `policy-rl.pt` を使う。",
-          "ヒント：まだ録画していない？ `python -m game_agent_rl.cli example --output-dir <dir>` で練習用の疑似セッションを作れば、今すぐステップ2〜4を試せる。",
-          "現実的な話：モデルは教えた通りにしかプレイできない——2分間のデモではうまくプレイできず、それは想定通りで壊れているわけではない。"
+          "これで全てアプリ内で完結します——最後の任意の裏技だけターミナルが必要です。まだ録画していない場合はヒントへ。",
+          "1. 録画：機械学習 →「深度強化学習：録画デモ」→ セッション名を入力、出力フォルダーを選び、「録画開始」をクリック、ゲームをプレイ、終わったら「停止」をクリック。",
+          "2. ラベル付け：「セッションフォルダー」に、録画停止後に表示されたフォルダーを貼り付ける（または「参照…」で選ぶ）、その後「ラベル付けを実行」をクリック。",
+          "3. 学習：チェックポイントのファイル名（既定は policy.pt）とエポック数を設定し、「train-bc を実行」をクリック。",
+          "4. 実際に動かす：「4. プレイ」セクションにそのチェックポイント名を入力し、「プレイ開始」をクリック——終わったら「停止」。",
+          "5.（任意）改善する：セッションフォルダー内の `labels.jsonl` の隣に、気になるフレームを評価する `rewards.jsonl` を作成します。次にチェックポイント入力を policy.pt、出力を新しい名前に設定し、「train-rl を実行」をクリック——手順4ではその新しいチェックポイントを使います。",
+          "ヒント：まだ録画がない場合は、ターミナルで一度 `python -m game_agent_rl.cli example --output-dir <dir>` を実行して練習用の擬似セッションを作成し、そのフォルダーで手順2から続けてください——これが唯一 CLI が必要な手順です。",
+          "現実的な注意点：モデルはあなたが教えた録画と同じレベルでしかプレイできません——2分間のデモではうまく再生されません。これは想定内で、故障ではありません。"
         ]
       }
     ]
@@ -483,7 +483,10 @@
       "statusStopped": "停止中",
       "stop": "停止",
       "starting": "開始中…",
-      "startRecording": "記録を開始"
+      "startRecording": "記録を開始",
+      "browse": "参照…",
+      "sessionDirLabel": "セッションフォルダー（この後の CLI コマンドで使うパス）：",
+      "copyPath": "コピー"
     }
   },
   "ml": {
@@ -494,6 +497,27 @@
       "none": "セマンティック検索が許可されている Agent やグループチャットはまだありません——「チャット」のAgentパネルから許可してください。",
       "agent": "Agent",
       "groupChat": "グループチャット"
+    },
+    "pipeline": {
+      "sessionDirHeading": "セッションフォルダー",
+      "sessionDirHint": "「録画」（またはサンプル生成）で作成したセッションフォルダーを指定してください——以下の各ステップはこのフォルダーを読み書きします。",
+      "sessionDirPlaceholder": "セッションフォルダー",
+      "labelHeading": "1. ラベル付け",
+      "labelHint": "録画したフレームと入力イベントをラベル付き学習データに変換します。",
+      "labelRun": "ラベル付けを実行",
+      "running": "実行中…",
+      "bcHeading": "2. 学習（行動クローニング）",
+      "bcHint": "ラベル付き学習データを模倣するモデルを学習し、チェックポイントファイルを出力します。",
+      "bcRun": "train-bc を実行",
+      "checkpointOutPlaceholder": "チェックポイント出力パス（例：policy.pt）",
+      "epochsPlaceholder": "エポック数",
+      "rlHeading": "3. 改善（任意、報酬による重み付け微調整）",
+      "rlHint": "セッションフォルダー内の labels.jsonl の隣に置いた rewards.jsonl を使って既存のチェックポイントを微調整します。",
+      "rlRun": "train-rl を実行",
+      "checkpointInPlaceholder": "チェックポイント入力パス（例：policy.pt）",
+      "playHeading": "4. プレイ",
+      "playHint": "学習済みチェックポイントを読み込み、停止するまでスクリーンショット→モデル→実際のマウス/キーボード操作のループを実行します。",
+      "playRun": "プレイ開始"
     }
   }
 }

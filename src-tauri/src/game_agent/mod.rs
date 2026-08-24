@@ -341,6 +341,137 @@ pub fn is_recording(state: &RecordingState) -> bool {
     state.0.lock().unwrap().is_some()
 }
 
+// --- Track B (Deep RL): label / train-bc / train-rl / play ---
+//
+// `label`/`train-bc`/`train-rl` are bounded, single-invocation jobs (the
+// process runs to completion and exits on its own) — unlike `record`/
+// `play`, there's no start/stop lifecycle to manage, so the Tauri command
+// just waits for the subprocess and surfaces its output. `play` runs
+// until stopped (same shape as `record`), so it gets its own `PlayState`
+// with the identical start/stop/is-running pattern as recording above.
+
+/// Runs one `game_agent_rl.cli` subcommand to completion and returns its
+/// stdout. On a non-zero exit, returns stderr (or stdout if stderr is
+/// empty) as the error — whatever the CLI actually printed about why it
+/// failed, not a generic wrapper message.
+fn run_cli_step(game_agent_rl_dir: &std::path::Path, args: Vec<String>) -> Result<String, String> {
+    let python_bin = find_python().ok_or("no working Python interpreter found on PATH")?;
+    let working_dir = game_agent_rl_dir
+        .parent()
+        .ok_or_else(|| format!("could not resolve the parent of {game_agent_rl_dir:?}"))?;
+    let mut command = Command::new(&python_bin);
+    crate::bridge_support::hide_console_window(&mut command);
+    let output = command
+        .arg("-m")
+        .arg("game_agent_rl.cli")
+        .args(&args)
+        .current_dir(working_dir)
+        .output()
+        .map_err(|e| format!("failed to run {python_bin} -m game_agent_rl.cli {}: {e}", args.join(" ")))?;
+    let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
+    let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
+    if !output.status.success() {
+        return Err(if stderr.trim().is_empty() { stdout } else { stderr });
+    }
+    Ok(stdout)
+}
+
+pub fn run_label(game_agent_rl_dir: &std::path::Path, session_dir: &str) -> Result<String, String> {
+    run_cli_step(game_agent_rl_dir, vec!["label".into(), "--session-dir".into(), session_dir.into()])
+}
+
+pub fn run_train_bc(
+    game_agent_rl_dir: &std::path::Path,
+    session_dir: &str,
+    checkpoint_out: &str,
+    epochs: u32,
+) -> Result<String, String> {
+    run_cli_step(
+        game_agent_rl_dir,
+        vec![
+            "train-bc".into(),
+            "--session-dir".into(),
+            session_dir.into(),
+            "--checkpoint-out".into(),
+            checkpoint_out.into(),
+            "--epochs".into(),
+            epochs.to_string(),
+        ],
+    )
+}
+
+pub fn run_train_rl(
+    game_agent_rl_dir: &std::path::Path,
+    session_dir: &str,
+    checkpoint_in: &str,
+    checkpoint_out: &str,
+    epochs: u32,
+) -> Result<String, String> {
+    run_cli_step(
+        game_agent_rl_dir,
+        vec![
+            "train-rl".into(),
+            "--session-dir".into(),
+            session_dir.into(),
+            "--checkpoint-in".into(),
+            checkpoint_in.into(),
+            "--checkpoint-out".into(),
+            checkpoint_out.into(),
+            "--epochs".into(),
+            epochs.to_string(),
+        ],
+    )
+}
+
+/// Owns the `play` subprocess's `Child` handle, if one is running —
+/// identical shape to `RecordingState`. `play` executes real mouse/
+/// keyboard input from a trained checkpoint until stopped, so leaving a
+/// stray handle here would mean losing the only way to kill it.
+pub struct PlayState(pub std::sync::Mutex<Option<std::process::Child>>);
+
+/// Starts `python -m game_agent_rl.cli play --checkpoint <path>` as a
+/// background subprocess. Returns an error immediately (does not spawn a
+/// second player) if one is already running.
+pub fn start_play(state: &PlayState, game_agent_rl_dir: &std::path::Path, checkpoint: &str) -> Result<(), String> {
+    let mut guard = state.0.lock().unwrap();
+    if guard.is_some() {
+        return Err("a play session is already running".to_string());
+    }
+    let python_bin = find_python().ok_or("no working Python interpreter found on PATH")?;
+    let working_dir = game_agent_rl_dir
+        .parent()
+        .ok_or_else(|| format!("could not resolve the parent of {game_agent_rl_dir:?}"))?;
+    let mut command = Command::new(&python_bin);
+    crate::bridge_support::hide_console_window(&mut command);
+    let child = command
+        .arg("-m")
+        .arg("game_agent_rl.cli")
+        .arg("play")
+        .arg("--checkpoint")
+        .arg(checkpoint)
+        .current_dir(working_dir)
+        .spawn()
+        .map_err(|e| format!("failed to spawn {python_bin} -m game_agent_rl.cli play: {e}"))?;
+    *guard = Some(child);
+    Ok(())
+}
+
+/// Stops the running `play` session. Same hard-kill caveat as
+/// `stop_recording`: this is `Child::kill`, not a graceful `Ctrl+C`.
+pub fn stop_play(state: &PlayState) -> Result<(), String> {
+    let mut guard = state.0.lock().unwrap();
+    let Some(mut child) = guard.take() else {
+        return Err("no play session is running".to_string());
+    };
+    child.kill().map_err(|e| e.to_string())?;
+    let _ = child.wait();
+    Ok(())
+}
+
+pub fn is_playing(state: &PlayState) -> bool {
+    state.0.lock().unwrap().is_some()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -499,5 +630,18 @@ mod tests {
     fn is_recording_reflects_whether_a_child_handle_is_held() {
         let state = RecordingState(std::sync::Mutex::new(None));
         assert!(!is_recording(&state));
+    }
+
+    #[test]
+    fn stop_play_reports_an_error_when_nothing_is_running() {
+        let state = PlayState(std::sync::Mutex::new(None));
+        let err = stop_play(&state).unwrap_err();
+        assert!(err.contains("no play session"));
+    }
+
+    #[test]
+    fn is_playing_reflects_whether_a_child_handle_is_held() {
+        let state = PlayState(std::sync::Mutex::new(None));
+        assert!(!is_playing(&state));
     }
 }

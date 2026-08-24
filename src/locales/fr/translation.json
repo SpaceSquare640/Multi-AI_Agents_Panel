@@ -238,16 +238,16 @@
         "id": "game-agent-track-b",
         "title": "Comment faire : entraîner et exécuter votre propre modèle joueur (Piste B)",
         "category": "machineLearning",
-        "minutes": 4,
+        "minutes": 3,
         "paragraphs": [
-          "C'est en ligne de commande, pas en cliquant dans l'application — cinq étapes, dans l'ordre. Pas encore d'enregistrement ? Passez directement à l'astuce à la fin.",
-          "1. Enregistrer : Apprentissage automatique → RL profond → nommez votre session, choisissez un dossier de sortie, cliquez sur « Démarrer l'enregistrement », jouez, cliquez sur « Arrêter ».",
-          "2. Étiqueter : `python -m game_agent_rl.cli label --session-dir <votre dossier de session>`",
-          "3. Entraîner : `python -m game_agent_rl.cli train-bc --session-dir <dir> --checkpoint-out policy.pt --epochs 10`",
-          "4. L'essayer : `python -m game_agent_rl.cli play --checkpoint policy.pt` — Ctrl+C pour arrêter.",
-          "5. (Optionnel) L'améliorer : écrivez un `rewards.jsonl` à côté de votre `labels.jsonl` en notant les images qui vous importent, puis `python -m game_agent_rl.cli train-rl --session-dir <dir> --checkpoint-in policy.pt --checkpoint-out policy-rl.pt --epochs 5` — utilisez `policy-rl.pt` à l'étape 4 à la place.",
-          "Astuce : pas encore d'enregistrement ? `python -m game_agent_rl.cli example --output-dir <dir>` crée une fausse session d'entraînement pour essayer les étapes 2 à 4 dès maintenant.",
-          "Vérification de la réalité : le modèle ne joue qu'aussi bien que ce que votre enregistrement lui a appris — une démo de deux minutes ne jouera pas bien, et c'est normal, pas un dysfonctionnement."
+          "Tout se fait maintenant dans l'application -- seule une astuce optionnelle a la fin necessite un terminal. Pas encore d'enregistrement ? Passez a l'astuce.",
+          "1. Enregistrer : Apprentissage automatique -> « RL profond : enregistrer une demonstration » -> nommez votre session, choisissez un dossier de sortie, cliquez sur « Demarrer l'enregistrement », jouez, puis cliquez sur « Arreter ».",
+          "2. Etiqueter : dans « Dossier de session », collez (ou parcourez) le dossier affiche apres l'arret de l'enregistrement, puis cliquez sur « Lancer l'etiquetage ».",
+          "3. Entrainer : definissez un nom de fichier de checkpoint (par defaut policy.pt) et un nombre d'epoques, cliquez sur « Lancer train-bc ».",
+          "4. Le tester : entrez ce nom de checkpoint dans la section Jouer, cliquez sur « Demarrer » -- cliquez sur « Arreter » une fois termine.",
+          "5. (Optionnel) L'ameliorer : ecrivez un fichier rewards.jsonl a cote de labels.jsonl dans le dossier de session, notant les images qui vous interessent. Definissez ensuite le checkpoint d'entree sur policy.pt et celui de sortie sur un nouveau nom, cliquez sur « Lancer train-rl » -- utilisez ce nouveau checkpoint a l'etape 4.",
+          "Astuce : pas encore d'enregistrement ? Executez une fois dans un terminal `python -m game_agent_rl.cli example --output-dir <dir>` pour generer une session d'entrainement factice, puis continuez a partir de l'etape 2 avec ce dossier -- c'est la seule etape qui necessite encore la ligne de commande.",
+          "Verification realiste : le modele ne joue qu'aussi bien que ce que votre enregistrement lui a appris -- une demo de deux minutes ne donnera pas un bon resultat, et c'est normal, pas un bug."
         ]
       }
     ]
@@ -483,7 +483,10 @@
       "statusStopped": "arrêté",
       "stop": "Arrêter",
       "starting": "Démarrage…",
-      "startRecording": "Démarrer l'enregistrement"
+      "startRecording": "Démarrer l'enregistrement",
+      "browse": "Parcourir…",
+      "sessionDirLabel": "Dossier de session (à utiliser dans les commandes CLI) :",
+      "copyPath": "Copier"
     }
   },
   "ml": {
@@ -494,6 +497,27 @@
       "none": "Aucun Agent ni discussion de groupe n'a encore d'accès à la recherche sémantique — accordez-le depuis le panneau d'un Agent dans Discussion.",
       "agent": "Agent",
       "groupChat": "Discussion de groupe"
+    },
+    "pipeline": {
+      "sessionDirHeading": "Dossier de session",
+      "sessionDirHint": "Pointez vers un dossier de session cree par Enregistrer (ou le generateur d'exemple) — chaque etape ci-dessous lit et ecrit dedans.",
+      "sessionDirPlaceholder": "Dossier de session",
+      "labelHeading": "1. Etiqueter",
+      "labelHint": "Transforme les images enregistrees et les evenements d'entree bruts en exemples d'entrainement etiquetes.",
+      "labelRun": "Lancer l'etiquetage",
+      "running": "En cours…",
+      "bcHeading": "2. Entrainer (clonage de comportement)",
+      "bcHint": "Entraine un modele a imiter la session etiquetee et ecrit un fichier de point de controle.",
+      "bcRun": "Lancer train-bc",
+      "checkpointOutPlaceholder": "Chemin de sortie du point de controle (ex. policy.pt)",
+      "epochsPlaceholder": "Epoques",
+      "rlHeading": "3. Ameliorer (optionnel, ajustement pondere par recompense)",
+      "rlHint": "Ajuste un point de controle existant a l'aide d'un fichier rewards.jsonl place a cote de labels.jsonl dans le dossier de session.",
+      "rlRun": "Lancer train-rl",
+      "checkpointInPlaceholder": "Chemin d'entree du point de controle (ex. policy.pt)",
+      "playHeading": "4. Jouer",
+      "playHint": "Charge un point de controle entraine et execute une boucle en direct : capture d'ecran -> modele -> action reelle de souris/clavier, jusqu'a l'arret.",
+      "playRun": "Demarrer"
     }
   }
 }
