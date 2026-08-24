@@ -135,8 +135,7 @@ export default function SemanticSearch() {
   }
 
   return (
-    <div className="ml-page">
-      <h1>{t("semanticSearch.title")}</h1>
+    <div className="ml-branch">
       {error && (
         <div className="acc-error" role="alert">
           {error}

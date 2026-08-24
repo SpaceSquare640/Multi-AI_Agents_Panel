@@ -184,8 +184,7 @@ export default function GameAgent() {
   }
 
   return (
-    <div className="ml-page">
-      <h1>{t("gameAgentPage.title")}</h1>
+    <div className="ml-branch">
       {error && (
         <div className="acc-error" role="alert">
           {error}

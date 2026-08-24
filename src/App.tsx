@@ -1,33 +1,22 @@
 import { useState } from "react";
 import AIControlCenter from "./AIControlCenter";
 import Chat from "./Chat";
-import GameAgent from "./GameAgent";
+import MachineLearning from "./MachineLearning";
 import Manual from "./Manual";
 import Notes from "./Notes";
 import Onboarding, { hasAcknowledgedGuardrails } from "./Onboarding";
-import SemanticSearch from "./SemanticSearch";
 import Settings from "./Settings";
 import Skills from "./Skills";
 import Usage from "./Usage";
 import "./App.css";
 
-type Tab =
-  | "chat"
-  | "control-center"
-  | "semantic-search"
-  | "skills"
-  | "game-agent"
-  | "usage"
-  | "notes"
-  | "manual"
-  | "settings";
+type Tab = "chat" | "control-center" | "ml" | "skills" | "usage" | "notes" | "manual" | "settings";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "chat", label: "Chat" },
   { id: "control-center", label: "Models" },
-  { id: "semantic-search", label: "Semantic Search" },
+  { id: "ml", label: "Machine Learning" },
   { id: "skills", label: "Skills" },
-  { id: "game-agent", label: "Game Agent" },
   { id: "usage", label: "Usage" },
   { id: "notes", label: "Notes" },
   { id: "manual", label: "Help" },
@@ -80,14 +69,11 @@ function App() {
       <div className="app-tab-content" hidden={tab !== "control-center"}>
         <AIControlCenter onOpenUsage={() => setTab("usage")} onOpenManual={() => setTab("manual")} />
       </div>
-      <div className="app-tab-content" hidden={tab !== "semantic-search"}>
-        <SemanticSearch />
+      <div className="app-tab-content" hidden={tab !== "ml"}>
+        <MachineLearning />
       </div>
       <div className="app-tab-content" hidden={tab !== "skills"}>
         <Skills onOpenChat={() => setTab("chat")} />
-      </div>
-      <div className="app-tab-content" hidden={tab !== "game-agent"}>
-        <GameAgent />
       </div>
       <div className="app-tab-content" hidden={tab !== "usage"}>
         <Usage />

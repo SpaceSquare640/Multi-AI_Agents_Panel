@@ -11,6 +11,30 @@
   letter-spacing: 0.08em;
 }
 
+.ml-branch-nav {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--edex-cyan-dim);
+}
+
+.ml-branch-nav button {
+  background: none;
+  box-shadow: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  padding: 0.5rem 0.2rem;
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+.ml-branch-nav button.active {
+  color: var(--edex-cyan);
+  border-bottom-color: var(--edex-cyan);
+  opacity: 1;
+}
+
 .ml-section-head {
   display: flex;
   align-items: center;
