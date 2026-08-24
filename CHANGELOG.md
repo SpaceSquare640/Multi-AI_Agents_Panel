@@ -2,6 +2,17 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [1.5.3] - 2026-08-24
+
+### Changes
+
+- Chore: update CHANGELOG.md for v1.5.2 [skip ci]
+- Chore: bump version to 1.5.3
+
+### Documentation
+
+- Docs: add curated MCP server examples to the manual
+
 ## [1.5.2] - 2026-08-24
 
 ### Changes
