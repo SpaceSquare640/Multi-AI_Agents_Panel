@@ -135,6 +135,7 @@
     "categoryLabels": {
       "gettingStarted": "시작하기",
       "agents": "Agent",
+      "machineLearning": "머신러닝",
       "safety": "안전"
     },
     "articles": [
@@ -192,6 +193,61 @@
           "가드레일은 모든 Agent가 따르는 고정된 규칙 세트입니다——로컬이든 클라우드든, 어떤 역할 템플릿을 사용하든 상관없습니다. 끌 수 없고, 역할 템플릿으로 재정의할 수 없으며, 당신의 지시를 포함한 어떤 지시로도 우회할 수 없습니다.",
           "여기에는 다음과 같은 내용이 포함됩니다: 명시적 허가 없이는 절대 파일을 읽지 않음, 되돌릴 수 없는 작업 전에는 항상 확인함, 공격이나 불법 행위 지원을 거부함, 그룹 채팅에서 무한히 반복하지 않음.",
           "최초 실행 시 이 규칙들의 요약을 보았습니다(다시 읽고 싶다면 설정 → 안전 → \"요약 다시 보기\"). Agent가 요청의 일부를 거부한다면 이 규칙들 중 하나 때문이며, 어떤 규칙인지 알려줄 것입니다."
+        ]
+      },
+      {
+        "id": "semantic-search",
+        "title": "사용법: 의미로 파일 검색하기",
+        "category": "machineLearning",
+        "minutes": 2,
+        "paragraphs": [
+          "1. 채팅에서 Agent를 열고 → \"+ 폴더 부여…\" 클릭 → 검색 대상으로 삼을 폴더 선택.",
+          "2. \"ML 기능 부여…\" 클릭 → semantic_search 선택.",
+          "3. \"인덱스 재구축\" 클릭 후 완료될 때까지 대기——파일을 추가하거나 변경하면 다시 실행.",
+          "4. 검색창에 질문 입력 → 검색 클릭. 결과는 관련성순으로, 일치한 파일의 짧은 발췌문과 함께 표시됨.",
+          "팁: 채팅을 열 필요도 없음——「머신러닝」탭의 시맨틱 검색 섹션에 권한이 부여된 모든 Agent／그룹 채팅이 나열되며, 거기서 바로 인덱스를 재구축하거나 검색할 수 있음."
+        ]
+      },
+      {
+        "id": "hardware-fit",
+        "title": "사용법: 내 하드웨어에 맞는 로컬 모델 찾기",
+        "category": "machineLearning",
+        "minutes": 1,
+        "paragraphs": [
+          "1. 「머신러닝」탭을 연다.",
+          "2. \"내 하드웨어 확인\"을 클릭한다.",
+          "3. 적합도 열을 본다: 완벽 또는 좋음이면 설치. 아슬아슬이면 느릴 것. 너무 빡빡함이면 포기.",
+          "4. AI 컨트롤 센터 → 로컬 AI 모델 에서 고른 모델을 설치한다."
+        ]
+      },
+      {
+        "id": "game-agent-track-a",
+        "title": "사용법: 실시간 게임 플레이 Agent(Track A) 실행하기",
+        "category": "machineLearning",
+        "minutes": 2,
+        "paragraphs": [
+          "1. 먼저 Ollama에서 비전 지원 모델(예: llava)을 받아온다——AI 컨트롤 센터 → 로컬 AI 모델.",
+          "2. 「머신러닝」→ 게임 플레이 Agent를 연다.",
+          "3. 모델 필드에 그 모델 이름을 입력한다.",
+          "4. (선택) 매 틱마다 정확히 무엇을 판단하게 할지 프롬프트를 수정한다——작동하는 기본값이 이미 채워져 있음.",
+          "5. \"시작\"을 클릭한다. \"중지\"를 클릭할 때까지 스크린샷→판단→실행을 반복한다.",
+          "안전 안내: 자동 입력이 실제로 규칙상 허용되는 게임／계정에서만 사용할 것——이 기능이 대신 안전하게 만들어 줄 수는 없다."
+        ]
+      },
+      {
+        "id": "game-agent-track-b",
+        "title": "사용법: 나만의 게임 플레이 모델 학습하고 실행하기(Track B)",
+        "category": "machineLearning",
+        "minutes": 4,
+        "paragraphs": [
+          "이건 앱 안에서 클릭하는 게 아니라 명령줄 작업——순서대로 5단계. 아직 녹화한 게 없다면 마지막 팁으로 건너뛸 것.",
+          "1. 녹화: 「머신러닝」→ Deep RL → 세션 이름과 출력 폴더를 정하고 \"녹화 시작\" 클릭, 게임 플레이, 끝나면 \"중지\" 클릭.",
+          "2. 라벨링: `python -m game_agent_rl.cli label --session-dir <당신의 세션 폴더>`",
+          "3. 학습: `python -m game_agent_rl.cli train-bc --session-dir <dir> --checkpoint-out policy.pt --epochs 10`",
+          "4. 실행해보기: `python -m game_agent_rl.cli play --checkpoint policy.pt`——Ctrl+C로 중지.",
+          "5. (선택) 개선하기: `labels.jsonl` 옆에 `rewards.jsonl`을 작성해 신경 쓰는 프레임에 점수를 매기고, `python -m game_agent_rl.cli train-rl --session-dir <dir> --checkpoint-in policy.pt --checkpoint-out policy-rl.pt --epochs 5`를 실행——4단계에서는 `policy-rl.pt`를 대신 사용.",
+          "팁: 아직 녹화한 게 없나요? `python -m game_agent_rl.cli example --output-dir <dir>`로 가짜 연습용 세션을 만들면 지금 바로 2~4단계를 시도할 수 있음.",
+          "현실 체크: 모델은 당신이 가르친 만큼만 플레이한다——2분짜리 데모로는 잘 플레이하지 못하며, 이는 예상된 결과이지 고장이 아니다."
         ]
       }
     ]

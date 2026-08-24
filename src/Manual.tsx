@@ -30,7 +30,7 @@ export function filterArticles(articles: Article[], query: string): Article[] {
  *  internally (matching `manual.categoryLabels.<id>` in the translation
  *  file for the actual display text) so nothing here has to change
  *  when a translation changes what the category is called. */
-const CATEGORY_ORDER = ["gettingStarted", "agents", "safety"];
+const CATEGORY_ORDER = ["gettingStarted", "agents", "machineLearning", "safety"];
 
 export default function Manual() {
   const { t } = useTranslation();

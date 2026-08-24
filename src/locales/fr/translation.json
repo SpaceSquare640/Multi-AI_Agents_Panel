@@ -135,6 +135,7 @@
     "categoryLabels": {
       "gettingStarted": "Prise en main",
       "agents": "Agents",
+      "machineLearning": "Apprentissage automatique",
       "safety": "Sécurité"
     },
     "articles": [
@@ -192,6 +193,61 @@
           "Les garde-fous sont un ensemble fixe de règles que chaque Agent suit — local ou cloud, quel que soit le modèle de rôle utilisé. Ils ne peuvent pas être désactivés, remplacés par un modèle de rôle, ni contournés par aucune instruction, y compris les vôtres.",
           "Ils couvrent notamment : ne jamais lire vos fichiers sans autorisation explicite, toujours confirmer avant une action irréversible, refuser d'aider à des attaques ou des activités illégales, et ne pas boucler indéfiniment dans une discussion de groupe.",
           "Vous en avez vu un résumé au premier lancement (Paramètres → Sécurité → « Revoir le résumé » si vous souhaitez le relire). Si un Agent refuse une partie d'une demande, c'est en raison de l'une de ces règles — il vous indiquera laquelle."
+        ]
+      },
+      {
+        "id": "semantic-search",
+        "title": "Comment faire : rechercher vos fichiers par sens",
+        "category": "machineLearning",
+        "minutes": 2,
+        "paragraphs": [
+          "1. Dans Discussion, ouvrez un Agent → cliquez sur « + Accorder un dossier… » → choisissez le dossier à rendre consultable.",
+          "2. Cliquez sur « Accorder une capacité ML… » → choisissez semantic_search.",
+          "3. Cliquez sur « Reconstruire l'index » et attendez qu'il termine — refaites-le à chaque ajout ou modification de fichier.",
+          "4. Tapez une question dans la zone de recherche → cliquez sur Rechercher. Les résultats sont classés par pertinence, avec un court extrait de chaque fichier correspondant.",
+          "Astuce : pas besoin d'ouvrir une discussion — la section Recherche sémantique de l'onglet Apprentissage automatique liste chaque Agent/Discussion de groupe ayant cet accès, et permet de reconstruire ou rechercher chacun directement depuis là."
+        ]
+      },
+      {
+        "id": "hardware-fit",
+        "title": "Comment faire : trouver le modèle local adapté à votre matériel",
+        "category": "machineLearning",
+        "minutes": 1,
+        "paragraphs": [
+          "1. Ouvrez l'onglet Apprentissage automatique.",
+          "2. Cliquez sur « Vérifier mon matériel ».",
+          "3. Regardez la colonne Adéquation : Parfait ou Bon signifie installez-le. Marginal signifie que ce sera lent. Trop serré signifie n'y touchez pas.",
+          "4. Allez installer votre choix dans Centre de contrôle IA → Modèles IA locaux."
+        ]
+      },
+      {
+        "id": "game-agent-track-a",
+        "title": "Comment faire : lancer l'Agent joueur en temps réel (Piste A)",
+        "category": "machineLearning",
+        "minutes": 2,
+        "paragraphs": [
+          "1. D'abord, récupérez un modèle capable de vision dans Ollama (par ex. llava) — Centre de contrôle IA → Modèles IA locaux.",
+          "2. Ouvrez Apprentissage automatique → Agent joueur de jeux vidéo.",
+          "3. Tapez le nom de ce modèle dans le champ modèle.",
+          "4. (Optionnel) Modifiez l'invite pour changer exactement ce que vous voulez qu'il décide à chaque tick — une valeur par défaut fonctionnelle est déjà remplie.",
+          "5. Cliquez sur Démarrer. Il continuera en boucle — capture d'écran, décision, action — jusqu'à ce que vous cliquiez sur Arrêter.",
+          "Sécurité : n'exécutez ceci que sur un jeu/compte où l'entrée automatisée est réellement autorisée par ses règles — cette application ne peut pas rendre ce choix sûr à votre place."
+        ]
+      },
+      {
+        "id": "game-agent-track-b",
+        "title": "Comment faire : entraîner et exécuter votre propre modèle joueur (Piste B)",
+        "category": "machineLearning",
+        "minutes": 4,
+        "paragraphs": [
+          "C'est en ligne de commande, pas en cliquant dans l'application — cinq étapes, dans l'ordre. Pas encore d'enregistrement ? Passez directement à l'astuce à la fin.",
+          "1. Enregistrer : Apprentissage automatique → RL profond → nommez votre session, choisissez un dossier de sortie, cliquez sur « Démarrer l'enregistrement », jouez, cliquez sur « Arrêter ».",
+          "2. Étiqueter : `python -m game_agent_rl.cli label --session-dir <votre dossier de session>`",
+          "3. Entraîner : `python -m game_agent_rl.cli train-bc --session-dir <dir> --checkpoint-out policy.pt --epochs 10`",
+          "4. L'essayer : `python -m game_agent_rl.cli play --checkpoint policy.pt` — Ctrl+C pour arrêter.",
+          "5. (Optionnel) L'améliorer : écrivez un `rewards.jsonl` à côté de votre `labels.jsonl` en notant les images qui vous importent, puis `python -m game_agent_rl.cli train-rl --session-dir <dir> --checkpoint-in policy.pt --checkpoint-out policy-rl.pt --epochs 5` — utilisez `policy-rl.pt` à l'étape 4 à la place.",
+          "Astuce : pas encore d'enregistrement ? `python -m game_agent_rl.cli example --output-dir <dir>` crée une fausse session d'entraînement pour essayer les étapes 2 à 4 dès maintenant.",
+          "Vérification de la réalité : le modèle ne joue qu'aussi bien que ce que votre enregistrement lui a appris — une démo de deux minutes ne jouera pas bien, et c'est normal, pas un dysfonctionnement."
         ]
       }
     ]

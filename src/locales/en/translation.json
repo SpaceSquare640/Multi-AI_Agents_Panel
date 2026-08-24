@@ -135,6 +135,7 @@
     "categoryLabels": {
       "gettingStarted": "Getting Started",
       "agents": "Agents",
+      "machineLearning": "Machine Learning",
       "safety": "Safety"
     },
     "articles": [
@@ -192,6 +193,61 @@
           "Guardrails are a fixed set of rules every Agent follows — local or cloud, whatever role template it's using. They can't be turned off, overridden by a role template, or bypassed by any instruction, including yours.",
           "They cover things like: never reading your files without explicit authorization, always confirming before an irreversible action, refusing to help with attacks or illegal activity, and not looping forever in a Group Chat.",
           "You saw a summary of these on first launch (Settings → Safety → \"View summary again\" if you want to re-read it). If an Agent refuses part of a request, it's because of one of these rules — it will tell you which one."
+        ]
+      },
+      {
+        "id": "semantic-search",
+        "title": "How to: search your files by meaning",
+        "category": "machineLearning",
+        "minutes": 2,
+        "paragraphs": [
+          "1. In Chat, open an Agent → click \"+ Grant folder…\" → pick the folder you want searchable.",
+          "2. Click \"Grant an ML capability…\" → choose semantic_search.",
+          "3. Click \"Rebuild index\" and wait for it to finish — do this again any time you add or change files.",
+          "4. Type a question in the search box → click Search. Results are ranked by relevance, with a short excerpt from each matching file.",
+          "Tip: skip opening a chat entirely — the Machine Learning tab's Semantic Search section lists every Agent/Group Chat with this granted, and lets you rebuild or search each one from there directly."
+        ]
+      },
+      {
+        "id": "hardware-fit",
+        "title": "How to: find which local model fits your hardware",
+        "category": "machineLearning",
+        "minutes": 1,
+        "paragraphs": [
+          "1. Open the Machine Learning tab.",
+          "2. Click \"Check my hardware\".",
+          "3. Look at the Fit column: Perfect or Good means install it. Marginal means it'll be slow. TooTight means don't bother.",
+          "4. Go install your pick in AI Control Center → Local AI Models."
+        ]
+      },
+      {
+        "id": "game-agent-track-a",
+        "title": "How to: run the live Game-Playing Agent (Track A)",
+        "category": "machineLearning",
+        "minutes": 2,
+        "paragraphs": [
+          "1. First, pull a vision-capable model in Ollama (e.g. llava) — AI Control Center → Local AI Models.",
+          "2. Open Machine Learning → Game-Playing Agent.",
+          "3. Type that model's name in the model field.",
+          "4. (Optional) Edit the prompt to change exactly what you want it to decide each tick — a working default is already filled in.",
+          "5. Click Start. It'll keep looping — screenshot, decide, act — until you click Stop.",
+          "Safety: only run this against a game/account where automated input is actually allowed by its rules — this app can't make that choice safe for you."
+        ]
+      },
+      {
+        "id": "game-agent-track-b",
+        "title": "How to: train and run your own game-playing model (Track B)",
+        "category": "machineLearning",
+        "minutes": 4,
+        "paragraphs": [
+          "This is command-line, not clicking around the app — five steps, run in order. No recording yet? Skip to the tip at the end.",
+          "1. Record: Machine Learning → Deep RL → name your session, pick an output folder, click \"Start recording\", play the game, click \"Stop\".",
+          "2. Label: `python -m game_agent_rl.cli label --session-dir <your session folder>`",
+          "3. Train: `python -m game_agent_rl.cli train-bc --session-dir <dir> --checkpoint-out policy.pt --epochs 10`",
+          "4. Play it back: `python -m game_agent_rl.cli play --checkpoint policy.pt` — Ctrl+C to stop.",
+          "5. (Optional) Improve it: write a `rewards.jsonl` next to your `labels.jsonl` scoring the frames you care about, then `python -m game_agent_rl.cli train-rl --session-dir <dir> --checkpoint-in policy.pt --checkpoint-out policy-rl.pt --epochs 5` — use `policy-rl.pt` in step 4 instead.",
+          "Tip: no recording yet? `python -m game_agent_rl.cli example --output-dir <dir>` makes a fake practice session so you can try steps 2–4 right now.",
+          "Reality check: the model only plays as well as your recording taught it — a two-minute demo won't play well, and that's expected, not broken."
         ]
       }
     ]

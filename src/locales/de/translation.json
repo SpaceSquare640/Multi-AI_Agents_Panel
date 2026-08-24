@@ -135,6 +135,7 @@
     "categoryLabels": {
       "gettingStarted": "Erste Schritte",
       "agents": "Agenten",
+      "machineLearning": "Maschinelles Lernen",
       "safety": "Sicherheit"
     },
     "articles": [
@@ -192,6 +193,61 @@
           "Leitplanken sind ein festes Regelwerk, dem jeder Agent folgt — lokal oder Cloud, unabhängig von der verwendeten Rollenvorlage. Sie können nicht deaktiviert, durch eine Rollenvorlage überschrieben oder durch irgendeine Anweisung, einschließlich Ihrer eigenen, umgangen werden.",
           "Sie umfassen unter anderem: niemals Ihre Dateien ohne ausdrückliche Genehmigung lesen, stets vor einer unumkehrbaren Aktion bestätigen, Hilfe bei Angriffen oder illegalen Aktivitäten verweigern und in einem Gruppenchat nicht endlos in Schleife laufen.",
           "Sie haben beim ersten Start eine Zusammenfassung davon gesehen (Einstellungen → Sicherheit → „Zusammenfassung erneut ansehen“, wenn Sie sie erneut lesen möchten). Lehnt ein Agent einen Teil einer Anfrage ab, liegt das an einer dieser Regeln — er wird Ihnen mitteilen, welche."
+        ]
+      },
+      {
+        "id": "semantic-search",
+        "title": "Anleitung: Dateien nach Bedeutung durchsuchen",
+        "category": "machineLearning",
+        "minutes": 2,
+        "paragraphs": [
+          "1. Öffnen Sie im Chat einen Agenten → klicken Sie auf „+ Ordner gewähren…“ → wählen Sie den zu durchsuchenden Ordner.",
+          "2. Klicken Sie auf „ML-Fähigkeit gewähren…“ → wählen Sie semantic_search.",
+          "3. Klicken Sie auf „Index neu erstellen“ und warten Sie, bis es fertig ist — wiederholen Sie dies, sobald Sie Dateien hinzufügen oder ändern.",
+          "4. Geben Sie eine Frage in das Suchfeld ein → klicken Sie auf Suchen. Die Ergebnisse sind nach Relevanz sortiert, mit einem kurzen Auszug aus jeder passenden Datei.",
+          "Tipp: Sie müssen dafür keinen Chat öffnen — der Abschnitt Semantische Suche im Tab „Maschinelles Lernen“ listet jeden Agenten/Gruppenchat mit dieser Berechtigung auf und lässt Sie den Index direkt von dort neu erstellen oder durchsuchen."
+        ]
+      },
+      {
+        "id": "hardware-fit",
+        "title": "Anleitung: das passende lokale Modell für Ihre Hardware finden",
+        "category": "machineLearning",
+        "minutes": 1,
+        "paragraphs": [
+          "1. Öffnen Sie den Tab „Maschinelles Lernen“.",
+          "2. Klicken Sie auf „Meine Hardware prüfen“.",
+          "3. Schauen Sie auf die Spalte Eignung: Perfekt oder Gut bedeutet installieren. Grenzwertig bedeutet, es wird langsam sein. Zu knapp bedeutet, lassen Sie es sein.",
+          "4. Installieren Sie Ihre Wahl in KI-Kontrollzentrum → Lokale KI-Modelle."
+        ]
+      },
+      {
+        "id": "game-agent-track-a",
+        "title": "Anleitung: den Live-Spielagenten starten (Track A)",
+        "category": "machineLearning",
+        "minutes": 2,
+        "paragraphs": [
+          "1. Laden Sie zuerst ein bildfähiges Modell in Ollama herunter (z. B. llava) — KI-Kontrollzentrum → Lokale KI-Modelle.",
+          "2. Öffnen Sie Maschinelles Lernen → Spielender Agent.",
+          "3. Geben Sie den Namen dieses Modells in das Modellfeld ein.",
+          "4. (Optional) Bearbeiten Sie den Prompt, um genau festzulegen, was das Modell bei jedem Takt entscheiden soll — ein funktionierender Standardwert ist bereits eingetragen.",
+          "5. Klicken Sie auf Start. Es läuft weiter in einer Schleife — Screenshot, Entscheidung, Aktion — bis Sie auf Stopp klicken.",
+          "Sicherheit: Verwenden Sie dies nur bei einem Spiel/Konto, bei dem automatisierte Eingabe laut dessen Regeln tatsächlich erlaubt ist — diese App kann diese Entscheidung nicht für Sie sicher machen."
+        ]
+      },
+      {
+        "id": "game-agent-track-b",
+        "title": "Anleitung: Ihr eigenes Spielmodell trainieren und ausführen (Track B)",
+        "category": "machineLearning",
+        "minutes": 4,
+        "paragraphs": [
+          "Dies ist Kommandozeilenarbeit, kein Klicken in der App — fünf Schritte, der Reihe nach. Noch keine Aufnahme? Springen Sie direkt zum Tipp am Ende.",
+          "1. Aufnehmen: Maschinelles Lernen → Deep RL → benennen Sie Ihre Sitzung, wählen Sie einen Ausgabeordner, klicken Sie auf „Aufzeichnung starten“, spielen Sie das Spiel, klicken Sie auf „Stopp“.",
+          "2. Beschriften: `python -m game_agent_rl.cli label --session-dir <Ihr Sitzungsordner>`",
+          "3. Trainieren: `python -m game_agent_rl.cli train-bc --session-dir <dir> --checkpoint-out policy.pt --epochs 10`",
+          "4. Ausprobieren: `python -m game_agent_rl.cli play --checkpoint policy.pt` — Strg+C zum Stoppen.",
+          "5. (Optional) Verbessern: Schreiben Sie eine `rewards.jsonl` neben Ihre `labels.jsonl` und bewerten Sie die Frames, die Ihnen wichtig sind, führen Sie dann `python -m game_agent_rl.cli train-rl --session-dir <dir> --checkpoint-in policy.pt --checkpoint-out policy-rl.pt --epochs 5` aus — verwenden Sie in Schritt 4 stattdessen `policy-rl.pt`.",
+          "Tipp: Noch keine Aufnahme? `python -m game_agent_rl.cli example --output-dir <dir>` erstellt eine gefälschte Übungssitzung, mit der Sie die Schritte 2–4 sofort ausprobieren können.",
+          "Realitätscheck: Das Modell spielt nur so gut, wie Ihre Aufnahme es gelehrt hat — eine zweiminütige Demo wird nicht gut spielen, das ist zu erwarten, kein Fehler."
         ]
       }
     ]

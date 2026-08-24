@@ -135,6 +135,7 @@
     "categoryLabels": {
       "gettingStarted": "入门指南",
       "agents": "Agent",
+      "machineLearning": "机器学习",
       "safety": "安全"
     },
     "articles": [
@@ -192,6 +193,61 @@
           "防护机制是每个 Agent 都遵循的一组固定规则——无论本地或云端、使用何种角色模板。这些规则无法关闭、无法被角色模板覆盖，也无法被任何指令（包括您的指令）绕过。",
           "涵盖内容包括：未经明确授权绝不读取您的文件、不可逆操作前始终先确认、拒绝协助攻击或非法活动，以及不会在群组对话中无限循环。",
           "您在首次启动时已看过这些规则的摘要（若想重新阅读，可前往「设置 → 安全 → 再次查看摘要」）。若 Agent 拒绝部分请求，是因为触犯了这些规则之一——它会告诉您是哪一条。"
+        ]
+      },
+      {
+        "id": "semantic-search",
+        "title": "教程：依语义搜索您的文件",
+        "category": "machineLearning",
+        "minutes": 2,
+        "paragraphs": [
+          "1. 在对话画面打开一个 Agent → 点击「+ 授予文件夹…」→ 选择想被搜索的文件夹。",
+          "2. 点击「授予 ML 能力…」→ 选择 semantic_search。",
+          "3. 点击「重建索引」并等它完成——之后新增或修改文件时要再做一次。",
+          "4. 在搜索框输入问题 → 点击搜索。结果依相关性排序，附上相符文件的简短摘录。",
+          "小技巧：不用打开对话也能做——「机器学习」分页的语义搜索区块列出所有已授权的 Agent／群组对话，可以直接在那里重建或搜索。"
+        ]
+      },
+      {
+        "id": "hardware-fit",
+        "title": "教程：找出适合您硬件的本地模型",
+        "category": "machineLearning",
+        "minutes": 1,
+        "paragraphs": [
+          "1. 打开「机器学习」分页。",
+          "2. 点击「检查我的硬件」。",
+          "3. 看「适配度」栏：完美或良好就装；勉强会跑得慢；太紧绷就别装了。",
+          "4. 到 AI 控制中心 → 本地 AI 模型 安装您选好的模型。"
+        ]
+      },
+      {
+        "id": "game-agent-track-a",
+        "title": "教程：启动实时游戏操作 Agent（Track A）",
+        "category": "machineLearning",
+        "minutes": 2,
+        "paragraphs": [
+          "1. 先在 Ollama 拉取一个支持视觉的模型（例如 llava）——AI 控制中心 → 本地 AI 模型。",
+          "2. 打开「机器学习」→ 游戏操作 Agent。",
+          "3. 在模型字段输入该模型名称。",
+          "4.（可选）编辑提示词，改成您真正想让它每轮判断的内容——已经内置一个能用的默认值。",
+          "5. 点击「开始」。它会持续截图→判断→行动，直到您点击「停止」。",
+          "安全提醒：只在条款真的允许自动化输入的游戏／账号上使用——这个功能没办法替您把这件事变安全。"
+        ]
+      },
+      {
+        "id": "game-agent-track-b",
+        "title": "教程：训练并运行您自己的游戏操作模型（Track B）",
+        "category": "machineLearning",
+        "minutes": 4,
+        "paragraphs": [
+          "这是命令行操作，不是在 App 里点来点去——依序做五步。还没录过示范？直接跳到最后的小技巧。",
+          "1. 录制：「机器学习」→ Deep RL → 给会话命名、选输出文件夹、点击「开始录制」、开始玩游戏、玩完点击「停止」。",
+          "2. 标记：`python -m game_agent_rl.cli label --session-dir <您的会话文件夹>`",
+          "3. 训练：`python -m game_agent_rl.cli train-bc --session-dir <dir> --checkpoint-out policy.pt --epochs 10`",
+          "4. 运行看看：`python -m game_agent_rl.cli play --checkpoint policy.pt`——按 Ctrl+C 停止。",
+          "5.（可选）改良它：在 `labels.jsonl` 旁写一个 `rewards.jsonl`，给您在意的画面评分，再跑 `python -m game_agent_rl.cli train-rl --session-dir <dir> --checkpoint-in policy.pt --checkpoint-out policy-rl.pt --epochs 5`——第 4 步改用 `policy-rl.pt`。",
+          "小技巧：还没录过示范？`python -m game_agent_rl.cli example --output-dir <dir>` 会生成一个假的练习用会话，让您现在就能试试第 2–4 步。",
+          "现实检查：模型只会玩得跟您教它的一样好——两分钟的示范不会训练出会玩的模型，这是预期中的事，不是坏掉了。"
         ]
       }
     ]
