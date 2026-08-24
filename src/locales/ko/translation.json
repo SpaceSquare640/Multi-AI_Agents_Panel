@@ -440,7 +440,9 @@
       "hardwareFitScore": "점수",
       "hardwareFitSpeed": "예상 속도",
       "hardwareFitQuant": "최적 양자화",
-      "hardwareFitMoved": "「머신러닝」탭으로 이동했습니다."
+      "hardwareFitMoved": "「머신러닝」탭으로 이동했습니다.",
+      "storageHintSuggested": "제안: 이 앱 자체의 데이터 폴더 안을 가리키면, 모델 파일이 이 앱이 관리하는 다른 것들과 한 곳에 모입니다.",
+      "storageHintRestart": "설정 후에는 Ollama 서비스(또는 컴퓨터)를 재시작해야 적용됩니다 -- 이 단계는 앱이 대신할 수 없습니다."
     },
     "usage": {
       "heading": "사용량",

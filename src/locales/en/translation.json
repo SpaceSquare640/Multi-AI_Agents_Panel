@@ -440,7 +440,9 @@
       "hardwareFitScore": "Score",
       "hardwareFitSpeed": "Est. speed",
       "hardwareFitQuant": "Best quant",
-      "hardwareFitMoved": "Moved to the Machine Learning tab."
+      "hardwareFitMoved": "Moved to the Machine Learning tab.",
+      "storageHintSuggested": "Suggestion: point it at a folder inside this app's own data folder, so model files live alongside everything else this app manages instead of scattered elsewhere.",
+      "storageHintRestart": "After setting this, restart the Ollama service (or your computer) for it to take effect -- this app can't do that for you."
     },
     "usage": {
       "heading": "Usage",

@@ -67,18 +67,48 @@ fn greet(name: &str) -> String {
 /// (ML model cache), and `skill/` (user-imported custom Skills) all live
 /// under here as named subfolders. Deliberately a fixed,
 /// cross-platform-consistent folder under the user's home directory
-/// (`~/MultiAIAgentsPanel/`) rather than Tauri's default `app_data_dir()`
-/// (which scatters across `%APPDATA%`, `~/Library/...`,
+/// (`~/Multi-AI Agents Panel/`) rather than Tauri's default
+/// `app_data_dir()` (which scatters across `%APPDATA%`, `~/Library/...`,
 /// `~/.local/share/...` depending on OS) or the install directory itself
 /// (installer upgrade/reinstall behavior touching that path has never
 /// been verified, and deb/AppImage have no equivalent writable "install
 /// directory" concept at all). See ADR 0004 for the full reasoning.
 ///
-/// **Renamed from `~/MultiAIAgentsPanel-Data/` with no migration** (see
-/// Backlog): alpha stage, no known real installs depending on the old
-/// path, so this is a clean breaking rename rather than a migration path.
-fn resolve_data_dir(home_dir: std::path::PathBuf) -> std::path::PathBuf {
-    home_dir.join("MultiAIAgentsPanel")
+/// **Named to match `productName` exactly** (with spaces) — previously
+/// `~/MultiAIAgentsPanel/` (no spaces), which looked unrelated to the
+/// `Multi-AI Agents Panel` folder the Windows installer creates, and was
+/// a real source of user confusion about which folder was "the app's."
+/// Unlike the earlier alpha-stage rename (`MultiAIAgentsPanel-Data` →
+/// `MultiAIAgentsPanel`, done with no migration since nothing depended on
+/// the old path yet), this app is GA now — real installs have real data
+/// under the old name, so `migrate_data_dir` below moves it forward
+/// instead of silently starting empty.
+pub(crate) fn resolve_data_dir(home_dir: std::path::PathBuf) -> std::path::PathBuf {
+    home_dir.join("Multi-AI Agents Panel")
+}
+
+/// One-time migration for the folder rename above: if the new
+/// (space-containing) data dir doesn't exist yet but the old
+/// (no-space) one does, moves it wholesale rather than leaving the old
+/// one behind or starting the user over with an empty database. A
+/// same-volume rename (the common case — both paths are under the same
+/// home directory) is atomic and instant; `std::fs::rename` is used
+/// directly rather than a recursive copy+delete, which would risk
+/// leaving a half-copied mess if interrupted partway through. If the
+/// rename fails for any reason (e.g. genuinely different volumes, a
+/// file lock), this logs the failure and leaves the old directory in
+/// place rather than losing data — the caller then creates a fresh
+/// empty directory at the new path, same as a first launch.
+fn migrate_data_dir(old_dir: &std::path::Path, new_dir: &std::path::Path) {
+    if new_dir.exists() || !old_dir.exists() {
+        return;
+    }
+    if let Err(e) = std::fs::rename(old_dir, new_dir) {
+        eprintln!(
+            "could not migrate old data folder {old_dir:?} to {new_dir:?}: {e} — leaving it in place, \
+             starting fresh at the new location"
+        );
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -87,7 +117,9 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
-            let data_dir = resolve_data_dir(app.path().home_dir()?);
+            let home_dir = app.path().home_dir()?;
+            let data_dir = resolve_data_dir(home_dir.clone());
+            migrate_data_dir(&home_dir.join("MultiAIAgentsPanel"), &data_dir);
             let db_dir = data_dir.join("Data");
             std::fs::create_dir_all(&db_dir)?;
             let db_path = db_dir.join("data.sqlite3");
@@ -172,6 +204,7 @@ pub fn run() {
             commands::delete_ollama_model,
             commands::install_ollama,
             commands::ollama_models_env_hint,
+            commands::suggest_ollama_models_dir,
             commands::list_agents,
             commands::create_agent,
             commands::pin_agent_provider_key,
@@ -284,6 +317,49 @@ mod tests {
     fn resolve_data_dir_is_a_fixed_subfolder_of_home_not_an_os_default_app_data_path() {
         let home = std::path::PathBuf::from("/home/someone");
         let data_dir = resolve_data_dir(home.clone());
-        assert_eq!(data_dir, home.join("MultiAIAgentsPanel"));
+        assert_eq!(data_dir, home.join("Multi-AI Agents Panel"));
+    }
+
+    #[test]
+    fn migrate_data_dir_moves_an_existing_old_folder_to_the_new_path() {
+        let tmp = std::env::temp_dir().join(format!("mig-test-{}", std::process::id()));
+        let old_dir = tmp.join("MultiAIAgentsPanel");
+        let new_dir = tmp.join("Multi-AI Agents Panel");
+        std::fs::create_dir_all(old_dir.join("Data")).unwrap();
+        std::fs::write(old_dir.join("Data").join("marker.txt"), b"hello").unwrap();
+
+        migrate_data_dir(&old_dir, &new_dir);
+
+        assert!(!old_dir.exists());
+        assert_eq!(std::fs::read_to_string(new_dir.join("Data").join("marker.txt")).unwrap(), "hello");
+        std::fs::remove_dir_all(&tmp).unwrap();
+    }
+
+    #[test]
+    fn migrate_data_dir_does_nothing_when_the_new_folder_already_exists() {
+        let tmp = std::env::temp_dir().join(format!("mig-test-noop-{}", std::process::id()));
+        let old_dir = tmp.join("MultiAIAgentsPanel");
+        let new_dir = tmp.join("Multi-AI Agents Panel");
+        std::fs::create_dir_all(&old_dir).unwrap();
+        std::fs::write(old_dir.join("marker.txt"), b"old").unwrap();
+        std::fs::create_dir_all(&new_dir).unwrap();
+        std::fs::write(new_dir.join("marker.txt"), b"new").unwrap();
+
+        migrate_data_dir(&old_dir, &new_dir);
+
+        assert!(old_dir.exists(), "old dir must be left alone, not merged or deleted");
+        assert_eq!(std::fs::read_to_string(new_dir.join("marker.txt")).unwrap(), "new");
+        std::fs::remove_dir_all(&tmp).unwrap();
+    }
+
+    #[test]
+    fn migrate_data_dir_does_nothing_when_no_old_folder_exists() {
+        let tmp = std::env::temp_dir().join(format!("mig-test-fresh-{}", std::process::id()));
+        let old_dir = tmp.join("MultiAIAgentsPanel");
+        let new_dir = tmp.join("Multi-AI Agents Panel");
+
+        migrate_data_dir(&old_dir, &new_dir);
+
+        assert!(!new_dir.exists());
     }
 }

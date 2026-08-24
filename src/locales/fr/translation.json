@@ -440,7 +440,9 @@
       "hardwareFitScore": "Score",
       "hardwareFitSpeed": "Vitesse estimée",
       "hardwareFitQuant": "Meilleure quantification",
-      "hardwareFitMoved": "Déplacé vers l'onglet Apprentissage automatique."
+      "hardwareFitMoved": "Déplacé vers l'onglet Apprentissage automatique.",
+      "storageHintSuggested": "Suggestion : pointez vers un dossier a l'interieur du propre dossier de donnees de cette application, pour que les fichiers de modele restent avec tout ce que cette application gere, plutot que disperses ailleurs.",
+      "storageHintRestart": "Apres avoir defini ceci, redemarrez le service Ollama (ou votre ordinateur) pour que ce soit pris en compte -- cette application ne peut pas le faire a votre place."
     },
     "usage": {
       "heading": "Utilisation",

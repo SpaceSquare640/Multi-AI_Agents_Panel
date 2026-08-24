@@ -440,7 +440,9 @@
       "hardwareFitScore": "Punktzahl",
       "hardwareFitSpeed": "Geschätzte Geschwindigkeit",
       "hardwareFitQuant": "Beste Quantisierung",
-      "hardwareFitMoved": "In den Tab „Maschinelles Lernen“ verschoben."
+      "hardwareFitMoved": "In den Tab „Maschinelles Lernen“ verschoben.",
+      "storageHintSuggested": "Vorschlag: Verweisen Sie auf einen Ordner innerhalb des eigenen Datenordners dieser App, damit Modell-Dateien zusammen mit allem anderen bleiben, das diese App verwaltet, statt verstreut zu sein.",
+      "storageHintRestart": "Nach dieser Einstellung muss der Ollama-Dienst (oder Ihr Computer) neu gestartet werden, damit sie wirksam wird -- das kann diese App nicht fuer Sie erledigen."
     },
     "usage": {
       "heading": "Nutzung",

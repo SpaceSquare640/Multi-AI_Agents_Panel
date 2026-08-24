@@ -52,6 +52,7 @@ export default function AIControlCenter({ onOpenUsage }: { onOpenUsage: () => vo
   const [pullingModel, setPullingModel] = useState<string | null>(null);
   const [pullProgress, setPullProgress] = useState<{ status: string; percent: number | null } | null>(null);
   const [ollamaModelsEnvHint, setOllamaModelsEnvHint] = useState<string | null | undefined>(undefined);
+  const [suggestedOllamaModelsDir, setSuggestedOllamaModelsDir] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Live OpenRouter catalog (search + real USD pricing) — only relevant
@@ -202,6 +203,9 @@ export default function AIControlCenter({ onOpenUsage }: { onOpenUsage: () => vo
       .catch((e) => setError(String(e)));
     invoke<string | null>("ollama_models_env_hint")
       .then(setOllamaModelsEnvHint)
+      .catch((e) => setError(String(e)));
+    invoke<string>("suggest_ollama_models_dir")
+      .then(setSuggestedOllamaModelsDir)
       .catch((e) => setError(String(e)));
     refreshMcpServers().catch((e) => setError(String(e)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -520,10 +524,20 @@ export default function AIControlCenter({ onOpenUsage }: { onOpenUsage: () => vo
           ) : (
             <p className="acc-hint">{t("acc.localModels.storageHintEnvUnset")}</p>
           )}
+          {suggestedOllamaModelsDir && <p className="acc-hint">{t("acc.localModels.storageHintSuggested")}</p>}
           <ul className="acc-hint">
-            <li>{t("acc.localModels.storageHintWindows", { command: 'setx OLLAMA_MODELS "C:\\path\\to\\folder"' })}</li>
-            <li>{t("acc.localModels.storageHintUnix", { command: "export OLLAMA_MODELS=/path/to/folder" })}</li>
+            <li>
+              {t("acc.localModels.storageHintWindows", {
+                command: `setx OLLAMA_MODELS "${suggestedOllamaModelsDir ?? "C:\\path\\to\\folder"}"`,
+              })}
+            </li>
+            <li>
+              {t("acc.localModels.storageHintUnix", {
+                command: `export OLLAMA_MODELS=${suggestedOllamaModelsDir ?? "/path/to/folder"}`,
+              })}
+            </li>
           </ul>
+          <p className="acc-hint">{t("acc.localModels.storageHintRestart")}</p>
         </details>
 
         {ollamaRunning && (

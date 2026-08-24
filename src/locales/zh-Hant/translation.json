@@ -440,7 +440,9 @@
       "hardwareFitScore": "分數",
       "hardwareFitSpeed": "預估速度",
       "hardwareFitQuant": "最佳量化",
-      "hardwareFitMoved": "已移至「機械學習」分頁。"
+      "hardwareFitMoved": "已移至「機械學習」分頁。",
+      "storageHintSuggested": "建議：指向這個 App 自己的資料夾內，讓模型檔案跟這個 App 管理的其他東西放在一起，而不是散落在別處。",
+      "storageHintRestart": "設定完成後，需要重新啟動 Ollama 服務（或重新開機）才會生效——這一步無法由本 App 代勞。"
     },
     "usage": {
       "heading": "使用量",

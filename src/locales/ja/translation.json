@@ -440,7 +440,9 @@
       "hardwareFitScore": "スコア",
       "hardwareFitSpeed": "推定速度",
       "hardwareFitQuant": "最適な量子化",
-      "hardwareFitMoved": "「機械学習」タブに移動しました。"
+      "hardwareFitMoved": "「機械学習」タブに移動しました。",
+      "storageHintSuggested": "提案：このアプリ自身のデータフォルダー内を指定すると、モデルファイルがこのアプリが管理する他のものと同じ場所にまとまります。",
+      "storageHintRestart": "設定後、Ollama サービス（またはPC）を再起動しないと反映されません——この操作はアプリ側からは行えません。"
     },
     "usage": {
       "heading": "使用量",

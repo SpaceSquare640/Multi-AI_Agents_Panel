@@ -385,6 +385,21 @@ pub fn ollama_models_env_hint() -> Option<String> {
     std::env::var("OLLAMA_MODELS").ok()
 }
 
+/// A concrete path under this app's own unified data folder for the
+/// user to point `OLLAMA_MODELS` at, if they choose to — copy-pasteable
+/// into the `setx`/`export` command shown in the same guidance panel,
+/// rather than a generic `C:\path\to\folder` placeholder. This app never
+/// creates or writes to this folder itself (see `ollama_models_env_hint`'s
+/// doc comment on why it can't redirect Ollama's storage) — it's purely
+/// a suggested destination the user applies themselves.
+#[tauri::command]
+pub fn suggest_ollama_models_dir(app: tauri::AppHandle) -> Result<String, String> {
+    use tauri::Manager;
+    let home = app.path().home_dir().map_err(|e| e.to_string())?;
+    let suggested = crate::resolve_data_dir(home).join("LocalAIModel").join("ollama");
+    Ok(suggested.to_string_lossy().into_owned())
+}
+
 // --- Independent Session chat (agents, sessions, messages) ---
 
 #[tauri::command]
