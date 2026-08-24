@@ -2,6 +2,16 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [1.6.1] - 2026-08-24
+
+### Changes
+
+- Chore: bump version to 1.6.1
+
+### Fixed
+
+- Fix: hyperlink bare URL in cherrytree.rs doc comment (CI rustdoc check)
+
 ## [1.6.0] - 2026-08-24
 
 ### Added
