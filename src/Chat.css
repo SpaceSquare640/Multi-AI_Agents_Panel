@@ -12,7 +12,7 @@
    seam/divider without adding an extra border that would double up
    against .chat-main's own left border below. */
 .chat-sidebar {
-  width: 260px;
+  width: 300px;
   flex-shrink: 0;
   padding: 1rem;
   overflow-y: auto;
