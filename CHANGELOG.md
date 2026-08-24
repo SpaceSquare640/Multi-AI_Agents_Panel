@@ -2,6 +2,16 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [1.6.3] - 2026-08-24
+
+### Changes
+
+- Chore: bump version to 1.6.3
+
+### Fixed
+
+- Fix: add missing Agent deletion (create-only, no way to delete)
+
 ## [1.6.2] - 2026-08-24
 
 ### Changes
