@@ -1086,6 +1086,7 @@ pub fn import_custom_skill(
     if !source.join(&manifest.entrypoint).exists() {
         return Err(format!("entrypoint \"{}\" not found in {source_folder}", manifest.entrypoint));
     }
+    skill_manager::validate_skill_name(&manifest.name)?;
 
     let dest = skill_dirs.custom.join(&manifest.name);
     if dest.exists() {
@@ -1114,6 +1115,7 @@ pub fn import_custom_skill(
 /// already, there's nothing to hand someone that they don't already have.
 #[tauri::command]
 pub fn export_custom_skill(skill_dirs: State<SkillDirs>, skill_name: String, dest_folder: String) -> Result<(), String> {
+    skill_manager::validate_skill_name(&skill_name)?;
     let source = skill_dirs.custom.join(&skill_name);
     if !source.is_dir() {
         return Err(format!("no custom skill named \"{skill_name}\""));

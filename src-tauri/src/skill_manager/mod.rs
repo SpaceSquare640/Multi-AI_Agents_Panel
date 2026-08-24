@@ -136,6 +136,24 @@ pub fn discover_skills_tagged(skills_dir: &Path, source: &str) -> Vec<SkillManif
         .collect()
 }
 
+/// Rejects a skill name that isn't a single, plain path component —
+/// blocks path traversal (`..`), absolute paths, and directory
+/// separators before the name is ever joined onto `skill_dirs.custom`.
+/// `import_custom_skill` takes this from a user-supplied `skill.json`
+/// and `export_custom_skill` takes it as a direct argument; neither
+/// value can be trusted to already be a safe single directory name —
+/// joining an unchecked name onto a base directory lets `..` segments
+/// escape it entirely (write outside `custom/` on import, read/copy an
+/// arbitrary directory on export).
+pub fn validate_skill_name(name: &str) -> Result<(), String> {
+    let is_single_normal_component =
+        matches!(Path::new(name).components().collect::<Vec<_>>().as_slice(), [std::path::Component::Normal(_)]);
+    if !is_single_normal_component {
+        return Err(format!("invalid skill name \"{name}\" — must be a single folder name, not a path"));
+    }
+    Ok(())
+}
+
 /// Copies a directory tree from `src` to `dst`, creating `dst` and any
 /// subdirectories as needed. Used by `import_custom_skill` to copy a
 /// user-picked skill folder into the custom-skills directory — `std::fs`
@@ -398,6 +416,37 @@ mod tests {
 
         assert_eq!(std::fs::read_to_string(dst.join("skill.json")).unwrap(), "{}");
         assert_eq!(std::fs::read_to_string(dst.join("nested/skill.py")).unwrap(), "def run(p): return p");
+    }
+
+    #[test]
+    fn validate_skill_name_accepts_a_plain_name() {
+        assert!(validate_skill_name("my-skill").is_ok());
+    }
+
+    #[test]
+    fn validate_skill_name_rejects_parent_directory_traversal() {
+        assert!(validate_skill_name("../../../../Windows/System32/evil").is_err());
+        assert!(validate_skill_name("..").is_err());
+    }
+
+    #[test]
+    fn validate_skill_name_rejects_a_nested_path() {
+        // Forward slash only — backslash is a path separator on Windows
+        // but a literal character in a filename on Linux (where CI's
+        // `cargo test` actually runs), so a backslash assertion here
+        // would silently test something different per platform instead
+        // of proving the same thing everywhere.
+        assert!(validate_skill_name("a/b").is_err());
+    }
+
+    #[test]
+    fn validate_skill_name_rejects_an_absolute_path() {
+        assert!(validate_skill_name("/etc/passwd").is_err());
+    }
+
+    #[test]
+    fn validate_skill_name_rejects_an_empty_name() {
+        assert!(validate_skill_name("").is_err());
     }
 
     #[test]
