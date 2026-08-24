@@ -538,5 +538,25 @@
   },
   "gameAgentPage": {
     "title": "Game Agent"
+  },
+  "notes": {
+    "title": "Notes",
+    "newTopLevel": "+ New note",
+    "untitled": "Untitled",
+    "none": "No notes yet.",
+    "addChild": "Add child note",
+    "delete": "Delete",
+    "deleteConfirmTitle": "Delete note",
+    "deleteConfirm": "Delete \"{{title}}\" and every note inside it? This can't be undone.",
+    "selectOrCreate": "Pick a note on the left, or create a new one.",
+    "save": "Save",
+    "saving": "Saving...",
+    "saved": "Saved.",
+    "cherryTreeHeading": "Want more? Install CherryTree",
+    "cherryTreeHint": "This app's own notes are deliberately simple (a tree + plain text). CherryTree is a full-featured standalone note-taking app (rich text, code highlighting, encryption) - installing it opens a separate program, not a tab in this app.",
+    "cherryTreeInstall": "Install CherryTree",
+    "cherryTreeInstalling": "Downloading...",
+    "installCherryTreeConfirmTitle": "Install CherryTree",
+    "installCherryTreeConfirm": "This downloads the real CherryTree installer from its official GitHub releases and launches it. You'll interact with CherryTree's own installer from there - continue?"
   }
 }

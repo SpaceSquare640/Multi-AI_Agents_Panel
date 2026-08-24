@@ -538,5 +538,25 @@
   },
   "gameAgentPage": {
     "title": "Agent de jeu"
+  },
+  "notes": {
+    "title": "Notes",
+    "newTopLevel": "+ Nouvelle note",
+    "untitled": "Sans titre",
+    "none": "Aucune note pour l'instant.",
+    "addChild": "Ajouter une sous-note",
+    "delete": "Supprimer",
+    "deleteConfirmTitle": "Supprimer la note",
+    "deleteConfirm": "Supprimer « {{title}} » et toutes les notes qu'elle contient ? Action irreversible.",
+    "selectOrCreate": "Choisissez une note a gauche, ou creez-en une nouvelle.",
+    "save": "Enregistrer",
+    "saving": "Enregistrement...",
+    "saved": "Enregistre.",
+    "cherryTreeHeading": "Envie de plus ? Installez CherryTree",
+    "cherryTreeHint": "Les notes de cette application restent volontairement simples (arborescence + texte brut). CherryTree est une application de prise de notes autonome et complete (texte enrichi, coloration syntaxique, chiffrement) - l'installer ouvre un programme separe, pas un onglet de cette application.",
+    "cherryTreeInstall": "Installer CherryTree",
+    "cherryTreeInstalling": "Telechargement...",
+    "installCherryTreeConfirmTitle": "Installer CherryTree",
+    "installCherryTreeConfirm": "Ceci telecharge le vrai programme d'installation de CherryTree depuis ses releases GitHub officielles et le lance. Vous interagirez ensuite avec l'installateur de CherryTree lui-meme - continuer ?"
   }
 }

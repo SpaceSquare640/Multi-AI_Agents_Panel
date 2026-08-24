@@ -21,7 +21,7 @@ use crate::skill_manager::{self, SkillManifest};
 use crate::update_check;
 use crate::storage::{
     Agent, AgentFallbackProvider, AgentMemory, FileAccessGrant, McpAccessGrant, McpServer, MlAccessGrant, Message,
-    ProviderKey, Session, SkillAccessGrant, Storage, UsageSummary,
+    Note, ProviderKey, Session, SkillAccessGrant, Storage, UsageSummary,
 };
 use crate::{MlDir, MlEngineRuntimeState, SkillDirs, SkillRuntimeState};
 
@@ -370,6 +370,14 @@ pub fn install_ollama() -> Result<(), String> {
     ollama::download_and_run_installer()
 }
 
+/// Downloads and launches the real CherryTree installer — same posture
+/// as `install_ollama` above (never silent, only reachable behind an
+/// explicit confirmation dialog). See `cherrytree` module docs.
+#[tauri::command]
+pub fn install_cherrytree() -> Result<(), String> {
+    crate::cherrytree::download_and_run_installer()
+}
+
 /// Reads `OLLAMA_MODELS` from *this app's own process environment* —
 /// best-effort information only. Ollama is an external, independently
 /// launched service (this app only calls its `localhost:11434` API, see
@@ -480,6 +488,36 @@ pub fn list_sessions(storage: State<Storage>) -> Result<Vec<Session>, String> {
 #[tauri::command]
 pub fn delete_session(storage: State<Storage>, session_id: String) -> Result<(), String> {
     storage.delete_session(&session_id).map_err(|e| e.to_string())
+}
+
+// --- Notes (hierarchical, see Backlog "CherryTree concept, native") ---
+
+#[tauri::command]
+pub fn list_notes(storage: State<Storage>) -> Result<Vec<Note>, String> {
+    storage.list_notes().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn create_note(storage: State<Storage>, parent_id: Option<String>, title: String) -> Result<Note, String> {
+    storage.create_note(parent_id.as_deref(), &title).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn update_note(
+    storage: State<Storage>,
+    id: String,
+    title: Option<String>,
+    content: Option<String>,
+) -> Result<Note, String> {
+    storage.update_note(&id, title.as_deref(), content.as_deref()).map_err(|e| e.to_string())
+}
+
+/// Permanently deletes a note and every descendant beneath it (see
+/// `Storage::delete_note`). There is no undo; the frontend must confirm
+/// with the user before calling this.
+#[tauri::command]
+pub fn delete_note(storage: State<Storage>, id: String) -> Result<(), String> {
+    storage.delete_note(&id).map_err(|e| e.to_string())
 }
 
 #[tauri::command]

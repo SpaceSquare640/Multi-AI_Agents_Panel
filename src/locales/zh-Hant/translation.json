@@ -538,5 +538,25 @@
   },
   "gameAgentPage": {
     "title": "遊戲操作 Agent"
+  },
+  "notes": {
+    "title": "筆記",
+    "newTopLevel": "+ 新增筆記",
+    "untitled": "未命名",
+    "none": "尚無筆記。",
+    "addChild": "新增子筆記",
+    "delete": "刪除",
+    "deleteConfirmTitle": "刪除筆記",
+    "deleteConfirm": "刪除「{{title}}」以及裡面的所有筆記？此操作無法復原。",
+    "selectOrCreate": "在左側選擇一則筆記，或新增一則。",
+    "save": "儲存",
+    "saving": "儲存中…",
+    "saved": "已儲存。",
+    "cherryTreeHeading": "想要更強大的功能？安裝 CherryTree",
+    "cherryTreeHint": "這個 App 自己的筆記刻意保持簡單（樹狀結構＋純文字）。CherryTree 是功能完整的獨立筆記軟體（富文字、程式碼高亮、加密）——安裝後會開啟一個獨立程式，不是這個 App 裡的分頁。",
+    "cherryTreeInstall": "安裝 CherryTree",
+    "cherryTreeInstalling": "下載中…",
+    "installCherryTreeConfirmTitle": "安裝 CherryTree",
+    "installCherryTreeConfirm": "這會從 CherryTree 官方 GitHub Releases 下載真正的安裝檔並啟動它，接下來您會直接操作 CherryTree 自己的安裝程式——要繼續嗎？"
   }
 }

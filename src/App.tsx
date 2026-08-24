@@ -3,6 +3,7 @@ import AIControlCenter from "./AIControlCenter";
 import Chat from "./Chat";
 import GameAgent from "./GameAgent";
 import Manual from "./Manual";
+import Notes from "./Notes";
 import Onboarding, { hasAcknowledgedGuardrails } from "./Onboarding";
 import SemanticSearch from "./SemanticSearch";
 import Settings from "./Settings";
@@ -10,7 +11,16 @@ import Skills from "./Skills";
 import Usage from "./Usage";
 import "./App.css";
 
-type Tab = "chat" | "control-center" | "semantic-search" | "skills" | "game-agent" | "usage" | "manual" | "settings";
+type Tab =
+  | "chat"
+  | "control-center"
+  | "semantic-search"
+  | "skills"
+  | "game-agent"
+  | "usage"
+  | "notes"
+  | "manual"
+  | "settings";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "chat", label: "Chat" },
@@ -19,6 +29,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "skills", label: "Skills" },
   { id: "game-agent", label: "Game Agent" },
   { id: "usage", label: "Usage" },
+  { id: "notes", label: "Notes" },
   { id: "manual", label: "Help" },
   { id: "settings", label: "Settings" },
 ];
@@ -80,6 +91,9 @@ function App() {
       </div>
       <div className="app-tab-content" hidden={tab !== "usage"}>
         <Usage />
+      </div>
+      <div className="app-tab-content" hidden={tab !== "notes"}>
+        <Notes />
       </div>
       <div className="app-tab-content" hidden={tab !== "manual"}>
         <Manual />

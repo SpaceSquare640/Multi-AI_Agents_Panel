@@ -237,6 +237,25 @@ pub struct CustomRoleTemplate {
     pub created_at: String,
 }
 
+/// One node in the hierarchical Notes tree (see Backlog: "CherryTree
+/// concept, native"). `parent_id` is `None` for a top-level note;
+/// children are resolved client-side from the flat list `list_notes`
+/// returns, same approach as `IndexEntry` on the frontend's Semantic
+/// Search page — there's no need for a recursive SQL query when the
+/// whole tree is small enough to just ship as one flat list and let the
+/// UI build the hierarchy.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Note {
+    pub id: String,
+    pub parent_id: Option<String>,
+    pub title: String,
+    pub content: String,
+    pub position: i64,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
 /// Per-Group-Chat-session turn-taking state. `rotation_cursor` indexes into
 /// the session's members (ordered by `joined_at`) for round-robin
 /// speaking order; an `@mention` speaks out of turn without consuming a
@@ -414,6 +433,16 @@ impl Storage {
             CREATE TABLE IF NOT EXISTS app_settings (
                 key    TEXT PRIMARY KEY,
                 value  TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS notes (
+                id          TEXT PRIMARY KEY,
+                parent_id   TEXT REFERENCES notes(id),
+                title       TEXT NOT NULL,
+                content     TEXT NOT NULL,
+                position    INTEGER NOT NULL DEFAULT 0,
+                created_at  TEXT NOT NULL,
+                updated_at  TEXT NOT NULL
             );
             ",
         )?;
@@ -1563,6 +1592,121 @@ impl Storage {
             .execute("DELETE FROM role_templates_custom WHERE id = ?1", params![id])?;
         Ok(())
     }
+
+    // --- Notes (hierarchical, see Backlog "CherryTree concept, native") ---
+
+    pub fn create_note(&self, parent_id: Option<&str>, title: &str) -> rusqlite::Result<Note> {
+        let now = chrono::Utc::now().to_rfc3339();
+        let note = Note {
+            id: uuid::Uuid::new_v4().to_string(),
+            parent_id: parent_id.map(str::to_string),
+            title: title.to_string(),
+            content: String::new(),
+            position: 0,
+            created_at: now.clone(),
+            updated_at: now,
+        };
+        self.conn.lock().unwrap().execute(
+            "INSERT INTO notes (id, parent_id, title, content, position, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![note.id, note.parent_id, note.title, note.content, note.position, note.created_at, note.updated_at],
+        )?;
+        Ok(note)
+    }
+
+    /// Returns every note as a flat list — the frontend resolves the
+    /// tree from `parent_id` client-side (same approach the Semantic
+    /// Search page already uses for its own index list), rather than a
+    /// recursive SQL query that would only pay off at a scale this
+    /// single-user local notes feature will never reach.
+    pub fn list_notes(&self) -> rusqlite::Result<Vec<Note>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, parent_id, title, content, position, created_at, updated_at
+             FROM notes ORDER BY position ASC, created_at ASC",
+        )?;
+        let rows = stmt.query_map([], |row| {
+            Ok(Note {
+                id: row.get(0)?,
+                parent_id: row.get(1)?,
+                title: row.get(2)?,
+                content: row.get(3)?,
+                position: row.get(4)?,
+                created_at: row.get(5)?,
+                updated_at: row.get(6)?,
+            })
+        })?;
+        rows.collect()
+    }
+
+    /// Edits an existing note's title and/or content in place. Either
+    /// argument left `None` keeps its current value, so the frontend can
+    /// save a title rename and a content edit as two independent calls
+    /// (e.g. renaming in the tree vs. autosaving the editor) without one
+    /// clobbering the other.
+    pub fn update_note(&self, id: &str, title: Option<&str>, content: Option<&str>) -> rusqlite::Result<Note> {
+        let now = chrono::Utc::now().to_rfc3339();
+        let conn = self.conn.lock().unwrap();
+        if let Some(title) = title {
+            conn.execute("UPDATE notes SET title = ?2, updated_at = ?3 WHERE id = ?1", params![id, title, now])?;
+        }
+        if let Some(content) = content {
+            conn.execute("UPDATE notes SET content = ?2, updated_at = ?3 WHERE id = ?1", params![id, content, now])?;
+        }
+        conn.query_row(
+            "SELECT id, parent_id, title, content, position, created_at, updated_at FROM notes WHERE id = ?1",
+            params![id],
+            |row| {
+                Ok(Note {
+                    id: row.get(0)?,
+                    parent_id: row.get(1)?,
+                    title: row.get(2)?,
+                    content: row.get(3)?,
+                    position: row.get(4)?,
+                    created_at: row.get(5)?,
+                    updated_at: row.get(6)?,
+                })
+            },
+        )
+    }
+
+    /// Deletes a note and every descendant beneath it. Silently orphaning
+    /// children (leaving their `parent_id` pointing at a row that no
+    /// longer exists) would make them permanently unreachable in the
+    /// tree UI without actually freeing their storage — an explicit
+    /// cascade is the only version of "delete this note" that makes
+    /// sense for a hierarchy. Descendant ids are collected breadth-first
+    /// in one read pass, then every id is deleted in a single
+    /// transaction so a mid-way failure can't leave a partial cascade.
+    pub fn delete_note(&self, id: &str) -> rusqlite::Result<()> {
+        let mut conn = self.conn.lock().unwrap();
+
+        let mut to_delete = vec![id.to_string()];
+        let mut frontier = vec![id.to_string()];
+        while !frontier.is_empty() {
+            let mut next_frontier = Vec::new();
+            for parent in &frontier {
+                let mut stmt = conn.prepare("SELECT id FROM notes WHERE parent_id = ?1")?;
+                let children: Vec<String> =
+                    stmt.query_map(params![parent], |row| row.get(0))?.collect::<rusqlite::Result<_>>()?;
+                next_frontier.extend(children);
+            }
+            to_delete.extend(next_frontier.iter().cloned());
+            frontier = next_frontier;
+        }
+
+        // Deleted in reverse collection order (leaves before their
+        // ancestors) — `parent_id REFERENCES notes(id)` means deleting a
+        // parent while a child row still points at it violates the
+        // foreign key constraint. Since `to_delete` was built root-first
+        // breadth-first, reversing it guarantees every child is gone
+        // before its parent's turn comes up.
+        let tx = conn.transaction()?;
+        for note_id in to_delete.iter().rev() {
+            tx.execute("DELETE FROM notes WHERE id = ?1", params![note_id])?;
+        }
+        tx.commit()
+    }
 }
 
 #[cfg(test)]
@@ -2179,5 +2323,73 @@ mod tests {
         let storage = Storage::open_in_memory().unwrap();
         let key = storage.create_provider_key("openrouter", Some("unused"), None).unwrap();
         assert!(storage.usage_log_rows_for_key(&key.id).unwrap().is_empty());
+    }
+
+    #[test]
+    fn create_and_list_notes_round_trips_a_top_level_note() {
+        let storage = Storage::open_in_memory().unwrap();
+        let note = storage.create_note(None, "Project Ideas").unwrap();
+
+        let notes = storage.list_notes().unwrap();
+        assert_eq!(notes.len(), 1);
+        assert_eq!(notes[0].id, note.id);
+        assert_eq!(notes[0].title, "Project Ideas");
+        assert_eq!(notes[0].parent_id, None);
+        assert_eq!(notes[0].content, "");
+    }
+
+    #[test]
+    fn create_note_with_a_parent_records_the_hierarchy() {
+        let storage = Storage::open_in_memory().unwrap();
+        let parent = storage.create_note(None, "Parent").unwrap();
+        let child = storage.create_note(Some(&parent.id), "Child").unwrap();
+
+        let notes = storage.list_notes().unwrap();
+        let child_row = notes.iter().find(|n| n.id == child.id).unwrap();
+        assert_eq!(child_row.parent_id, Some(parent.id));
+    }
+
+    #[test]
+    fn update_note_changes_only_the_field_provided() {
+        let storage = Storage::open_in_memory().unwrap();
+        let note = storage.create_note(None, "Draft").unwrap();
+
+        let renamed = storage.update_note(&note.id, Some("Final Title"), None).unwrap();
+        assert_eq!(renamed.title, "Final Title");
+        assert_eq!(renamed.content, "");
+
+        let edited = storage.update_note(&note.id, None, Some("Some content")).unwrap();
+        assert_eq!(edited.title, "Final Title", "title must survive a content-only update");
+        assert_eq!(edited.content, "Some content");
+    }
+
+    #[test]
+    fn delete_note_cascades_to_every_descendant() {
+        let storage = Storage::open_in_memory().unwrap();
+        let root = storage.create_note(None, "Root").unwrap();
+        let child = storage.create_note(Some(&root.id), "Child").unwrap();
+        let grandchild = storage.create_note(Some(&child.id), "Grandchild").unwrap();
+        let unrelated = storage.create_note(None, "Unrelated").unwrap();
+
+        storage.delete_note(&root.id).unwrap();
+
+        let remaining_ids: Vec<String> = storage.list_notes().unwrap().into_iter().map(|n| n.id).collect();
+        assert!(!remaining_ids.contains(&root.id));
+        assert!(!remaining_ids.contains(&child.id));
+        assert!(!remaining_ids.contains(&grandchild.id));
+        assert!(remaining_ids.contains(&unrelated.id), "a sibling note outside the deleted subtree must survive");
+    }
+
+    #[test]
+    fn delete_note_on_a_leaf_only_removes_that_one_note() {
+        let storage = Storage::open_in_memory().unwrap();
+        let root = storage.create_note(None, "Root").unwrap();
+        let child = storage.create_note(Some(&root.id), "Child").unwrap();
+
+        storage.delete_note(&child.id).unwrap();
+
+        let remaining_ids: Vec<String> = storage.list_notes().unwrap().into_iter().map(|n| n.id).collect();
+        assert!(remaining_ids.contains(&root.id));
+        assert!(!remaining_ids.contains(&child.id));
     }
 }

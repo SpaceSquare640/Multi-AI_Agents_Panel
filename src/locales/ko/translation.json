@@ -538,5 +538,25 @@
   },
   "gameAgentPage": {
     "title": "게임 조작 Agent"
+  },
+  "notes": {
+    "title": "노트",
+    "newTopLevel": "+ 새 노트",
+    "untitled": "제목 없음",
+    "none": "아직 노트가 없습니다.",
+    "addChild": "하위 노트 추가",
+    "delete": "삭제",
+    "deleteConfirmTitle": "노트 삭제",
+    "deleteConfirm": "\"{{title}}\" 및 그 안의 모든 노트를 삭제하시겠습니까? 되돌릴 수 없습니다.",
+    "selectOrCreate": "왼쪽에서 노트를 선택하거나 새로 만드세요.",
+    "save": "저장",
+    "saving": "저장 중…",
+    "saved": "저장됨.",
+    "cherryTreeHeading": "더 강력한 기능이 필요하신가요? CherryTree 설치",
+    "cherryTreeHint": "이 앱 자체의 노트는 의도적으로 간단합니다(트리 구조 + 일반 텍스트). CherryTree는 서식 있는 텍스트, 코드 하이라이트, 암호화를 지원하는 완전한 기능의 독립 노트 앱입니다 -- 설치하면 이 앱의 탭이 아니라 별도의 프로그램이 열립니다.",
+    "cherryTreeInstall": "CherryTree 설치",
+    "cherryTreeInstalling": "다운로드 중…",
+    "installCherryTreeConfirmTitle": "CherryTree 설치",
+    "installCherryTreeConfirm": "CherryTree의 공식 GitHub 릴리스에서 실제 설치 프로그램을 다운로드하여 실행합니다. 이후에는 CherryTree 자체의 설치 프로그램을 직접 조작하게 됩니다 -- 계속하시겠습니까?"
   }
 }

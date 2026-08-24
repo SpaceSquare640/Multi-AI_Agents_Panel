@@ -538,5 +538,25 @@
   },
   "gameAgentPage": {
     "title": "Spiel-Agent"
+  },
+  "notes": {
+    "title": "Notizen",
+    "newTopLevel": "+ Neue Notiz",
+    "untitled": "Unbenannt",
+    "none": "Noch keine Notizen.",
+    "addChild": "Unternotiz hinzufuegen",
+    "delete": "Loeschen",
+    "deleteConfirmTitle": "Notiz loeschen",
+    "deleteConfirm": "\"{{title}}\" und alle darin enthaltenen Notizen loeschen? Das kann nicht rueckgaengig gemacht werden.",
+    "selectOrCreate": "Waehlen Sie links eine Notiz aus oder erstellen Sie eine neue.",
+    "save": "Speichern",
+    "saving": "Wird gespeichert…",
+    "saved": "Gespeichert.",
+    "cherryTreeHeading": "Mehr gewuenscht? CherryTree installieren",
+    "cherryTreeHint": "Die eigenen Notizen dieser App sind bewusst einfach gehalten (Baumstruktur + Klartext). CherryTree ist eine voll ausgestattete eigenstaendige Notiz-App (Rich Text, Code-Hervorhebung, Verschluesselung) — die Installation oeffnet ein separates Programm, keinen Tab in dieser App.",
+    "cherryTreeInstall": "CherryTree installieren",
+    "cherryTreeInstalling": "Wird heruntergeladen…",
+    "installCherryTreeConfirmTitle": "CherryTree installieren",
+    "installCherryTreeConfirm": "Dies laedt das echte CherryTree-Installationsprogramm von dessen offiziellen GitHub-Releases herunter und startet es. Danach interagieren Sie mit CherryTrees eigenem Installationsprogramm — fortfahren?"
   }
 }

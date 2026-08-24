@@ -538,5 +538,25 @@
   },
   "gameAgentPage": {
     "title": "ゲーム操作 Agent"
+  },
+  "notes": {
+    "title": "ノート",
+    "newTopLevel": "+ 新規ノート",
+    "untitled": "無題",
+    "none": "まだノートがありません。",
+    "addChild": "子ノートを追加",
+    "delete": "削除",
+    "deleteConfirmTitle": "ノートを削除",
+    "deleteConfirm": "「{{title}}」とその中の全てのノートを削除しますか？元に戻せません。",
+    "selectOrCreate": "左側でノートを選ぶか、新規作成してください。",
+    "save": "保存",
+    "saving": "保存中…",
+    "saved": "保存しました。",
+    "cherryTreeHeading": "もっと高機能なものが欲しいですか？CherryTree をインストール",
+    "cherryTreeHint": "このアプリ自身のノートはあえてシンプルです（ツリー構造＋プレーンテキスト）。CherryTree はリッチテキスト・コードハイライト・暗号化などを備えた高機能な独立ノートアプリです——インストールすると、このアプリのタブではなく別のプログラムが開きます。",
+    "cherryTreeInstall": "CherryTree をインストール",
+    "cherryTreeInstalling": "ダウンロード中…",
+    "installCherryTreeConfirmTitle": "CherryTree をインストール",
+    "installCherryTreeConfirm": "CherryTree の公式 GitHub リリースから本物のインストーラーをダウンロードして起動します。この後は CherryTree 自身のインストーラーを操作することになります——続けますか？"
   }
 }

@@ -1,5 +1,6 @@
 mod agent_manager;
 mod bridge_support;
+mod cherrytree;
 mod commands;
 mod fallback;
 mod file_access;
@@ -203,6 +204,7 @@ pub fn run() {
             commands::pull_ollama_model,
             commands::delete_ollama_model,
             commands::install_ollama,
+            commands::install_cherrytree,
             commands::ollama_models_env_hint,
             commands::suggest_ollama_models_dir,
             commands::list_agents,
@@ -213,6 +215,10 @@ pub fn run() {
             commands::remove_agent_fallback_provider,
             commands::list_sessions,
             commands::delete_session,
+            commands::list_notes,
+            commands::create_note,
+            commands::update_note,
+            commands::delete_note,
             commands::create_independent_session,
             commands::list_messages,
             commands::get_session_agent_id,

@@ -86,6 +86,16 @@ export interface Session {
   createdAt: string;
 }
 
+export interface Note {
+  id: string;
+  parentId: string | null;
+  title: string;
+  content: string;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Message {
   id: string;
   sessionId: string;

@@ -1,0 +1,123 @@
+.notes-screen {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  text-align: left;
+  gap: 1px;
+  background: var(--edex-cyan-dim);
+}
+
+.notes-toc {
+  width: 320px;
+  flex: 0 0 auto;
+  padding: 1.25rem 0.9rem;
+  overflow-y: auto;
+  background: var(--card-bg);
+}
+
+.notes-toc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.notes-toc-head h1 {
+  margin: 0;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--edex-cyan);
+}
+
+.notes-tree-item {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  margin-bottom: 1px;
+}
+
+.notes-tree-toggle,
+.notes-tree-toggle-spacer {
+  flex: 0 0 auto;
+  width: 1.1rem;
+  height: 1.1rem;
+  padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+
+.notes-tree-title {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  background: none;
+  border: none;
+  box-shadow: none;
+  border-radius: 2px;
+  padding: 0.4rem 0.4rem;
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notes-tree-item.active .notes-tree-title {
+  background: var(--edex-cyan-dim);
+  color: var(--edex-cyan);
+  font-weight: 600;
+}
+
+.notes-tree-add,
+.notes-tree-delete {
+  flex: 0 0 auto;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.notes-content {
+  flex: 1;
+  min-width: 0;
+  padding: 1.5rem 2rem;
+  overflow-y: auto;
+  background: var(--card-bg);
+  display: flex;
+  flex-direction: column;
+}
+
+.notes-title-input {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.notes-content-textarea {
+  flex: 1;
+  min-height: 320px;
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  padding: 0.75rem;
+}
+
+.notes-save-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.notes-cherrytree-section {
+  margin-top: 2rem;
+}
