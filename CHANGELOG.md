@@ -2,6 +2,17 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [1.6.0] - 2026-08-24
+
+### Added
+
+- Feat: add a native hierarchical Notes tab, with CherryTree as a companion install option
+
+### Changes
+
+- Chore: update CHANGELOG.md for v1.5.3 [skip ci]
+- Chore: bump version to 1.6.0
+
 ## [1.5.3] - 2026-08-24
 
 ### Changes
