@@ -2,6 +2,18 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [1.6.2] - 2026-08-24
+
+### Changes
+
+- Chore: update CHANGELOG.md for v1.6.0 [skip ci]
+- Chore: update CHANGELOG.md for v1.6.1 [skip ci]
+- Chore: bump version to 1.6.2
+
+### Fixed
+
+- Fix: restore Game Agent as a branch under Machine Learning, not its own tab
+
 ## [1.6.1] - 2026-08-24
 
 ### Changes
