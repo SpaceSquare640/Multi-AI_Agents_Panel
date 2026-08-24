@@ -2,6 +2,17 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [1.5.0] - 2026-08-24
+
+### Added
+
+- Feat: finish Track B as an in-app GUI pipeline, fix Manual sidebar wrap and recording UX
+
+### Changes
+
+- Chore: update CHANGELOG.md for v1.4.3 [skip ci]
+- Chore: bump version to 1.5.0
+
 ## [1.4.3] - 2026-08-24
 
 ### Changes
