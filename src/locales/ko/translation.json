@@ -64,7 +64,9 @@
     "importWarning": "⚠ 스킬을 가져오면 내장 스킬과 동일한 신뢰 수준으로 해당 Python 코드가 실행됩니다. skill.json에 선언된 권한에 구속되며——선언되지 않은 파일 시스템/네트워크 기능은 단순 경고가 아니라 실제로 차단됩니다——신뢰할 수 있는 출처의 스킬만 가져오세요.",
     "export": "내보내기…",
     "exporting": "내보내는 중…",
-    "exportedTo": "{{path}}(으)로 내보냈습니다"
+    "exportedTo": "{{path}}(으)로 내보냈습니다",
+    "grantHint": "특정 Agent에게 Skill을 부여하려면 해당 Agent 패널에서",
+    "grantHintLink": "\"채팅\" 열기 ->"
   },
   "usage": {
     "title": "사용량",
@@ -442,13 +444,8 @@
     },
     "usage": {
       "heading": "사용량",
-      "tableProvider": "제공자",
-      "tableLabel": "라벨",
-      "tableSuccess": "성공",
-      "tableFailure": "실패",
-      "tableLastUsed": "마지막 사용",
-      "noUsageYet": "아직 기록된 사용량이 없습니다.",
-      "never": "없음"
+      "movedHint": "자세한 사용량 통계, 예상 비용, 예산은 \"사용량\" 탭에 있습니다.",
+      "openLink": "사용량 열기 ->"
     },
     "mcp": {
       "heading": "MCP 서버",
@@ -519,5 +516,11 @@
       "playHint": "학습된 체크포인트를 불러와 중지할 때까지 스크린샷 -> 모델 -> 실제 마우스/키보드 동작 루프를 실행합니다.",
       "playRun": "플레이 시작"
     }
+  },
+  "semanticSearch": {
+    "title": "시맨틱 검색"
+  },
+  "gameAgentPage": {
+    "title": "게임 조작 Agent"
   }
 }

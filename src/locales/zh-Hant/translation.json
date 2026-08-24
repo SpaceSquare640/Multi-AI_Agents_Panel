@@ -64,7 +64,9 @@
     "importWarning": "⚠ 匯入技能會以與內建技能相同的信任等級執行其 Python 程式碼。其行為受 skill.json 中宣告的權限約束——未宣告的檔案系統／網路能力會被真正封鎖，而不僅是警告——但請僅從您信任的來源匯入技能。",
     "export": "匯出…",
     "exporting": "匯出中…",
-    "exportedTo": "已匯出至 {{path}}"
+    "exportedTo": "已匯出至 {{path}}",
+    "grantHint": "授權特定 Agent 使用某個 Skill，請到該 Agent 的面板，在",
+    "grantHintLink": "「對話」→"
   },
   "usage": {
     "title": "使用量",
@@ -442,13 +444,8 @@
     },
     "usage": {
       "heading": "使用量",
-      "tableProvider": "供應商",
-      "tableLabel": "標籤",
-      "tableSuccess": "成功",
-      "tableFailure": "失敗",
-      "tableLastUsed": "上次使用",
-      "noUsageYet": "尚無使用記錄。",
-      "never": "從未"
+      "movedHint": "完整的使用量統計、預估花費與軟性預算都在「使用量」分頁。",
+      "openLink": "開啟使用量 ->"
     },
     "mcp": {
       "heading": "MCP 伺服器",
@@ -519,5 +516,11 @@
       "playHint": "載入訓練好的 checkpoint，跑即時迴圈：截圖 -> 模型 -> 真實滑鼠／鍵盤操作，直到您停止為止。",
       "playRun": "開始遊玩"
     }
+  },
+  "semanticSearch": {
+    "title": "語意搜尋"
+  },
+  "gameAgentPage": {
+    "title": "遊戲操作 Agent"
   }
 }

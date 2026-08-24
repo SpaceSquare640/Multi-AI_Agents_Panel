@@ -64,7 +64,9 @@
     "importWarning": "⚠ Importer une compétence exécute son code Python avec le même niveau de confiance qu'une compétence intégrée. Elle est liée aux permissions déclarées dans son skill.json — une capacité de système de fichiers/réseau non déclarée est réellement bloquée, pas seulement signalée — mais n'importez des compétences que depuis des sources en qui vous avez confiance.",
     "export": "Exporter…",
     "exporting": "Exportation…",
-    "exportedTo": "Exporté vers {{path}}"
+    "exportedTo": "Exporté vers {{path}}",
+    "grantHint": "Pour accorder une competence a un Agent specifique, rendez-vous dans le panneau de cet Agent, dans",
+    "grantHintLink": "Discussion ->"
   },
   "usage": {
     "title": "Utilisation",
@@ -442,13 +444,8 @@
     },
     "usage": {
       "heading": "Utilisation",
-      "tableProvider": "Fournisseur",
-      "tableLabel": "Libellé",
-      "tableSuccess": "Succès",
-      "tableFailure": "Échec",
-      "tableLastUsed": "Dernière utilisation",
-      "noUsageYet": "Aucune utilisation enregistrée pour le moment.",
-      "never": "jamais"
+      "movedHint": "Les statistiques d'utilisation completes, les couts estimes et le budget se trouvent dans l'onglet Utilisation.",
+      "openLink": "Ouvrir Utilisation ->"
     },
     "mcp": {
       "heading": "Serveurs MCP",
@@ -519,5 +516,11 @@
       "playHint": "Charge un point de controle entraine et execute une boucle en direct : capture d'ecran -> modele -> action reelle de souris/clavier, jusqu'a l'arret.",
       "playRun": "Demarrer"
     }
+  },
+  "semanticSearch": {
+    "title": "Recherche semantique"
+  },
+  "gameAgentPage": {
+    "title": "Agent de jeu"
   }
 }

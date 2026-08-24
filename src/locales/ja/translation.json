@@ -64,7 +64,9 @@
     "importWarning": "⚠ スキルをインポートすると、組み込みスキルと同じ信頼レベルでその Python コードが実行されます。skill.json で宣言された権限に拘束されます——宣言されていないファイルシステム／ネットワーク機能は、単なる警告ではなく実際にブロックされます——信頼できるソースからのみスキルをインポートしてください。",
     "export": "エクスポート…",
     "exporting": "エクスポート中…",
-    "exportedTo": "{{path}} にエクスポートしました"
+    "exportedTo": "{{path}} にエクスポートしました",
+    "grantHint": "特定の Agent に Skill を許可するには、そのAgentのパネルで",
+    "grantHintLink": "「チャット」を開く ->"
   },
   "usage": {
     "title": "使用状況",
@@ -441,14 +443,9 @@
       "hardwareFitMoved": "「機械学習」タブに移動しました。"
     },
     "usage": {
-      "heading": "使用状況",
-      "tableProvider": "プロバイダー",
-      "tableLabel": "ラベル",
-      "tableSuccess": "成功",
-      "tableFailure": "失敗",
-      "tableLastUsed": "最終使用",
-      "noUsageYet": "まだ使用記録がありません。",
-      "never": "未使用"
+      "heading": "使用量",
+      "movedHint": "詳しい利用統計、推定コスト、予算は「使用量」タブにあります。",
+      "openLink": "使用量を開く ->"
     },
     "mcp": {
       "heading": "MCP サーバー",
@@ -519,5 +516,11 @@
       "playHint": "学習済みチェックポイントを読み込み、停止するまでスクリーンショット→モデル→実際のマウス/キーボード操作のループを実行します。",
       "playRun": "プレイ開始"
     }
+  },
+  "semanticSearch": {
+    "title": "セマンティック検索"
+  },
+  "gameAgentPage": {
+    "title": "ゲーム操作 Agent"
   }
 }

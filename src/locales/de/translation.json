@@ -64,7 +64,9 @@
     "importWarning": "⚠ Das Importieren einer Fähigkeit führt deren Python-Code mit derselben Vertrauensstufe wie eine integrierte Fähigkeit aus. Sie ist an die in ihrer skill.json deklarierten Berechtigungen gebunden — eine nicht deklarierte Dateisystem-/Netzwerkfähigkeit wird tatsächlich blockiert, nicht nur gewarnt — importieren Sie Fähigkeiten jedoch nur aus vertrauenswürdigen Quellen.",
     "export": "Exportieren…",
     "exporting": "Wird exportiert…",
-    "exportedTo": "Exportiert nach {{path}}"
+    "exportedTo": "Exportiert nach {{path}}",
+    "grantHint": "Um einer bestimmten Agent eine Faehigkeit zu gewaehren, gehen Sie zum Panel dieser Agent unter",
+    "grantHintLink": "Chat oeffnen ->"
   },
   "usage": {
     "title": "Nutzung",
@@ -442,13 +444,8 @@
     },
     "usage": {
       "heading": "Nutzung",
-      "tableProvider": "Anbieter",
-      "tableLabel": "Bezeichnung",
-      "tableSuccess": "Erfolg",
-      "tableFailure": "Fehler",
-      "tableLastUsed": "Zuletzt verwendet",
-      "noUsageYet": "Noch keine Nutzung erfasst.",
-      "never": "nie"
+      "movedHint": "Vollstaendige Nutzungsstatistiken, Kostenschaetzungen und Budget finden Sie im Tab \"Nutzung\".",
+      "openLink": "Nutzung oeffnen ->"
     },
     "mcp": {
       "heading": "MCP-Server",
@@ -519,5 +516,11 @@
       "playHint": "Laedt einen trainierten Checkpoint und fuehrt eine Live-Schleife aus: Screenshot -> Modell -> echte Maus-/Tastaturaktion, bis Sie stoppen.",
       "playRun": "Start"
     }
+  },
+  "semanticSearch": {
+    "title": "Semantische Suche"
+  },
+  "gameAgentPage": {
+    "title": "Spiel-Agent"
   }
 }

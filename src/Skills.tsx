@@ -37,7 +37,7 @@ export function aggregateGrantsBySkill(
  *  Agent Info panel), and there is no backend concept of a Skill being
  *  "on" or "off" App-wide, only which Agents currently hold a grant for
  *  it. A toggle here would imply a control that doesn't actually exist. */
-export default function Skills() {
+export default function Skills({ onOpenChat }: { onOpenChat: () => void }) {
   const { t } = useTranslation();
   const [skills, setSkills] = useState<SkillManifest[]>([]);
   const [grantsBySkill, setGrantsBySkill] = useState<Map<string, string[]>>(new Map());
@@ -126,6 +126,9 @@ export default function Skills() {
         </div>
       </div>
       <p className="acc-hint">{t("skills.hint")}</p>
+      <p className="acc-hint">
+        {t("skills.grantHint")} <button onClick={onOpenChat}>{t("skills.grantHintLink")}</button>
+      </p>
       <p className="acc-hint">{t("skills.importWarning")}</p>
 
       {error && <div className="acc-error">{error}</div>}

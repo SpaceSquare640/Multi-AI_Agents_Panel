@@ -64,7 +64,9 @@
     "importWarning": "⚠ Importing a Skill runs its Python code with the same trust level as a built-in Skill. It's bound by whatever permissions its skill.json declares — an undeclared filesystem/network capability is genuinely blocked, not just a warning — but only import Skills from sources you trust.",
     "export": "Export…",
     "exporting": "Exporting…",
-    "exportedTo": "Exported to {{path}}"
+    "exportedTo": "Exported to {{path}}",
+    "grantHint": "Granting a Skill to a specific Agent happens in that Agent's panel in",
+    "grantHintLink": "Chat ->"
   },
   "usage": {
     "title": "Usage",
@@ -442,13 +444,8 @@
     },
     "usage": {
       "heading": "Usage",
-      "tableProvider": "Provider",
-      "tableLabel": "Label",
-      "tableSuccess": "Success",
-      "tableFailure": "Failure",
-      "tableLastUsed": "Last used",
-      "noUsageYet": "No usage recorded yet.",
-      "never": "never"
+      "movedHint": "Full usage stats, cost estimates, and budget live on the Usage tab.",
+      "openLink": "Open Usage ->"
     },
     "mcp": {
       "heading": "MCP Servers",
@@ -519,5 +516,11 @@
       "playHint": "Loads a trained checkpoint and runs a live loop: screenshot -> model -> real mouse/keyboard action, until you stop it.",
       "playRun": "Start playing"
     }
+  },
+  "semanticSearch": {
+    "title": "Semantic Search"
+  },
+  "gameAgentPage": {
+    "title": "Game Agent"
   }
 }

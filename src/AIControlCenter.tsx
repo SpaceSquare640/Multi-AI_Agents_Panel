@@ -7,10 +7,10 @@ import {
   CLOUD_PROVIDERS,
   type CuratedModel,
   type McpServer,
+  type ModelRecommendation,
   type OllamaModel,
   type OpenRouterModel,
   type ProviderKeyView,
-  type UsageSummary,
 } from "./types";
 import "./AIControlCenter.css";
 
@@ -39,10 +39,9 @@ function formatBytes(bytes: number | null): string {
   return gb >= 1 ? `${gb.toFixed(1)} GB` : `${(bytes / 1_000_000).toFixed(0)} MB`;
 }
 
-export default function AIControlCenter() {
+export default function AIControlCenter({ onOpenUsage }: { onOpenUsage: () => void }) {
   const { t } = useTranslation();
   const [keys, setKeys] = useState<ProviderKeyView[]>([]);
-  const [usage, setUsage] = useState<UsageSummary[]>([]);
   const [modelProvider, setModelProvider] = useState<string>("openrouter");
   const [curatedModels, setCuratedModels] = useState<CuratedModel[]>([]);
   const [ollamaRunning, setOllamaRunning] = useState<boolean | null>(null);
@@ -87,12 +86,14 @@ export default function AIControlCenter() {
   const [newMcpArgs, setNewMcpArgs] = useState("");
   const [mcpBusy, setMcpBusy] = useState(false);
 
+  // Hardware fit advisor — "which local model fits my machine", placed
+  // next to Local Models since that's the only place its recommendation
+  // is actually acted on (install the model it points at).
+  const [hardwareRecommendations, setHardwareRecommendations] = useState<ModelRecommendation[] | null>(null);
+  const [loadingHardwareRecommendations, setLoadingHardwareRecommendations] = useState(false);
+
   async function refreshKeys() {
     setKeys(await invoke<ProviderKeyView[]>("list_provider_keys"));
-  }
-
-  async function refreshUsage() {
-    setUsage(await invoke<UsageSummary[]>("get_usage_summary"));
   }
 
   async function refreshCuratedModels(provider: string) {
@@ -109,6 +110,18 @@ export default function AIControlCenter() {
       setOpenRouterLive(result.live);
     } finally {
       setOpenRouterLoading(false);
+    }
+  }
+
+  async function handleRecommendLocalModels() {
+    setError(null);
+    setLoadingHardwareRecommendations(true);
+    try {
+      setHardwareRecommendations(await invoke<ModelRecommendation[]>("recommend_local_models", { limit: 8 }));
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setLoadingHardwareRecommendations(false);
     }
   }
 
@@ -183,7 +196,6 @@ export default function AIControlCenter() {
 
   useEffect(() => {
     refreshKeys().catch((e) => setError(String(e)));
-    refreshUsage().catch((e) => setError(String(e)));
     refreshOllama().catch((e) => setError(String(e)));
     invoke<CuratedModel[]>("list_curated_models", { provider: "ollama" })
       .then(setOllamaCurated)
@@ -563,40 +575,50 @@ export default function AIControlCenter() {
           </>
         )}
 
-        <p className="acc-hint">{t("acc.localModels.hardwareFitMoved")}</p>
+      </section>
+
+      <section className="acc-section">
+        <h2>{t("acc.localModels.hardwareFitHeading")}</h2>
+        <p className="acc-hint">{t("acc.localModels.hardwareFitHint")}</p>
+        <button disabled={loadingHardwareRecommendations} onClick={() => void handleRecommendLocalModels()}>
+          {loadingHardwareRecommendations
+            ? t("acc.localModels.hardwareFitLoading")
+            : t("acc.localModels.hardwareFitButton")}
+        </button>
+        {hardwareRecommendations && (
+          <table className="acc-table">
+            <thead>
+              <tr>
+                <th>{t("acc.localModels.tableModel")}</th>
+                <th>{t("acc.localModels.hardwareFitLevel")}</th>
+                <th>{t("acc.localModels.hardwareFitScore")}</th>
+                <th>{t("acc.localModels.hardwareFitSpeed")}</th>
+                <th>{t("acc.localModels.hardwareFitQuant")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {hardwareRecommendations.map((m) => (
+                <tr key={m.name}>
+                  <td className="acc-mono">
+                    {m.name} ({m.parameterCount})
+                  </td>
+                  <td>{m.fitLevel}</td>
+                  <td>{m.score.toFixed(0)}</td>
+                  <td>{m.estimatedTokensPerSecond.toFixed(1)} tok/s</td>
+                  <td className="acc-mono">{m.bestQuantization}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </section>
 
       <section className="acc-section">
         <h2>{t("acc.usage.heading")}</h2>
-        <table className="acc-table">
-          <thead>
-            <tr>
-              <th>{t("acc.usage.tableProvider")}</th>
-              <th>{t("acc.usage.tableLabel")}</th>
-              <th>{t("acc.usage.tableSuccess")}</th>
-              <th>{t("acc.usage.tableFailure")}</th>
-              <th>{t("acc.usage.tableLastUsed")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {usage.length === 0 && (
-              <tr>
-                <td colSpan={5} className="acc-empty">
-                  {t("acc.usage.noUsageYet")}
-                </td>
-              </tr>
-            )}
-            {usage.map((u) => (
-              <tr key={u.providerKeyId}>
-                <td>{u.provider}</td>
-                <td>{u.label ?? "—"}</td>
-                <td>{u.successCount}</td>
-                <td>{u.failureCount}</td>
-                <td>{u.lastUsedAt ?? t("acc.usage.never")}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <p className="acc-hint">
+          {t("acc.usage.movedHint")}{" "}
+          <button onClick={onOpenUsage}>{t("acc.usage.openLink")}</button>
+        </p>
       </section>
 
       <section className="acc-section">
