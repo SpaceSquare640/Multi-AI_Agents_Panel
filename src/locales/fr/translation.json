@@ -380,7 +380,12 @@
     "defaultGroupChatTitle": "Discussion de groupe",
     "createAnAgentFirst": "Créez d'abord un Agent.",
     "pickAtLeastOneAgent": "Choisissez au moins un Agent pour la discussion de groupe.",
-    "skillPayloadMustBeJson": "La charge utile de la compétence doit être un JSON valide."
+    "skillPayloadMustBeJson": "La charge utile de la compétence doit être un JSON valide.",
+    "agents": "Agents",
+    "deleteAgent": "Supprimer {{name}}",
+    "deleteAgentTitle": "Supprimer definitivement",
+    "deleteAgentConfirmTitle": "Supprimer definitivement ?",
+    "deleteAgentConfirm": "Ceci supprime definitivement l'Agent « {{name}} » et ses autorisations (acces aux fichiers, Skills, MCP, ML). Les sessions et messages auxquels il a participe sont conserves, simplement dissocies de lui. Action irreversible."
   },
   "acc": {
     "title": "Centre de contrôle IA",

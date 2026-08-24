@@ -380,7 +380,12 @@
     "defaultGroupChatTitle": "Group Chat",
     "createAnAgentFirst": "Create an agent first.",
     "pickAtLeastOneAgent": "Pick at least one agent for the Group Chat.",
-    "skillPayloadMustBeJson": "Skill payload must be valid JSON."
+    "skillPayloadMustBeJson": "Skill payload must be valid JSON.",
+    "agents": "Agents",
+    "deleteAgent": "Delete {{name}}",
+    "deleteAgentTitle": "Delete permanently",
+    "deleteAgentConfirmTitle": "Delete permanently?",
+    "deleteAgentConfirm": "This permanently deletes the Agent \"{{name}}\" and its grants (file access, Skills, MCP, ML). Sessions and messages it took part in are kept, just no longer linked to it. This can't be undone."
   },
   "acc": {
     "title": "AI Control Center",

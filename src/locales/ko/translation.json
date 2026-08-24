@@ -380,7 +380,12 @@
     "defaultGroupChatTitle": "그룹 채팅",
     "createAnAgentFirst": "먼저 Agent를 생성하세요.",
     "pickAtLeastOneAgent": "그룹 채팅에 최소 하나의 Agent를 선택하세요.",
-    "skillPayloadMustBeJson": "스킬 페이로드는 유효한 JSON이어야 합니다."
+    "skillPayloadMustBeJson": "스킬 페이로드는 유효한 JSON이어야 합니다.",
+    "agents": "Agent",
+    "deleteAgent": "{{name}} 삭제",
+    "deleteAgentTitle": "영구 삭제",
+    "deleteAgentConfirmTitle": "영구적으로 삭제하시겠습니까?",
+    "deleteAgentConfirm": "Agent \"{{name}}\" 및 그 권한(파일 접근, Skills, MCP, ML)이 영구적으로 삭제됩니다. 참여했던 세션과 메시지는 유지되지만 더 이상 이 Agent와 연결되지 않습니다. 되돌릴 수 없습니다."
   },
   "acc": {
     "title": "AI 컨트롤 센터",

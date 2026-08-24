@@ -704,6 +704,34 @@ impl Storage {
         tx.commit()
     }
 
+    /// Permanently deletes an Agent and everything that belongs to it —
+    /// session membership, grants (file access, Skills, MCP, ML), fallback
+    /// providers, and memories. Sessions and messages the Agent
+    /// participated in are *not* deleted (a Group Chat's history must
+    /// survive one member being removed) — `messages.agent_id` and
+    /// `usage_log.agent_id` are set to `NULL` instead, preserving the
+    /// message/usage row itself while disassociating it from an Agent
+    /// that no longer exists. Wrapped in one transaction so a mid-way
+    /// failure can't leave orphaned grant rows behind.
+    pub fn delete_agent(&self, agent_id: &str) -> rusqlite::Result<()> {
+        let mut conn = self.conn.lock().unwrap();
+        let tx = conn.transaction()?;
+        tx.execute("DELETE FROM session_agents WHERE agent_id = ?1", params![agent_id])?;
+        tx.execute("UPDATE messages SET agent_id = NULL WHERE agent_id = ?1", params![agent_id])?;
+        tx.execute("UPDATE usage_log SET agent_id = NULL WHERE agent_id = ?1", params![agent_id])?;
+        tx.execute("DELETE FROM file_access_grants WHERE agent_id = ?1", params![agent_id])?;
+        tx.execute("DELETE FROM skill_access_grants WHERE agent_id = ?1", params![agent_id])?;
+        tx.execute("DELETE FROM mcp_access_grants WHERE agent_id = ?1", params![agent_id])?;
+        tx.execute("DELETE FROM agent_fallback_providers WHERE agent_id = ?1", params![agent_id])?;
+        tx.execute("DELETE FROM agent_memories WHERE agent_id = ?1", params![agent_id])?;
+        tx.execute(
+            "DELETE FROM ml_access_grants WHERE scope_kind = 'agent' AND scope_id = ?1",
+            params![agent_id],
+        )?;
+        tx.execute("DELETE FROM agents WHERE id = ?1", params![agent_id])?;
+        tx.commit()
+    }
+
     pub fn add_agent_to_session(&self, session_id: &str, agent_id: &str) -> rusqlite::Result<()> {
         self.conn.lock().unwrap().execute(
             "INSERT OR IGNORE INTO session_agents (session_id, agent_id, joined_at) VALUES (?1, ?2, ?3)",
@@ -1728,6 +1756,61 @@ mod tests {
         let fetched = storage.get_agent(&agent.id).unwrap().unwrap();
         assert_eq!(fetched.name, "Full-Stack Developer");
         assert!(storage.get_agent("does-not-exist").unwrap().is_none());
+    }
+
+    #[test]
+    fn delete_agent_removes_it_from_the_list() {
+        let storage = Storage::open_in_memory().unwrap();
+        let agent = storage.create_agent("Temp", None, None, "local", "ollama", "llama3.1:8b").unwrap();
+
+        storage.delete_agent(&agent.id).unwrap();
+
+        assert!(storage.list_agents().unwrap().is_empty());
+        assert!(storage.get_agent(&agent.id).unwrap().is_none());
+    }
+
+    #[test]
+    fn delete_agent_removes_its_grants_and_session_membership() {
+        let storage = Storage::open_in_memory().unwrap();
+        let agent = storage.create_agent("Temp", None, None, "local", "ollama", "llama3.1:8b").unwrap();
+        let session = storage.create_session("independent", "Test session").unwrap();
+        storage.add_agent_to_session(&session.id, &agent.id).unwrap();
+        storage.grant_folder_access(&agent.id, "/tmp/some-folder").unwrap();
+        storage.grant_skill_access(&agent.id, "some-skill").unwrap();
+        storage.grant_ml_capability("agent", &agent.id, "semantic_search").unwrap();
+
+        storage.delete_agent(&agent.id).unwrap();
+
+        assert!(storage.list_file_access_grants(&agent.id).unwrap().is_empty());
+        assert!(storage.list_skill_access_grants(&agent.id).unwrap().is_empty());
+        assert!(storage.list_ml_access_grants_for_agent(&agent.id).unwrap().is_empty());
+    }
+
+    #[test]
+    fn delete_agent_preserves_messages_but_nulls_the_agent_reference() {
+        let storage = Storage::open_in_memory().unwrap();
+        let agent = storage.create_agent("Temp", None, None, "local", "ollama", "llama3.1:8b").unwrap();
+        let session = storage.create_session("independent", "Test session").unwrap();
+        storage.add_message(&session.id, Some(&agent.id), "assistant", "hello").unwrap();
+
+        storage.delete_agent(&agent.id).unwrap();
+
+        let messages = storage.list_messages(&session.id).unwrap();
+        assert_eq!(messages.len(), 1, "the message itself must survive deleting its Agent");
+        assert_eq!(messages[0].agent_id, None, "but no longer reference the deleted Agent");
+    }
+
+    #[test]
+    fn delete_agent_does_not_affect_a_different_agent() {
+        let storage = Storage::open_in_memory().unwrap();
+        let doomed = storage.create_agent("Doomed", None, None, "local", "ollama", "llama3.1:8b").unwrap();
+        let survivor = storage.create_agent("Survivor", None, None, "local", "ollama", "llama3.1:8b").unwrap();
+
+        storage.delete_agent(&doomed.id).unwrap();
+
+        let agents = storage.list_agents().unwrap();
+        assert_eq!(agents.len(), 1);
+        assert_eq!(agents[0].id, survivor.id);
     }
 
     #[test]

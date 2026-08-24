@@ -380,7 +380,12 @@
     "defaultGroupChatTitle": "群组对话",
     "createAnAgentFirst": "请先创建一个 Agent。",
     "pickAtLeastOneAgent": "请为群组对话至少选择一个 Agent。",
-    "skillPayloadMustBeJson": "技能内容必须是有效的 JSON。"
+    "skillPayloadMustBeJson": "技能内容必须是有效的 JSON。",
+    "agents": "Agent",
+    "deleteAgent": "删除 {{name}}",
+    "deleteAgentTitle": "永久删除",
+    "deleteAgentConfirmTitle": "永久删除？",
+    "deleteAgentConfirm": "这会永久删除 Agent「{{name}}」以及它的授权（文件访问、Skills、MCP、ML）。它参与过的工作阶段与消息会保留，只是不再连结到它。此操作无法复原。"
   },
   "acc": {
     "title": "AI 控制中心",

@@ -501,6 +501,24 @@ export default function Chat() {
     }
   }
 
+  /** Permanently deletes an Agent — there's no undo, so this confirms
+   *  with the user first. See `Storage::delete_agent` for what's
+   *  cascaded (grants, session membership) vs. preserved (messages,
+   *  usage history, with the Agent reference nulled out). */
+  async function handleDeleteAgent(agentId: string, name: string) {
+    const confirmed = await ask(t("chat.deleteAgentConfirm", { name }), {
+      title: t("chat.deleteAgentConfirmTitle"),
+      kind: "warning",
+    });
+    if (!confirmed) return;
+    try {
+      await invoke("delete_agent", { agentId });
+      await refreshAgents();
+    } catch (err) {
+      setError(String(err));
+    }
+  }
+
   async function handleCreateSession(e: FormEvent) {
     e.preventDefault();
     setError(null);
@@ -1309,6 +1327,26 @@ export default function Chat() {
             <button type="submit">{t("chat.startMeeting")}</button>
           </form>
         )}
+
+        <h2>{t("chat.agents")}</h2>
+        <ul className="chat-session-list">
+          {agents.map((a) => (
+            <li key={a.id} className="chat-session-list-item">
+              <button title={`${a.name} (${a.providerName}/${a.model})`} disabled>
+                {a.name}
+              </button>
+              <button
+                className="chat-session-delete"
+                aria-label={t("chat.deleteAgent", { name: a.name })}
+                title={t("chat.deleteAgentTitle")}
+                onClick={() => void handleDeleteAgent(a.id, a.name)}
+              >
+                ×
+              </button>
+            </li>
+          ))}
+          {agents.length === 0 && <li className="chat-empty">{t("chat.noAgentsYet")}</li>}
+        </ul>
 
         <h3>{t("chat.newSession")}</h3>
         <form className="chat-form" onSubmit={handleCreateSession}>

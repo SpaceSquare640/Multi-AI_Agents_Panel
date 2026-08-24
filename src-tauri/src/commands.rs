@@ -437,6 +437,14 @@ pub fn create_agent(
         .map_err(|e| e.to_string())
 }
 
+/// Permanently deletes an Agent — see `Storage::delete_agent` for exactly
+/// what is and isn't cascaded. There is no undo; the frontend must
+/// confirm with the user before calling this.
+#[tauri::command]
+pub fn delete_agent(storage: State<Storage>, agent_id: String) -> Result<(), String> {
+    storage.delete_agent(&agent_id).map_err(|e| e.to_string())
+}
+
 /// Pins (or, with `providerKeyId: null`, un-pins) which Key Vault entry an
 /// agent uses for cloud calls — see `Agent::pinned_provider_key_id`.
 /// Separate from `create_agent` so that command's signature doesn't grow

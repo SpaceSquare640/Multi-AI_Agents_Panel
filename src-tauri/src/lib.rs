@@ -209,6 +209,7 @@ pub fn run() {
             commands::suggest_ollama_models_dir,
             commands::list_agents,
             commands::create_agent,
+            commands::delete_agent,
             commands::pin_agent_provider_key,
             commands::add_agent_fallback_provider,
             commands::list_agent_fallback_providers,

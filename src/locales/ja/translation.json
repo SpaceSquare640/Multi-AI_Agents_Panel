@@ -380,7 +380,12 @@
     "defaultGroupChatTitle": "グループチャット",
     "createAnAgentFirst": "まず Agent を作成してください。",
     "pickAtLeastOneAgent": "グループチャットには少なくとも 1 つの Agent を選んでください。",
-    "skillPayloadMustBeJson": "スキルのペイロードは有効な JSON である必要があります。"
+    "skillPayloadMustBeJson": "スキルのペイロードは有効な JSON である必要があります。",
+    "agents": "Agent",
+    "deleteAgent": "{{name}} を削除",
+    "deleteAgentTitle": "完全に削除",
+    "deleteAgentConfirmTitle": "完全に削除しますか？",
+    "deleteAgentConfirm": "Agent「{{name}}」とその権限（ファイルアクセス、Skills、MCP、ML）を完全に削除します。参加していたセッションとメッセージは保持されますが、このAgentとの関連は解除されます。元に戻せません。"
   },
   "acc": {
     "title": "AI コントロールセンター",
