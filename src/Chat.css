@@ -72,7 +72,7 @@
   white-space: nowrap;
 }
 
-.chat-session-delete {
+.chat-session-list button.chat-session-delete {
   flex-shrink: 0;
   width: 1.6rem;
   height: 1.6rem;
