@@ -2,6 +2,17 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [1.4.2] - 2026-08-24
+
+### Changes
+
+- Chore: update CHANGELOG.md for v1.4.1 [skip ci]
+- Chore: bump version to 1.4.2
+
+### Fixed
+
+- Fix: path traversal in Skills import/export
+
 ## [1.4.1] - 2026-08-23
 
 ### Added
