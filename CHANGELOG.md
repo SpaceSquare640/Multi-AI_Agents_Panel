@@ -2,6 +2,17 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [1.5.2] - 2026-08-24
+
+### Changes
+
+- Chore: update CHANGELOG.md for v1.5.1 [skip ci]
+- Chore: bump version to 1.5.2
+
+### Fixed
+
+- Fix: unify data folder naming with the installer, improve Ollama storage guidance
+
 ## [1.5.1] - 2026-08-24
 
 ### Changed
