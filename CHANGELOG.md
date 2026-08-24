@@ -2,6 +2,19 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [1.6.4] - 2026-08-24
+
+### Changes
+
+- Chore: update CHANGELOG.md for v1.6.2 [skip ci]
+- Chore: update CHANGELOG.md for v1.6.3 [skip ci]
+- Chore: bump version to 1.6.4
+
+### Fixed
+
+- Fix: widen Chat sidebar (move divider right, 260px -> 300px)
+- Fix: delete button expanding to fill row, squeezing session/agent titles to 1-2 chars
+
 ## [1.6.3] - 2026-08-24
 
 ### Changes
