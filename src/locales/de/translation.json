@@ -187,6 +187,18 @@
         ]
       },
       {
+        "id": "mcp-servers",
+        "title": "Anleitung: einen MCP-Server verbinden",
+        "category": "agents",
+        "minutes": 2,
+        "paragraphs": [
+          "1. Oeffnen Sie Models -> MCP-Server -> geben Sie Name, Befehl und Argumente ein -> klicken Sie auf Server hinzufuegen.",
+          "2. Oeffnen Sie im Chat den Agenten, der ihn nutzen soll -> gewaehren Sie diesem Agenten im jeweiligen Panel Zugriff auf den neuen Server.",
+          "Zwei echte Server, die sich lohnen: mcp-alchemy (laesst einen Agenten eine SQL-Datenbank abfragen) und mcp-memory (dauerhaftes Gedaechtnis ueber Sitzungen hinweg, ueber das hinaus, was Benutzerdefinierte Anweisungen abdecken). Weitere finden Sie im community-gepflegten Verzeichnis \"awesome-mcp\".",
+          "Sicherheit: MCP-Server laufen als lokale Subprozesse auf derselben Vertrauensstufe wie Skills, nicht in einer Sandbox -- fuegen Sie nur Server hinzu, denen Sie vertrauen."
+        ]
+      },
+      {
         "id": "guardrails",
         "title": "Was Leitplanken sind",
         "category": "safety",
@@ -459,7 +471,9 @@
       "tableName": "Name",
       "tableCommand": "Befehl",
       "noneYet": "Noch keine MCP-Server hinzugefügt.",
-      "delete": "Löschen"
+      "delete": "Löschen",
+      "examplesHint": "Nicht sicher, was Sie hinzufuegen sollen? Das Handbuch enthaelt echte Beispielserver zum Ausprobieren.",
+      "examplesHintLink": "Hilfe oeffnen ->"
     },
     "gameAgent": {
       "heading": "Spielenden Agent (experimentell)",

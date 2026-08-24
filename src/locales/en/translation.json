@@ -187,6 +187,18 @@
         ]
       },
       {
+        "id": "mcp-servers",
+        "title": "How to: connect an MCP server",
+        "category": "agents",
+        "minutes": 2,
+        "paragraphs": [
+          "1. Open Models -> MCP Servers -> fill in a name, command, and arguments -> click Add server.",
+          "2. Open the Agent you want to use it in Chat -> grant that Agent access to the new server from its panel.",
+          "Two real servers worth trying: mcp-alchemy (lets an Agent query a SQL database) and mcp-memory (persistent memory across sessions, beyond what Custom Instructions cover). For more, see the community-maintained \"awesome-mcp\" directory.",
+          "Safety: MCP servers run as local subprocesses at the same trust level as Skills, not sandboxed — only add servers you trust."
+        ]
+      },
+      {
         "id": "guardrails",
         "title": "What Guardrails are",
         "category": "safety",
@@ -459,7 +471,9 @@
       "tableName": "Name",
       "tableCommand": "Command",
       "noneYet": "No MCP servers added yet.",
-      "delete": "Delete"
+      "delete": "Delete",
+      "examplesHint": "Not sure what to add? The manual has real example servers to try.",
+      "examplesHintLink": "Open Help ->"
     },
     "gameAgent": {
       "heading": "Game-Playing Agent (experimental)",

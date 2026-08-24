@@ -187,6 +187,18 @@
         ]
       },
       {
+        "id": "mcp-servers",
+        "title": "手順：MCP サーバーを接続する",
+        "category": "agents",
+        "minutes": 2,
+        "paragraphs": [
+          "1. 「Models」→「MCP サーバー」を開く → 名前・コマンド・引数を入力 → 「サーバーを追加」をクリック。",
+          "2. 「チャット」で使いたい Agent を開く → その Agent のパネルで新しいサーバーへのアクセスを許可する。",
+          "試す価値のある実在サーバー2つ：mcp-alchemy（Agent が SQL データベースに問い合わせできる）と mcp-memory（カスタム指示を超えた、セッションをまたぐ永続的な記憶）。他にも探したい場合はコミュニティ管理の「awesome-mcp」ディレクトリを参照してください。",
+          "安全に関する注意：MCP サーバーはローカルのサブプロセスとして実行され、Skills と同じ信頼レベルです——サンドボックス化されていないため、信頼できるサーバーのみを追加してください。"
+        ]
+      },
+      {
         "id": "guardrails",
         "title": "ガードレールとは",
         "category": "safety",
@@ -459,7 +471,9 @@
       "tableName": "名前",
       "tableCommand": "コマンド",
       "noneYet": "まだ MCP サーバーが追加されていません。",
-      "delete": "削除"
+      "delete": "削除",
+      "examplesHint": "何を追加すればいいか分からない場合は、マニュアルに試せる実例サーバーがあります。",
+      "examplesHintLink": "ヘルプを開く ->"
     },
     "gameAgent": {
       "heading": "ゲームプレイ Agent（実験的）",

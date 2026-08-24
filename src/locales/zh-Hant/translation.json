@@ -187,6 +187,18 @@
         ]
       },
       {
+        "id": "mcp-servers",
+        "title": "教學：連接 MCP 伺服器",
+        "category": "agents",
+        "minutes": 2,
+        "paragraphs": [
+          "1. 打開「Models」→「MCP 伺服器」→ 填入名稱、指令與參數 → 點擊「新增伺服器」。",
+          "2. 在「對話」中打開要使用它的 Agent → 在該 Agent 的面板授予存取新伺服器的權限。",
+          "兩個真實可試用的伺服器：mcp-alchemy（讓 Agent 查詢 SQL 資料庫）與 mcp-memory（跨工作階段的持久記憶，超越自訂指示能做到的範圍）。想找更多，可參考社群維護的「awesome-mcp」目錄。",
+          "安全提醒：MCP 伺服器以本地子行程執行，信任等級與 Skills 相同——不會被沙盒隔離，請僅新增您信任的伺服器。"
+        ]
+      },
+      {
         "id": "guardrails",
         "title": "什麼是防護機制",
         "category": "safety",
@@ -459,7 +471,9 @@
       "tableName": "名稱",
       "tableCommand": "指令",
       "noneYet": "尚未新增任何 MCP 伺服器。",
-      "delete": "刪除"
+      "delete": "刪除",
+      "examplesHint": "不知道該加什麼？手冊裡有真實可試用的範例伺服器。",
+      "examplesHintLink": "開啟說明 ->"
     },
     "gameAgent": {
       "heading": "遊戲操作 Agent（實驗性）",

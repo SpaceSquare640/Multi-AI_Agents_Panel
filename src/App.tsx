@@ -67,7 +67,7 @@ function App() {
         <Chat />
       </div>
       <div className="app-tab-content" hidden={tab !== "control-center"}>
-        <AIControlCenter onOpenUsage={() => setTab("usage")} />
+        <AIControlCenter onOpenUsage={() => setTab("usage")} onOpenManual={() => setTab("manual")} />
       </div>
       <div className="app-tab-content" hidden={tab !== "semantic-search"}>
         <SemanticSearch />

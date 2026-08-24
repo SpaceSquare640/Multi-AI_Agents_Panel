@@ -187,6 +187,18 @@
         ]
       },
       {
+        "id": "mcp-servers",
+        "title": "Comment faire : connecter un serveur MCP",
+        "category": "agents",
+        "minutes": 2,
+        "paragraphs": [
+          "1. Ouvrez Models -> Serveurs MCP -> renseignez un nom, une commande et des arguments -> cliquez sur Ajouter un serveur.",
+          "2. Ouvrez dans Discussion l'Agent qui doit l'utiliser -> accordez a cet Agent l'acces au nouveau serveur depuis son panneau.",
+          "Deux serveurs reels a essayer : mcp-alchemy (permet a un Agent d'interroger une base de donnees SQL) et mcp-memory (memoire persistante entre les sessions, au-dela de ce que couvrent les instructions personnalisees). Pour en trouver d'autres, consultez le repertoire communautaire \"awesome-mcp\".",
+          "Securite : les serveurs MCP s'executent comme des sous-processus locaux, au meme niveau de confiance que les Skills, sans sandboxing -- n'ajoutez que des serveurs de confiance."
+        ]
+      },
+      {
         "id": "guardrails",
         "title": "Que sont les garde-fous",
         "category": "safety",
@@ -459,7 +471,9 @@
       "tableName": "Nom",
       "tableCommand": "Commande",
       "noneYet": "Aucun serveur MCP ajouté pour le moment.",
-      "delete": "Supprimer"
+      "delete": "Supprimer",
+      "examplesHint": "Vous ne savez pas quoi ajouter ? Le manuel propose de vrais serveurs d'exemple a essayer.",
+      "examplesHintLink": "Ouvrir l'aide ->"
     },
     "gameAgent": {
       "heading": "Agent joueur de jeux vidéo (expérimental)",

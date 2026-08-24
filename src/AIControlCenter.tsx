@@ -39,7 +39,13 @@ function formatBytes(bytes: number | null): string {
   return gb >= 1 ? `${gb.toFixed(1)} GB` : `${(bytes / 1_000_000).toFixed(0)} MB`;
 }
 
-export default function AIControlCenter({ onOpenUsage }: { onOpenUsage: () => void }) {
+export default function AIControlCenter({
+  onOpenUsage,
+  onOpenManual,
+}: {
+  onOpenUsage: () => void;
+  onOpenManual: () => void;
+}) {
   const { t } = useTranslation();
   const [keys, setKeys] = useState<ProviderKeyView[]>([]);
   const [modelProvider, setModelProvider] = useState<string>("openrouter");
@@ -638,6 +644,9 @@ export default function AIControlCenter({ onOpenUsage }: { onOpenUsage: () => vo
       <section className="acc-section">
         <h2>{t("acc.mcp.heading")}</h2>
         <p className="acc-hint">{t("acc.mcp.hint")}</p>
+        <p className="acc-hint">
+          {t("acc.mcp.examplesHint")} <button onClick={onOpenManual}>{t("acc.mcp.examplesHintLink")}</button>
+        </p>
         <form className="acc-form" onSubmit={handleAddMcpServer}>
           <div className="acc-form-row">
             <input
