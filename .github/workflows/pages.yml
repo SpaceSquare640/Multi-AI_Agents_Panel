@@ -7,9 +7,9 @@
 # This deploys from the design branch only. The Source_Code branch is not
 # involved and is never checked out here.
 #
-# Requires the repository's Pages source to be set to "GitHub Actions"
-# (Settings -> Pages -> Source). Until that is set, this workflow fails at the
-# configure step with a message saying Pages is not enabled.
+# The configure step enables Pages itself the first time it runs, and sets the
+# build source to GitHub Actions, so no manual repository setting is needed.
+# After the first successful run it is a no-op.
 
 name: Pages
 
@@ -44,6 +44,12 @@ jobs:
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
+        with:
+          # Turns Pages on for the repository and points its build source at
+          # GitHub Actions, rather than requiring someone to set it by hand
+          # first. Without this the very first run fails with "Get Pages site
+          # failed ... Not Found", which is how this workflow first behaved.
+          enablement: true
 
       - name: Upload the mockup
         uses: actions/upload-pages-artifact@v3

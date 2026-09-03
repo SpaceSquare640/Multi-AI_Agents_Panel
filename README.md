@@ -56,7 +56,8 @@ interface can be looked at without cloning anything:
 
 The workflow in `.github/workflows/pages.yml` uploads the branch as-is —
 there is nothing to compile, and no dependency is installed. It deploys from
-this branch only; `Source_Code` is never checked out by it.
+this branch only; `Source_Code` is never checked out by it, and it enables
+Pages on its first run rather than needing the setting flipped by hand.
 
 What is published is work in progress. Screens are added a batch at a time,
 and `index.html` marks which ones exist yet. The pages are mockups of a
