@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Help — Multi-AI Agents Panel UI Design</title>
+<link rel="icon" href="../app-icon.png">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/shell.css">
+<link rel="stylesheet" href="../css/screens.css">
+<script src="../js/theme.js"></script>
+<script src="../js/icons.js"></script>
+</head>
+<body>
+
+<a class="skip-link" href="#workspace">Skip to main content</a>
+
+<div class="shell" data-screen="help" data-sidebar="expanded" data-inspector="expanded">
+
+  <!-- ==================== SIDEBAR ==================== -->
+  <aside class="sidebar" aria-label="Manual">
+    <div class="sidebar-header"><span class="label">Manual</span></div>
+
+    <div class="sidebar-body">
+      <div class="input-group" style="margin:var(--space-3) var(--space-2) var(--space-5)">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-search"/></svg>
+        <input class="input" id="q" type="search" placeholder="Search the manual" aria-label="Search the manual">
+      </div>
+
+      <div class="label" style="padding:0 var(--row-px) var(--space-3)">Getting started</div>
+      <button class="row" type="button" aria-current="true"><span class="name">Solo sessions and group chats</span></button>
+      <button class="row" type="button"><span class="name">Adding a cloud API key</span></button>
+      <button class="row" type="button"><span class="name">Setting up a local model</span></button>
+
+      <div class="label" style="padding:var(--space-6) var(--row-px) var(--space-3)">Working with agents</div>
+      <button class="row" type="button"><span class="name">Role templates</span></button>
+      <button class="row" type="button"><span class="name">Memory, and what each agent remembers</span></button>
+      <button class="row" type="button"><span class="name">Granting folder access</span></button>
+      <button class="row" type="button"><span class="name">Skills and their permissions</span></button>
+
+      <div class="label" style="padding:var(--space-6) var(--row-px) var(--space-3)">Machine learning</div>
+      <button class="row" type="button"><span class="name">Semantic search over your files</span></button>
+      <button class="row" type="button"><span class="name">Teaching an agent to play</span></button>
+
+      <div class="label" style="padding:var(--space-6) var(--row-px) var(--space-3)">Reference</div>
+      <button class="row" type="button"><span class="name">What the guardrails are</span></button>
+      <button class="row" type="button"><span class="name">Error codes</span></button>
+      <button class="row" type="button"><span class="name">Keyboard shortcuts</span></button>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="row"><span class="name">12 articles · offline</span></div>
+    </div>
+  </aside>
+
+  <!-- ==================== WORKSPACE ==================== -->
+  <main class="workspace" id="workspace" tabindex="-1">
+    <div class="workspace-header">
+      <span class="workspace-title">Solo sessions and group chats</span>
+      <div class="workspace-actions">
+        <button class="btn btn-ghost btn-sm" type="button">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#i-copy"/></svg>
+          Copy link
+        </button>
+      </div>
+    </div>
+
+    <div class="workspace-body">
+      <article class="article selectable">
+        <h1>Solo sessions and group chats</h1>
+        <p class="lede">
+          Two ways to talk to agents. The difference is not how many are listening
+          — it is whether they can hear each other.
+        </p>
+
+        <h2 id="a-solo">A solo session</h2>
+        <p>
+          One agent, one conversation. It has its own history, its own memory and
+          its own tool grants, and it cannot see anything from your other sessions.
+          Two solo sessions with the same agent are still separate conversations,
+          in the same way two emails to the same person are separate.
+        </p>
+        <p>
+          This is the right choice when you want a single opinion, or when the
+          material is sensitive enough that you would rather it not be repeated
+          into a room of other models.
+        </p>
+
+        <h2 id="a-group">A group chat</h2>
+        <p>
+          Several agents in one room, each able to read what the others said. They
+          take turns rather than replying at once, and the conversation has a turn
+          limit so it cannot run indefinitely while you are away from the machine.
+        </p>
+        <dl>
+          <dt>Turn taking</dt>
+          <dd>
+            One agent speaks per turn, in a rotation you can reorder. An agent with
+            nothing to add can pass rather than filling a turn with agreement.
+          </dd>
+          <dt>The turn limit</dt>
+          <dd>
+            Set per session. When it is reached the meeting stops and offers a
+            summary rather than continuing quietly — a room of models agreeing with
+            each other for two hundred turns costs real money and produces very
+            little.
+          </dd>
+          <dt>Ending with a summary</dt>
+          <dd>
+            One participant is asked to summarise what was decided. You choose which,
+            because the summariser's bias becomes the record's bias.
+          </dd>
+        </dl>
+
+        <h2 id="a-shared">What is shared, and what is not</h2>
+        <ul>
+          <li>Inside a group chat, every participant reads the whole conversation. That is the point of it, and it is also why a group turn costs more than a solo one.</li>
+          <li>Memory stays private to each agent unless you say otherwise. An agent does not learn from another agent's memory by sitting in the same room.</li>
+          <li>Folder grants and skill grants are per agent. Being in a group chat does not lend one agent another's permissions.</li>
+        </ul>
+
+        <div class="callout" data-kind="info" style="margin-top:var(--space-8)">
+          <svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg>
+          <div class="callout-body">
+            <strong>Guardrails apply the same way in both</strong>
+            A group chat is exactly where one agent would be asked to do something it
+            may not, on another's behalf. The rules are checked per message, not per
+            session, so the room does not become a loophole.
+          </div>
+        </div>
+
+        <h2 id="a-cost">Cost</h2>
+        <p>
+          A solo turn sends one conversation to one provider. A group turn sends the
+          conversation to each participant that speaks, so four cloud participants
+          cost roughly four times a solo turn at the same length. Mixing local
+          agents into a group is the cheapest way to keep several voices in the
+          room, and the status bar shows the running total while a meeting is live.
+        </p>
+      </article>
+    </div>
+  </main>
+
+  <!-- ==================== INSPECTOR ==================== -->
+  <aside class="inspector" aria-label="On this page">
+    <div class="inspector-header"><span class="label">On this page</span></div>
+    <div class="inspector-body">
+      <nav class="toc" aria-label="Article contents">
+        <a href="#a-solo" aria-current="true">A solo session</a>
+        <a href="#a-group">A group chat</a>
+        <a href="#a-shared">What is shared</a>
+        <a href="#a-cost">Cost</a>
+      </nav>
+
+      <section class="inspector-section">
+        <span class="label">Related</span>
+        <button class="row" type="button"><span class="name">Role templates</span></button>
+        <button class="row" type="button"><span class="name">What the guardrails are</span></button>
+        <button class="row" type="button"><span class="name">Error codes</span></button>
+      </section>
+
+      <section class="inspector-section">
+        <span class="label">This manual is offline</span>
+        <p style="font-size:var(--text-sm);color:var(--text-muted);line-height:var(--leading-loose)">
+          Shipped with the app and readable without a connection. Asking what a
+          guardrail is should not require leaving the app that is enforcing them.
+        </p>
+      </section>
+    </div>
+  </aside>
+
+</div>
+
+<script src="../js/mock.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/frame.js"></script>
+<script src="../js/shell.js"></script>
+<script src="../js/palette.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  /* The contents list tracks the heading currently in view rather than only
+     the last one clicked, so it stays honest while you scroll. */
+  var links = [...document.querySelectorAll('.toc a')];
+  var body = document.querySelector('.workspace-body');
+  var targets = links.map(function (a) { return document.querySelector(a.getAttribute('href')); });
+
+  var io = new IntersectionObserver(function (entries) {
+    var visible = entries.filter(function (e) { return e.isIntersecting; })
+                         .sort(function (a, b) { return a.boundingClientRect.top - b.boundingClientRect.top; })[0];
+    if (!visible) return;
+    links.forEach(function (a) {
+      if (a.getAttribute('href') === '#' + visible.target.id) a.setAttribute('aria-current', 'true');
+      else a.removeAttribute('aria-current');
+    });
+  }, { root: body, rootMargin: '-8% 0px -75% 0px' });
+  targets.forEach(function (t) { if (t) io.observe(t); });
+
+  links.forEach(function (a) {
+    a.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      var t = document.querySelector(a.getAttribute('href'));
+      if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
+  document.querySelectorAll('.sidebar .row').forEach(function (r) {
+    r.addEventListener('click', function () {
+      document.querySelectorAll('.sidebar .row[aria-current]').forEach(function (o) {
+        o.removeAttribute('aria-current');
+      });
+      r.setAttribute('aria-current', 'true');
+      window.Toast.show({
+        kind: 'info',
+        title: r.textContent.trim(),
+        body: 'This is a design mockup — only one article is written out.'
+      });
+    });
+  });
+});
+</script>
+</body>
+</html>

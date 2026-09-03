@@ -39,6 +39,8 @@
 
     // actions
     'i-plus':        '<path d="M10 4v12M4 10h12"/>',
+    'i-chevron':     '<path d="m5.5 8 4.5 4.5L14.5 8"/>',
+    'i-globe':       '<circle cx="10" cy="10" r="7"/><path d="M3 10h14M10 3c2 2.2 2 11.8 0 14M10 3c-2 2.2-2 11.8 0 14"/>',
     'i-close':       '<path d="M5 5l10 10M15 5 5 15"/>',
     'i-check':       '<path d="m4 10.5 4 4 8-9"/>',
     'i-trash':       '<path d="M4 6h12M8 6V4.5A.5.5 0 0 1 8.5 4h3a.5.5 0 0 1 .5.5V6M6 6l.7 10a1 1 0 0 0 1 1h4.6a1 1 0 0 0 1-1L14 6"/>',

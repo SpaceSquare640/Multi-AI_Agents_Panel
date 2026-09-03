@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Onboarding — Multi-AI Agents Panel UI Design</title>
+<link rel="icon" href="../app-icon.png">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/shell.css">
+<link rel="stylesheet" href="../css/screens.css">
+<script src="../js/theme.js"></script>
+<script src="../js/icons.js"></script>
+<style>
+  /* This screen deliberately owns the whole window rather than sitting inside
+     the shell: on first launch there is nothing behind it to look at, and a
+     dialog over an empty app invites clicking the backdrop to escape
+     something that is not optional. */
+  body { overflow: auto; }
+</style>
+</head>
+<body>
+
+<div class="onboard">
+  <div class="onboard-card" role="region" aria-labelledby="ob-title">
+
+    <div class="onboard-mark">
+      <img src="../app-icon.png" alt="">
+      <div>
+        <div style="font-weight:var(--weight-semibold)">Multi-AI Agents Panel</div>
+        <div class="row-sub">Version 1.6.4</div>
+      </div>
+    </div>
+
+    <h1 id="ob-title">Before you start</h1>
+    <p>
+      Every agent in this app follows a short set of rules that you cannot switch
+      off, and neither can they. Read them once — they explain most of what the
+      app will and will not do for you later.
+    </p>
+
+    <div class="steps" role="group" aria-label="Setup progress">
+      <span class="step-dot" data-state="current" aria-hidden="true"></span>
+      <span class="step-dot" aria-hidden="true"></span>
+      <span class="step-dot" aria-hidden="true"></span>
+      <span class="of">Step 1 of 3 · the rules</span>
+    </div>
+
+    <div class="rules">
+      <div class="rule">
+        <svg class="icon" aria-hidden="true"><use href="#i-folder"/></svg>
+        <div class="rule-body">
+          <h3>Nothing on your machine is read without your say-so</h3>
+          <p>
+            An agent can only open files in folders you have granted, and every
+            conversation lists which files it actually opened. There is no
+            background scan, and no folder is granted by default.
+          </p>
+        </div>
+      </div>
+
+      <div class="rule">
+        <svg class="icon" aria-hidden="true"><use href="#i-key"/></svg>
+        <div class="rule-body">
+          <h3>Your keys and conversations stay here</h3>
+          <p>
+            API keys are stored on this machine and sent only to the provider they
+            belong to. There is no account, no server of ours, and nothing to sign
+            in to — which also means nothing is backed up for you.
+          </p>
+        </div>
+      </div>
+
+      <div class="rule">
+        <svg class="icon" aria-hidden="true"><use href="#i-shield-alert"/></svg>
+        <div class="rule-body">
+          <h3>Agents will refuse some things, and cannot be talked round</h3>
+          <p>
+            Attacks on other people's systems, sexual content, and instructions for
+            weapons or self-harm are refused outright. Framing a request as
+            role-play, research or a test does not change the answer.
+          </p>
+        </div>
+      </div>
+
+      <div class="rule">
+        <svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg>
+        <div class="rule-body">
+          <h3>No agent pretends to be another agent, or you</h3>
+          <p>
+            In a group chat this matters more than it sounds: it is the difference
+            between four opinions and one opinion wearing four names.
+          </p>
+        </div>
+      </div>
+
+      <div class="rule">
+        <svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg>
+        <div class="rule-body">
+          <h3>Anything irreversible asks you first</h3>
+          <p>
+            Deleting files, force-pushing, clearing data. When something fails, you
+            get the failure and its error code rather than a retry you did not see
+            or a partial result presented as a whole one.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout" data-kind="info" style="margin-top:var(--space-8)">
+      <svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>
+      <div class="callout-body">
+        <strong>These are not settings</strong>
+        There is no screen where they can be turned off. That is deliberate: a rule
+        reachable from a settings page is also reachable by an agent asking you to
+        go there. You can re-read this summary any time from Settings.
+      </div>
+    </div>
+
+    <div class="onboard-foot">
+      <label class="check">
+        <input type="checkbox" id="ack">
+        <span>I have read the rules</span>
+      </label>
+      <span class="spacer"></span>
+      <a class="btn btn-ghost" href="help.html">Read the full text</a>
+      <button class="btn btn-primary btn-lg" id="go" type="button" disabled>Continue</button>
+    </div>
+
+  </div>
+</div>
+
+<script src="../js/mock.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/palette.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var ack = document.getElementById('ack');
+  var go = document.getElementById('go');
+
+  ack.addEventListener('change', function () { go.disabled = !ack.checked; });
+
+  go.addEventListener('click', function () {
+    window.Toast.show({
+      kind: 'success',
+      title: 'Rules acknowledged',
+      body: 'Next would be choosing a provider. This is a design mockup, so nothing was saved.'
+    });
+  });
+
+  /* A focus trap, because this step is not optional. Without one, Tab walks
+     straight past the card into whatever is behind it and the "required" part
+     of a required step stops being true for keyboard users — which is how the
+     previous version of this screen behaved. */
+  var card = document.querySelector('.onboard-card');
+  function focusable() {
+    return [...card.querySelectorAll('a[href], button:not([disabled]), input:not([disabled])')]
+      .filter(function (el) { return el.offsetParent !== null; });
+  }
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key !== 'Tab') return;
+    var items = focusable();
+    if (!items.length) return;
+    var first = items[0], last = items[items.length - 1];
+    if (!card.contains(document.activeElement)) { first.focus(); ev.preventDefault(); return; }
+    if (!ev.shiftKey && document.activeElement === last) { first.focus(); ev.preventDefault(); }
+    else if (ev.shiftKey && document.activeElement === first) { last.focus(); ev.preventDefault(); }
+  });
+  ack.focus();
+});
+</script>
+</body>
+</html>

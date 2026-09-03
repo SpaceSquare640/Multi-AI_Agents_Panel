@@ -619,3 +619,269 @@
 .stage-actions { display: flex; align-items: center; gap: var(--space-4); }
 .stage[data-state="blocked"] .stage-body h3,
 .stage[data-state="blocked"] .stage-body p { color: var(--text-faint); }
+
+
+/* ==========================================================================
+   NOTES
+   A tree, an editor, and nothing else. The tree carries depth through
+   indentation and a disclosure control rather than through colour, so the
+   hierarchy survives without colour perception.
+   ========================================================================== */
+
+.tree { display: flex; flex-direction: column; }
+.tree-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  height: var(--row-h);
+  padding-right: var(--row-px);
+  border-radius: var(--row-radius);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.tree-item:hover { background: var(--row-bg-hover); color: var(--text); }
+.tree-item[aria-current="true"] { background: var(--row-bg-active); color: var(--text); }
+/* Indentation is a token multiple rather than a hand-picked pixel value, so
+   depth stays proportional if the density dial ever changes. */
+.tree-item[data-depth="0"] { padding-left: var(--space-4); }
+.tree-item[data-depth="1"] { padding-left: calc(var(--space-4) + var(--space-7)); }
+.tree-item[data-depth="2"] { padding-left: calc(var(--space-4) + var(--space-7) * 2); }
+.tree-item .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.tree-item .icon { flex: none; color: var(--text-faint); }
+.tree-item[aria-current="true"] .icon { color: var(--text-muted); }
+
+.twisty {
+  display: grid;
+  place-items: center;
+  width: 16px; height: 16px;
+  flex: none;
+  border-radius: var(--radius-xs);
+  color: var(--text-faint);
+}
+.twisty:hover { background: var(--surface-3); color: var(--text); }
+.twisty svg { transition: transform var(--dur-fast) var(--ease-out); }
+.twisty[aria-expanded="false"] svg { transform: rotate(-90deg); }
+/* A leaf keeps the slot so its label lines up with its siblings' labels
+   instead of shifting left by 16px. */
+.twisty-spacer { width: 16px; flex: none; }
+
+.note-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.note-title {
+  width: 100%;
+  padding: var(--space-7) var(--space-9) var(--space-5);
+  background: none;
+  border: 0;
+  outline: none;
+  color: var(--text);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-tight);
+}
+.note-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: 0 var(--space-9) var(--space-6);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+.note-body {
+  flex: 1;
+  min-height: 0;
+  padding: 0 var(--space-9) var(--space-9);
+  overflow-y: auto;
+}
+.note-body .prose { font-size: var(--text-base); }
+.note-body h3 { margin-top: var(--space-8); }
+.note-body ul { padding-left: var(--space-7); }
+.note-body li { margin-top: var(--space-3); list-style: disc; }
+
+
+/* ==========================================================================
+   USAGE
+   Numbers people act on: what has been spent, on what, and how close that is
+   to a limit they set. Every figure is tabular so a column never jitters as
+   it updates, and every bar is paired with its own value in text.
+   ========================================================================== */
+
+.stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--space-5); }
+.stat {
+  padding: var(--space-6);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius);
+}
+.stat .k {
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.stat .v {
+  margin-top: var(--space-3);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-2xl);
+  letter-spacing: var(--tracking-tight);
+}
+.stat .d { margin-top: var(--space-2); font-size: var(--text-xs); color: var(--text-muted); }
+
+/* A budget is the one number here that has a threshold, so it gets a meter
+   and an explicit statement of what happens at the limit. Colour alone would
+   not say whether crossing it warns or stops. */
+.budget { padding: var(--space-6); }
+.budget-head { display: flex; align-items: baseline; gap: var(--space-5); margin-bottom: var(--space-5); }
+.budget-head h3 { flex: 1; font-size: var(--text-base); }
+.budget-head .v { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--text-md); }
+.budget-marks { display: flex; justify-content: space-between; margin-top: var(--space-3); font-size: var(--text-2xs); color: var(--text-faint); }
+
+/* Horizontal bars, not a pie. Comparing eight agents by angle is guesswork;
+   comparing them by length is reading. */
+.bars { display: flex; flex-direction: column; gap: var(--space-5); }
+.bar-row { display: grid; grid-template-columns: 150px minmax(0, 1fr) 76px; gap: var(--space-5); align-items: center; }
+.bar-row .who { font-size: var(--text-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-row .val { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--text-sm); text-align: right; }
+.bar-track { height: 8px; background: var(--surface-3); border-radius: var(--radius-full); overflow: hidden; }
+.bar-fill { height: 100%; border-radius: inherit; background: var(--brand); }
+.bar-fill[data-where="local"] { background: var(--provider-local); }
+.bar-fill[data-where="cloud"] { background: var(--provider-cloud); }
+
+
+/* ==========================================================================
+   SETTINGS
+   Grouped rows, each a label with its control on the right. Long enough that
+   the groups need headings, not long enough to need tabs.
+   ========================================================================== */
+
+.settings-group { padding: 0; }
+.settings-group + .settings-group { margin-top: var(--space-7); }
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-7);
+  padding: var(--space-6);
+}
+.settings-row + .settings-row { border-top: 1px solid var(--border); }
+.settings-label { flex: 1; min-width: 0; }
+.settings-label .t { font-size: var(--text-base); }
+.settings-label .d {
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  line-height: var(--leading-snug);
+}
+.settings-control { flex: none; min-width: 0; }
+.settings-control .select,
+.settings-control .input { width: 200px; }
+/* A destructive row is separated by more than a hairline: the gap is the
+   signal that it is not part of the group above it. */
+.settings-danger { margin-top: var(--space-10); border-color: var(--danger); }
+
+
+/* ==========================================================================
+   HELP
+   Articles with their own contents list. The manual lives in the app because
+   the answer to "what is a guardrail" should not require leaving the app that
+   is enforcing them.
+   ========================================================================== */
+
+.article { max-width: var(--measure); padding: var(--space-8) var(--space-9); }
+.article h1 { font-size: var(--text-2xl); }
+.article > .lede {
+  margin-top: var(--space-5);
+  color: var(--text-muted);
+  font-size: var(--text-md);
+  line-height: var(--leading-loose);
+}
+.article h2 {
+  margin: var(--space-10) 0 var(--space-5);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border);
+  font-size: var(--text-lg);
+}
+.article p { margin-top: var(--space-6); line-height: var(--leading-loose); }
+.article ul { margin-top: var(--space-6); padding-left: var(--space-7); }
+.article li { margin-top: var(--space-4); line-height: var(--leading-loose); list-style: disc; }
+.article dl { margin-top: var(--space-6); }
+.article dt { margin-top: var(--space-6); font-weight: var(--weight-semibold); }
+.article dd { margin: var(--space-2) 0 0; color: var(--text-muted); line-height: var(--leading-loose); }
+
+.toc { display: flex; flex-direction: column; gap: var(--space-1); }
+.toc a {
+  padding: var(--space-3) var(--space-5);
+  border-left: 2px solid transparent;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+.toc a:hover { color: var(--text); text-decoration: none; }
+.toc a[aria-current="true"] { border-left-color: var(--accent); color: var(--text); }
+
+
+/* ==========================================================================
+   ONBOARDING
+   First launch. The guardrail summary has to be read before anything else, so
+   it is a full surface rather than a dialog that could be dismissed by a
+   stray click on the backdrop.
+   ========================================================================== */
+
+.onboard {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: var(--space-9);
+  background: var(--bg);
+}
+.onboard-card {
+  width: 100%;
+  max-width: 640px;
+  padding: var(--space-10);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-3);
+}
+.onboard-mark { display: flex; align-items: center; gap: var(--space-6); }
+.onboard-mark img { width: 44px; height: 44px; border-radius: var(--radius-md); }
+.onboard-card h1 { margin-top: var(--space-8); font-size: var(--text-2xl); }
+.onboard-card > p {
+  margin-top: var(--space-5);
+  color: var(--text-muted);
+  line-height: var(--leading-loose);
+}
+
+/* Steps are dots plus a written position. A row of dots alone does not say
+   which step you are on to anyone who cannot see the filled one. */
+.steps { display: flex; align-items: center; gap: var(--space-4); margin-top: var(--space-8); }
+.step-dot { width: 6px; height: 6px; border-radius: var(--radius-full); background: var(--surface-3); }
+.step-dot[data-state="done"]    { background: var(--success); }
+.step-dot[data-state="current"] { background: var(--brand); width: 18px; }
+.steps .of { margin-left: var(--space-4); font-size: var(--text-xs); color: var(--text-faint); }
+
+.rules { margin-top: var(--space-8); }
+.rule {
+  display: flex;
+  gap: var(--space-5);
+  padding: var(--space-6) 0;
+}
+.rule + .rule { border-top: 1px solid var(--border); }
+.rule .icon { flex: none; margin-top: 2px; color: var(--danger-text); }
+.rule-body h3 { font-size: var(--text-base); }
+.rule-body p { margin-top: var(--space-2); font-size: var(--text-sm); color: var(--text-muted); line-height: var(--leading-body); }
+
+.onboard-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  margin-top: var(--space-9);
+  padding-top: var(--space-7);
+  border-top: 1px solid var(--border);
+}
+.onboard-foot .spacer { flex: 1; }

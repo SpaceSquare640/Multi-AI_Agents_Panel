@@ -86,9 +86,13 @@
       '<div class="palette" role="dialog" aria-modal="true" aria-label="Command palette">' +
         '<div class="palette-input-row">' +
           '<svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>' +
+          /* A real label, not just the placeholder: a placeholder disappears the
+             moment anything is typed, which is precisely when a screen reader
+             user most needs to know what the field is. */
           '<input class="palette-input" type="text" role="combobox" aria-expanded="true" ' +
                  'aria-controls="palette-list" aria-autocomplete="list" autocomplete="off" ' +
-                 'spellcheck="false" placeholder="Search agents, sessions, skills, settings…">' +
+                 'spellcheck="false" aria-label="Search agents, sessions, skills and settings" ' +
+                 'placeholder="Search agents, sessions, skills, settings…">' +
           '<kbd>Esc</kbd>' +
         '</div>' +
         '<div class="palette-list" id="palette-list" role="listbox" aria-label="Results"></div>' +

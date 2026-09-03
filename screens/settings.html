@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settings — Multi-AI Agents Panel UI Design</title>
+<link rel="icon" href="../app-icon.png">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/shell.css">
+<link rel="stylesheet" href="../css/screens.css">
+<script src="../js/theme.js"></script>
+<script src="../js/icons.js"></script>
+</head>
+<body>
+
+<a class="skip-link" href="#workspace">Skip to main content</a>
+
+<div class="shell" data-screen="settings" data-sidebar="expanded" data-inspector="collapsed">
+
+  <!-- ==================== SIDEBAR ==================== -->
+  <aside class="sidebar" aria-label="Settings sections">
+    <div class="sidebar-header"><span class="label">Settings</span></div>
+    <div class="sidebar-body">
+      <a class="row" href="#appearance" aria-current="true">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-theme"/></svg>
+        <span class="name">Appearance</span>
+      </a>
+      <a class="row" href="#language">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-globe"/></svg>
+        <span class="name">Language</span>
+      </a>
+      <a class="row" href="#instructions">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-notes"/></svg>
+        <span class="name">Instructions</span>
+      </a>
+      <a class="row" href="#data">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-folder"/></svg>
+        <span class="name">Data</span>
+      </a>
+      <a class="row" href="#guardrails">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-shield"/></svg>
+        <span class="name">Guardrails</span>
+      </a>
+      <a class="row" href="#about">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-info"/></svg>
+        <span class="name">About</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- ==================== WORKSPACE ==================== -->
+  <main class="workspace" id="workspace" tabindex="-1">
+    <div class="workspace-header">
+      <span class="workspace-title">Settings</span>
+    </div>
+
+    <div class="workspace-body">
+      <div class="pane">
+
+        <!-- ---------- appearance ---------- -->
+        <section id="appearance">
+          <div class="section-head"><h2>Appearance</h2></div>
+
+          <div class="card settings-group">
+            <div class="settings-row">
+              <div class="settings-label">
+                <div class="t">Theme</div>
+                <div class="d">
+                  Following the system is the default. Both themes are designed
+                  together and neither is a stripped-down version of the other.
+                </div>
+              </div>
+              <div class="settings-control">
+                <div class="segmented" role="group" aria-label="Theme">
+                  <button type="button" data-action="theme-set" data-theme="system">System</button>
+                  <button type="button" data-action="theme-set" data-theme="light">Light</button>
+                  <button type="button" data-action="theme-set" data-theme="dark">Dark</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-row">
+              <div class="settings-label">
+                <div class="t">Text size</div>
+                <div class="d">Scales every size in the interface together, not just body text.</div>
+              </div>
+              <div class="settings-control">
+                <select class="select" id="scale" aria-label="Text size">
+                  <option>Small</option>
+                  <option selected>Default</option>
+                  <option>Large</option>
+                  <option>Larger</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="settings-row">
+              <div class="settings-label">
+                <div class="t">Reduce motion</div>
+                <div class="d">
+                  Follows the system setting already. This forces it on regardless.
+                </div>
+              </div>
+              <div class="settings-control">
+                <label class="switch">
+                  <input type="checkbox">
+                  <span class="switch-track" aria-hidden="true"></span>
+                  <span class="sr-only">Reduce motion</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ---------- language ---------- -->
+        <section id="language">
+          <div class="section-head"><h2>Language</h2></div>
+
+          <div class="card settings-group">
+            <div class="settings-row">
+              <div class="settings-label">
+                <div class="t">Interface language</div>
+                <div class="d">
+                  Independent of the system language. Where a translation is missing,
+                  the English string is shown rather than a blank or a key name.
+                </div>
+              </div>
+              <div class="settings-control">
+                <select class="select" id="lang" aria-label="Interface language">
+                  <option selected>English</option>
+                  <option>繁體中文</option>
+                  <option>简体中文</option>
+                  <option>Français</option>
+                  <option>Deutsch</option>
+                  <option>日本語</option>
+                  <option>한국어</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ---------- instructions ---------- -->
+        <section id="instructions">
+          <div class="section-head"><h2>Instructions</h2></div>
+
+          <div class="card card-pad">
+            <div class="field">
+              <label class="field-label" for="ci">Instructions for every agent</label>
+              <textarea class="textarea" id="ci" rows="5" aria-describedby="ci-hint">Prefer short answers. Say when you are unsure rather than guessing. Use metric units.</textarea>
+              <span class="field-hint" id="ci-hint">
+                Added to every agent's context, on top of whatever its role template says.
+                It cannot override the guardrails, and an instruction that tries to is
+                ignored rather than silently obeyed.
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <!-- ---------- data ---------- -->
+        <section id="data">
+          <div class="section-head"><h2>Data</h2></div>
+
+          <div class="card settings-group">
+            <div class="settings-row">
+              <div class="settings-label">
+                <div class="t">Data folder</div>
+                <div class="d">
+                  Conversations, agents, memory, notes, keys and skills all live here.
+                  Moving it moves everything, and the app migrates the contents rather
+                  than starting empty at the new location.
+                </div>
+              </div>
+              <div class="settings-control" style="display:flex;gap:var(--space-4)">
+                <input class="input input-mono" readonly value="~/MultiAIAgentsPanel" aria-label="Data folder">
+                <button class="btn btn-secondary" type="button">Move</button>
+              </div>
+            </div>
+
+            <div class="settings-row">
+              <div class="settings-label">
+                <div class="t">On disk</div>
+                <div class="d">Sessions 214 MB · notes 1.2 MB · index 42 MB · recordings 2.1 GB</div>
+              </div>
+              <div class="settings-control">
+                <span class="badge" data-kind="idle">2.4 GB</span>
+              </div>
+            </div>
+
+            <div class="settings-row">
+              <div class="settings-label">
+                <div class="t">Backups</div>
+                <div class="d">
+                  There are none, by design — the app stores nothing off this machine
+                  and syncs nothing. Point your own backup tool at the folder above.
+                </div>
+              </div>
+              <div class="settings-control">
+                <button class="btn btn-ghost btn-sm" type="button">
+                  <svg class="icon icon-sm" aria-hidden="true"><use href="#i-external"/></svg>
+                  Open folder
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- The gap above this card is the separation: a destructive control
+               should not read as the next row of the group it follows. -->
+          <div class="card settings-group settings-danger">
+            <div class="settings-row">
+              <div class="settings-label">
+                <div class="t">Erase all local data</div>
+                <div class="d">
+                  Removes every session, agent, note, grant and key. There is no backup
+                  and no undo, because there is nowhere else a copy could exist.
+                </div>
+              </div>
+              <div class="settings-control">
+                <button class="btn btn-danger" type="button" data-dialog-open="dlg-erase">Erase</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ---------- guardrails ---------- -->
+        <section id="guardrails">
+          <div class="section-head"><h2>Guardrails</h2></div>
+
+          <div class="callout" data-kind="info">
+            <svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg>
+            <div class="callout-body">
+              <strong>There is nothing to configure here</strong>
+              The rules are not settings, so this section shows them rather than
+              offering switches. A rule that could be turned off from a settings
+              screen would also be reachable by an agent asking you to turn it off.
+            </div>
+          </div>
+
+          <div class="card settings-group">
+            <div class="settings-row">
+              <div class="settings-label">
+                <div class="t">Review the rules</div>
+                <div class="d">The same summary shown on first launch, re-readable at any time.</div>
+              </div>
+              <div class="settings-control">
+                <a class="btn btn-secondary" href="onboarding.html">Read</a>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label">
+                <div class="t">Classifier</div>
+                <div class="d">Llama Guard 3, running locally. Screens every message before it is sent.</div>
+              </div>
+              <div class="settings-control">
+                <span class="badge" data-kind="running">Active</span>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label">
+                <div class="t">Blocked this month</div>
+                <div class="d">Each one is recorded with its rule and error code.</div>
+              </div>
+              <div class="settings-control">
+                <button class="btn btn-ghost btn-sm" type="button">3 — show them</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ---------- about ---------- -->
+        <section id="about">
+          <div class="section-head"><h2>About</h2></div>
+
+          <div class="card settings-group">
+            <div class="settings-row">
+              <div class="settings-label">
+                <div class="t">Version</div>
+                <div class="d">Windows installer · unsigned, see the security notes</div>
+              </div>
+              <div class="settings-control"><span class="mono">1.6.4</span></div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label">
+                <div class="t">Updates</div>
+                <div class="d">Checks the releases page. Nothing is downloaded without asking.</div>
+              </div>
+              <div class="settings-control">
+                <button class="btn btn-secondary btn-sm" type="button">Check now</button>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label">
+                <div class="t">Licence</div>
+                <div class="d">MIT. Source and issue tracker are public.</div>
+              </div>
+              <div class="settings-control">
+                <a class="btn btn-ghost btn-sm" href="#">
+                  <svg class="icon icon-sm" aria-hidden="true"><use href="#i-external"/></svg>
+                  Repository
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <aside class="inspector" aria-label="Details"><div class="inspector-body"></div></aside>
+
+</div>
+
+<dialog class="dialog" id="dlg-erase" data-confirm-toast="Nothing was erased">
+  <div class="dialog-header">
+    <span class="dialog-icon" data-kind="danger"><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg></span>
+    <div>
+      <h2 class="dialog-title">Erase all local data?</h2>
+      <p class="dialog-sub">This cannot be undone, and there is no backup.</p>
+    </div>
+  </div>
+  <div class="dialog-body">
+    <p>Everything below is stored only on this machine. Deleting it deletes the only copy.</p>
+    <div class="dialog-scroll">6 sessions and their message history<br>8 agents and their memory<br>13 notes<br>4 imported skills<br>All folder grants<br>Saved API keys<br>3 recordings (2.1 GB)</div>
+    <div class="field">
+      <label class="field-label" for="erase-confirm">Type <strong>erase everything</strong> to continue</label>
+      <input class="input input-mono" id="erase-confirm" type="text" autocomplete="off" spellcheck="false" placeholder="erase everything">
+      <span class="field-hint">The button stays disabled until the phrase matches.</span>
+    </div>
+  </div>
+  <div class="dialog-footer">
+    <span class="spacer"></span>
+    <button class="btn btn-secondary" type="button" data-dialog-close="cancel" data-autofocus>Cancel</button>
+    <button class="btn btn-danger" type="button" data-dialog-close="erase" id="erase-go" disabled>Erase everything</button>
+  </div>
+</dialog>
+
+<script src="../js/mock.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/frame.js"></script>
+<script src="../js/shell.js"></script>
+<script src="../js/palette.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  /* Section links mark themselves current as the corresponding section scrolls
+     into view, so the sidebar reflects position rather than only last click. */
+  var links = [...document.querySelectorAll('.sidebar .row')];
+  var sections = links.map(function (a) { return document.querySelector(a.getAttribute('href')); });
+  var body = document.querySelector('.workspace-body');
+
+  function mark(el) {
+    links.forEach(function (a) {
+      a.toggleAttribute('aria-current', a.getAttribute('href') === '#' + el.id);
+      if (a.getAttribute('href') === '#' + el.id) a.setAttribute('aria-current', 'true');
+    });
+  }
+  var io = new IntersectionObserver(function (entries) {
+    var top = entries.filter(function (e) { return e.isIntersecting; })
+                     .sort(function (a, b) { return a.boundingClientRect.top - b.boundingClientRect.top; })[0];
+    if (top) mark(top.target);
+  }, { root: body, rootMargin: '-10% 0px -70% 0px' });
+  sections.forEach(function (s) { if (s) io.observe(s); });
+
+  var phrase = 'erase everything';
+  var field = document.getElementById('erase-confirm');
+  var go = document.getElementById('erase-go');
+  field.addEventListener('input', function () {
+    go.disabled = field.value.trim().toLowerCase() !== phrase;
+  });
+  document.getElementById('dlg-erase').addEventListener('close', function () {
+    field.value = '';
+    go.disabled = true;
+  });
+
+  var seg = document.querySelectorAll('.segmented button');
+  function syncSeg() {
+    var pref = document.documentElement.getAttribute('data-theme-pref') || 'system';
+    seg.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.theme === pref)); });
+  }
+  document.addEventListener('themechange', syncSeg);
+  syncSeg();
+});
+</script>
+</body>
+</html>

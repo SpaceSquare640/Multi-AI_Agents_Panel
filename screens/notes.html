@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notes — Multi-AI Agents Panel UI Design</title>
+<link rel="icon" href="../app-icon.png">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/shell.css">
+<link rel="stylesheet" href="../css/screens.css">
+<script src="../js/theme.js"></script>
+<script src="../js/icons.js"></script>
+</head>
+<body>
+
+<a class="skip-link" href="#workspace">Skip to main content</a>
+
+<div class="shell" data-screen="notes" data-sidebar="expanded" data-inspector="collapsed">
+
+  <!-- ==================== SIDEBAR ==================== -->
+  <aside class="sidebar" aria-label="Notes">
+    <div class="sidebar-header">
+      <span class="label">Notes</span>
+      <button class="titlebar-btn" type="button" aria-label="New note">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-plus"/></svg>
+      </button>
+    </div>
+
+    <div class="sidebar-body">
+      <div class="input-group" style="margin:var(--space-3) var(--space-2) var(--space-5)">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-search"/></svg>
+        <input class="input" type="search" placeholder="Search notes" aria-label="Search notes">
+      </div>
+
+      <div class="tree" role="tree" aria-label="Notes">
+
+        <div role="treeitem" aria-expanded="true" aria-level="1">
+          <div style="display:flex;align-items:center">
+            <button class="twisty" type="button" aria-expanded="true" aria-label="Collapse Project">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="#i-chevron"/></svg>
+            </button>
+            <button class="tree-item" type="button" data-depth="0" style="flex:1">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="#i-folder"/></svg>
+              <span class="name">Project</span>
+            </button>
+          </div>
+        </div>
+        <button class="tree-item" type="button" data-depth="1" aria-current="true">
+          <span class="twisty-spacer"></span>
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#i-notes"/></svg>
+          <span class="name">Guardrails, in my own words</span>
+        </button>
+        <button class="tree-item" type="button" data-depth="1">
+          <span class="twisty-spacer"></span>
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#i-notes"/></svg>
+          <span class="name">Provider costs — rough numbers</span>
+        </button>
+        <button class="tree-item" type="button" data-depth="1">
+          <span class="twisty-spacer"></span>
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#i-notes"/></svg>
+          <span class="name">Release checklist</span>
+        </button>
+
+        <div role="treeitem" aria-expanded="true" aria-level="1">
+          <div style="display:flex;align-items:center">
+            <button class="twisty" type="button" aria-expanded="true" aria-label="Collapse Sessions worth keeping">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="#i-chevron"/></svg>
+            </button>
+            <button class="tree-item" type="button" data-depth="0" style="flex:1">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="#i-folder"/></svg>
+              <span class="name">Sessions worth keeping</span>
+            </button>
+          </div>
+        </div>
+        <button class="tree-item" type="button" data-depth="1">
+          <span class="twisty-spacer"></span>
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#i-notes"/></svg>
+          <span class="name">Storage layer walkthrough</span>
+        </button>
+        <button class="tree-item" type="button" data-depth="2">
+          <span class="twisty-spacer"></span>
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#i-notes"/></svg>
+          <span class="name">The cascade delete bug</span>
+        </button>
+
+        <div role="treeitem" aria-expanded="false" aria-level="1">
+          <div style="display:flex;align-items:center">
+            <button class="twisty" type="button" aria-expanded="false" aria-label="Expand Scratch">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="#i-chevron"/></svg>
+            </button>
+            <button class="tree-item" type="button" data-depth="0" style="flex:1">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="#i-folder"/></svg>
+              <span class="name">Scratch</span>
+              <span class="badge" data-kind="idle">7</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="row"><span class="name">13 notes · stored on this machine</span></div>
+    </div>
+  </aside>
+
+  <!-- ==================== WORKSPACE ==================== -->
+  <main class="workspace" id="workspace" tabindex="-1">
+    <div class="workspace-header">
+      <span class="workspace-title">Guardrails, in my own words</span>
+      <div class="workspace-actions">
+        <button class="btn btn-ghost btn-sm" type="button">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#i-copy"/></svg>
+          Copy
+        </button>
+        <button class="btn btn-icon btn-sm" type="button" aria-label="Delete this note" data-dialog-open="dlg-del-note">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#i-trash"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="workspace-body">
+      <div class="note-editor">
+        <input class="note-title" value="Guardrails, in my own words" aria-label="Note title">
+        <div class="note-meta">
+          <span>Edited 14 minutes ago</span>
+          <span>·</span>
+          <span>Project</span>
+          <span>·</span>
+          <span class="num">412 words</span>
+        </div>
+        <div class="note-body">
+          <div class="prose selectable">
+            <p>
+              The point of the rules is not that the model is untrustworthy. It is that
+              a rule which can be talked out of is not a rule, and a rule that only
+              holds in a solo session is not a rule either — a group chat is exactly
+              where one agent would ask another to do the thing neither is allowed to.
+            </p>
+
+            <h3>What I keep having to re-explain</h3>
+            <ul>
+              <li>Installing a skill is not the same as trusting it. Grants are per agent for a reason.</li>
+              <li>Folder access is granted per folder, but every read is still listed afterwards. The grant is not a blank cheque.</li>
+              <li>Nothing about the rules is a setting. There is no switch, and the absence of a switch is deliberate.</li>
+            </ul>
+
+            <h3>The one I got wrong at first</h3>
+            <p>
+              I assumed the interesting failure mode was an agent refusing something it
+              should allow. It is the opposite: the interesting failure is an agent
+              quietly allowing something because the request was phrased as a role-play.
+              That is why identity is its own rule rather than a footnote under safety.
+            </p>
+
+            <h3>Open question</h3>
+            <p>
+              Keyword matching for E9002 is still doing more work than it should. A
+              classifier catches phrasing that a keyword list never will, but it also
+              costs a call per message — worth measuring before deciding.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <aside class="inspector" aria-label="Note details">
+    <div class="inspector-header"><span class="label">Note</span></div>
+    <div class="inspector-body">
+      <section class="inspector-section">
+        <dl class="kv">
+          <dt>Created</dt> <dd>28 Aug</dd>
+          <dt>Edited</dt>  <dd>14 min ago</dd>
+          <dt>Words</dt>   <dd class="num">412</dd>
+          <dt>Parent</dt>  <dd>Project</dd>
+        </dl>
+      </section>
+      <section class="inspector-section">
+        <span class="label">Where this lives</span>
+        <p style="font-size:var(--text-sm);color:var(--text-muted);line-height:var(--leading-loose)">
+          In the app's own database on this machine. Notes are not synced, not
+          uploaded and not readable by any agent unless you paste them into a
+          conversation yourself.
+        </p>
+      </section>
+    </div>
+  </aside>
+
+</div>
+
+<dialog class="dialog" id="dlg-del-note">
+  <div class="dialog-header">
+    <span class="dialog-icon" data-kind="danger"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg></span>
+    <div>
+      <h2 class="dialog-title">Delete this note?</h2>
+      <p class="dialog-sub">Guardrails, in my own words — 412 words.</p>
+    </div>
+  </div>
+  <div class="dialog-body">
+    <p>It has no child notes, so nothing else goes with it. You can undo this for a few seconds afterwards.</p>
+  </div>
+  <div class="dialog-footer">
+    <span class="spacer"></span>
+    <button class="btn btn-secondary" type="button" data-dialog-close="cancel" data-autofocus>Cancel</button>
+    <button class="btn btn-danger" type="button" data-dialog-close="delete">Delete note</button>
+  </div>
+</dialog>
+
+<script src="../js/mock.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/frame.js"></script>
+<script src="../js/shell.js"></script>
+<script src="../js/palette.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  /* Disclosure keeps aria-expanded in step with the rotation, so the state is
+     announced rather than only drawn. */
+  document.querySelectorAll('.twisty').forEach(function (t) {
+    t.addEventListener('click', function () {
+      var open = t.getAttribute('aria-expanded') === 'true';
+      t.setAttribute('aria-expanded', String(!open));
+      var host = t.closest('[role="treeitem"]');
+      if (host) host.setAttribute('aria-expanded', String(!open));
+      t.setAttribute('aria-label', (open ? 'Expand ' : 'Collapse ') +
+        t.parentElement.querySelector('.name').textContent);
+    });
+  });
+
+  document.querySelectorAll('.tree-item').forEach(function (item) {
+    item.addEventListener('click', function () {
+      document.querySelectorAll('.tree-item[aria-current]').forEach(function (o) {
+        o.removeAttribute('aria-current');
+      });
+      item.setAttribute('aria-current', 'true');
+    });
+  });
+
+  document.getElementById('dlg-del-note').addEventListener('close', function () {
+    if (this.returnValue !== 'delete') return;
+    window.Toast.show({
+      kind: 'success',
+      title: 'Note deleted',
+      body: 'Guardrails, in my own words.',
+      action: 'Undo',
+      onAction: function () {
+        window.Toast.show({ kind: 'info', title: 'Restored', body: 'Nothing was deleted — this is a mockup.' });
+      }
+    });
+  });
+});
+</script>
+</body>
+</html>

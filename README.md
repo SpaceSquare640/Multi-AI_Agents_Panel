@@ -30,19 +30,33 @@ app-icon.png      The application icon; the brand palette is sampled from it
 css/
   tokens.css      Three-layer tokens: primitive -> semantic -> component
   base.css        Reset, typography, focus handling, scrollbars, icons
+  components.css  Buttons, fields, cards, dialogs, toasts, tables, and the rest
   shell.css       The four-column application frame
-  components.css  Buttons, inputs, cards, dialogs, toasts        (planned)
-  screens.css     Per-screen styles                              (planned)
+  screens.css     Per-screen styles
 
 js/
   theme.js        system / light / dark, persisted, applied before paint
+  icons.js        The icon sprite, one copy shared by every page
+  frame.js        Title bar, rail, resizers and status bar, injected per page
   shell.js        Panel collapse, resize, rail keyboard navigation
-  palette.js      Command palette                                (planned)
-  mock.js         Static sample data                             (planned)
+  palette.js      Command palette
+  ui.js           Toasts and dialogs
+  mock.js         Static sample data
 
 screens/
-  shell.html      The application frame
-  …               One file per screen                            (planned)
+  shell.html            The application frame on its own
+  chat.html             Solo session
+  group-chat.html       Several agents in one room
+  notes.html            Hierarchical local notes
+  models.html           Providers, keys, fallback order, hardware fit
+  skills.html           Installed skills, declared scopes, per-agent grants
+  semantic-search.html  Local embedding search over granted folders
+  game-agent.html       Record, label, train, play
+  usage.html            Spend and tokens, budget threshold and hard cap
+  settings.html         Appearance, language, instructions, data, guardrails
+  help.html             The built-in manual
+  onboarding.html       First launch — the guardrail summary
+  dialogs.html          Authorisation, destructive confirmation, interception
 ```
 
 There is no build step. Open any `.html` file directly in a browser.
@@ -59,10 +73,9 @@ there is nothing to compile, and no dependency is installed. It deploys from
 this branch only; `Source_Code` is never checked out by it, and it enables
 Pages on its first run rather than needing the setting flipped by hand.
 
-What is published is work in progress. Screens are added a batch at a time,
-and `index.html` marks which ones exist yet. The pages are mockups of a
-desktop application sized for a window, so a phone browser will show a
-cramped frame — that is the design, not a fault.
+Every screen in the app is there. The pages are mockups of a desktop
+application sized for a window, so a phone browser will show a cramped frame —
+that is the design, not a fault.
 
 ## Design decisions
 
@@ -105,12 +118,26 @@ without touching a component.
 ## Accessibility
 
 The target is WCAG 2.1 AA, carried over from the application's existing
-commitment. In practice that means: text contrast at 4.5:1 and meaningful UI
-boundaries at 3:1, both verified in light and dark; focus rings that are never
-suppressed; icon-only controls that always carry an accessible name; colour
-never used as the only carrier of meaning; and `prefers-reduced-motion`
-honoured by collapsing the duration tokens rather than removing transitions, so
-nothing that waits on `transitionend` can hang.
+commitment, and it is checked by measurement rather than by eye: a script walks
+every text-bearing element on all fifteen pages, composites each translucent
+layer up the ancestor chain to find the effective background, and reports
+anything below the threshold for its own font size. All fifteen pages pass in
+both themes.
+
+That pass found defects repeatedly, and always the same kind — a tint designed
+against one surface landing on a darker one. Faint text passed on the page
+background and failed inside a selected row; a tinted badge inside a tinted row
+stacked two layers of the same hue; agent monograms mixed their tint with
+`transparent` and inherited whatever row sat behind them. The lesson is in the
+token file: mix against a named surface, never against transparency, and
+measure the worst surface a colour can land on rather than the most common one.
+
+In practice AA here means: text contrast at 4.5:1 and meaningful UI boundaries
+at 3:1, both verified in light and dark; focus rings that are never suppressed;
+icon-only controls that always carry an accessible name; colour never used as
+the only carrier of meaning; and `prefers-reduced-motion` honoured by
+collapsing the duration tokens rather than removing transitions, so nothing
+that waits on `transitionend` can hang.
 
 Standard controls are 32px tall rather than 44px. That is deliberate: this is a
 mouse-and-keyboard desktop application with no touch surface, and 44px

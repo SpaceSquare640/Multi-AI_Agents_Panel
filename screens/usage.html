@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Usage — Multi-AI Agents Panel UI Design</title>
+<link rel="icon" href="../app-icon.png">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/shell.css">
+<link rel="stylesheet" href="../css/screens.css">
+<script src="../js/theme.js"></script>
+<script src="../js/icons.js"></script>
+</head>
+<body>
+
+<a class="skip-link" href="#workspace">Skip to main content</a>
+
+<div class="shell" data-screen="usage" data-sidebar="collapsed" data-inspector="expanded">
+
+  <aside class="sidebar" aria-label="Period">
+    <div class="sidebar-header"><span class="label">Period</span></div>
+    <div class="sidebar-body">
+      <button class="row" type="button">Today</button>
+      <button class="row" type="button" aria-current="true">This month</button>
+      <button class="row" type="button">Last month</button>
+      <button class="row" type="button">All time</button>
+    </div>
+  </aside>
+
+  <!-- ==================== WORKSPACE ==================== -->
+  <main class="workspace" id="workspace" tabindex="-1">
+    <div class="workspace-header">
+      <span class="workspace-title">Usage</span>
+      <span class="badge" data-kind="idle">September 2026</span>
+      <div class="workspace-actions">
+        <button class="btn btn-ghost btn-sm" type="button">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#i-copy"/></svg>
+          Export CSV
+        </button>
+      </div>
+    </div>
+
+    <div class="workspace-body">
+      <div class="pane pane-wide">
+
+        <p class="pane-intro">
+          What the cloud providers have cost so far. Local models are counted in
+          tokens but cost nothing, so they are kept out of the money figures
+          rather than shown as zeroes that make the totals harder to read.
+        </p>
+
+        <div class="stat-row">
+          <div class="stat">
+            <div class="k">Spent this month</div>
+            <div class="v">$18.40</div>
+            <div class="d">of a $20.00 warning threshold</div>
+          </div>
+          <div class="stat">
+            <div class="k">Today</div>
+            <div class="v">$1.18</div>
+            <div class="d">14 requests across 3 sessions</div>
+          </div>
+          <div class="stat">
+            <div class="k">Cloud tokens</div>
+            <div class="v">2.41M</div>
+            <div class="d">1.92M in · 0.49M out</div>
+          </div>
+          <div class="stat">
+            <div class="k">Local tokens</div>
+            <div class="v">6.08M</div>
+            <div class="d">no cost — ran on this machine</div>
+          </div>
+        </div>
+
+        <!-- ---------- budget ---------- -->
+        <section>
+          <div class="section-head"><h2>Budget</h2></div>
+
+          <div class="card budget">
+            <div class="budget-head">
+              <h3>Warning threshold</h3>
+              <span class="v">$18.40 / $20.00</span>
+            </div>
+            <div class="meter" data-state="warning" role="progressbar" aria-valuenow="92"
+                 aria-valuemin="0" aria-valuemax="100" aria-label="Spend against the warning threshold">
+              <div class="meter-fill" style="width:92%"></div>
+            </div>
+            <div class="budget-marks"><span>$0</span><span>$20.00</span></div>
+
+            <div class="callout" data-kind="warning" style="margin-top:var(--space-6)">
+              <svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg>
+              <div class="callout-body">
+                <strong>92% of the warning threshold</strong>
+                Crossing this warns and nothing more — requests keep going. Only the
+                hard cap stops them, and it is off unless you turn it on.
+              </div>
+            </div>
+
+            <div class="settings-row" style="padding-inline:0;margin-top:var(--space-5);border-top:1px solid var(--border)">
+              <div class="settings-label">
+                <div class="t">Hard cap</div>
+                <div class="d">
+                  Pauses every cloud provider when the amount is reached, until you
+                  lift it by hand. Off by default: stopping mid-task without being
+                  asked is worse than the spend for most people.
+                </div>
+              </div>
+              <div class="settings-control">
+                <label class="switch">
+                  <input type="checkbox">
+                  <span class="switch-track" aria-hidden="true"></span>
+                  <span class="sr-only">Enable the hard cap</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ---------- by agent ---------- -->
+        <section>
+          <div class="section-head">
+            <h2>By agent</h2>
+            <span class="count">this month</span>
+          </div>
+
+          <div class="card card-pad">
+            <div class="bars">
+              <div class="bar-row">
+                <span class="who">Lead Architect</span>
+                <div class="bar-track"><div class="bar-fill" data-where="cloud" style="width:60%"></div></div>
+                <span class="val">$11.04</span>
+              </div>
+              <div class="bar-row">
+                <span class="who">Full-Stack Developer</span>
+                <div class="bar-track"><div class="bar-fill" data-where="cloud" style="width:26%"></div></div>
+                <span class="val">$4.79</span>
+              </div>
+              <div class="bar-row">
+                <span class="who">Product Lead</span>
+                <div class="bar-track"><div class="bar-fill" data-where="cloud" style="width:9%"></div></div>
+                <span class="val">$1.66</span>
+              </div>
+              <div class="bar-row">
+                <span class="who">Release Manager</span>
+                <div class="bar-track"><div class="bar-fill" data-where="cloud" style="width:5%"></div></div>
+                <span class="val">$0.91</span>
+              </div>
+              <div class="bar-row">
+                <span class="who">QA Engineer</span>
+                <div class="bar-track"><div class="bar-fill" data-where="local" style="width:100%"></div></div>
+                <span class="val">4.10M tok</span>
+              </div>
+              <div class="bar-row">
+                <span class="who">Security Tester</span>
+                <div class="bar-track"><div class="bar-fill" data-where="local" style="width:48%"></div></div>
+                <span class="val">1.98M tok</span>
+              </div>
+            </div>
+
+            <p class="field-hint" style="margin-top:var(--space-7)">
+              Cloud bars are scaled against the highest spend, local bars against the
+              highest token count. They are not comparable to each other, which is why
+              each row states its own figure instead of relying on bar length alone.
+            </p>
+          </div>
+        </section>
+
+        <!-- ---------- by provider ---------- -->
+        <section>
+          <div class="section-head">
+            <h2>By provider</h2>
+            <span class="count">this month</span>
+          </div>
+
+          <div class="card" style="overflow:hidden">
+            <div style="overflow-x:auto">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Provider</th>
+                    <th>Where</th>
+                    <th class="num">Requests</th>
+                    <th class="num">Tokens in</th>
+                    <th class="num">Tokens out</th>
+                    <th class="num">Cost</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Anthropic</td>
+                    <td><span class="badge" data-kind="cloud">Cloud</span></td>
+                    <td class="num">412</td>
+                    <td class="num">1,684,200</td>
+                    <td class="num">428,910</td>
+                    <td class="num">$16.83</td>
+                  </tr>
+                  <tr>
+                    <td>OpenRouter</td>
+                    <td><span class="badge" data-kind="cloud">Cloud</span></td>
+                    <td class="num">38</td>
+                    <td class="num">236,400</td>
+                    <td class="num">61,040</td>
+                    <td class="num">$1.57</td>
+                  </tr>
+                  <tr>
+                    <td>Ollama</td>
+                    <td><span class="badge" data-kind="local">Local</span></td>
+                    <td class="num">1,204</td>
+                    <td class="num">4,910,300</td>
+                    <td class="num">1,168,720</td>
+                    <td class="num">—</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- ==================== INSPECTOR ==================== -->
+  <aside class="inspector" aria-label="Details">
+    <div class="inspector-header"><span class="label">Details</span></div>
+    <div class="inspector-body">
+
+      <section class="inspector-section">
+        <span class="label">How this is counted</span>
+        <p style="font-size:var(--text-sm);color:var(--text-muted);line-height:var(--leading-loose)">
+          Costs are estimated from each provider's published prices at the time of
+          the call, not read back from a bill. Treat them as close, not exact — a
+          provider's own invoice is the authority.
+        </p>
+      </section>
+
+      <section class="inspector-section">
+        <span class="label">Most expensive session</span>
+        <dl class="kv">
+          <dt>Session</dt> <dd>Release review</dd>
+          <dt>Cost</dt>    <dd class="num">$4.12</dd>
+          <dt>Turns</dt>   <dd class="num">30</dd>
+        </dl>
+        <p class="field-hint" style="margin-top:var(--space-5)">
+          Group chats cost more per turn than solo sessions, because every
+          participant reads the whole conversation each time.
+        </p>
+      </section>
+
+      <section class="inspector-section">
+        <span class="label">Stored</span>
+        <dl class="kv">
+          <dt>Records</dt> <dd class="num">1,654</dd>
+          <dt>Since</dt>   <dd>25 Jul</dd>
+          <dt>Where</dt>   <dd>This machine</dd>
+        </dl>
+      </section>
+
+      <section class="inspector-section">
+        <button class="btn btn-secondary" type="button" style="width:100%">Reset the month's counters</button>
+      </section>
+
+    </div>
+  </aside>
+
+</div>
+
+<script src="../js/mock.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/frame.js"></script>
+<script src="../js/shell.js"></script>
+<script src="../js/palette.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.sidebar .row').forEach(function (r) {
+    r.addEventListener('click', function () {
+      document.querySelectorAll('.sidebar .row[aria-current]').forEach(function (o) {
+        o.removeAttribute('aria-current');
+      });
+      r.setAttribute('aria-current', 'true');
+    });
+  });
+
+  var cap = document.querySelector('.settings-control input[type="checkbox"]');
+  cap.addEventListener('change', function () {
+    window.Toast.show({
+      kind: cap.checked ? 'warning' : 'info',
+      title: cap.checked ? 'Hard cap on' : 'Hard cap off',
+      body: cap.checked
+        ? 'Cloud providers will pause at $20.00 until you lift it by hand.'
+        : 'Crossing the threshold will warn without stopping anything.'
+    });
+  });
+});
+</script>
+</body>
+</html>
