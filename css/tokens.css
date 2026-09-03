@@ -1,0 +1,589 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* ============================================================================
+   Multi-AI Agents Panel — Design Tokens
+   ----------------------------------------------------------------------------
+   Three-layer token architecture:
+
+       primitive  (raw values, never used directly in components)
+            v
+       semantic   (purpose aliases — the ONLY layer that changes per theme)
+            v
+       component  (per-component knobs, theme-agnostic)
+
+   Theme switching only ever rewrites the semantic layer. Component tokens are
+   defined once and never duplicated per theme, which is what stops light and
+   dark from drifting apart as the design grows.
+
+   Theme resolution, in order:
+     :root                                -> complete LIGHT palette
+     @media (prefers-color-scheme: dark)  -> dark, unless the user forced light
+     :root[data-theme="dark"]             -> dark, forced
+   Every colour gets its first definition on bare :root, so no token can end up
+   undefined when a media query never matches.
+
+   Brand colour provenance
+   -----------------------
+   Sampled from the application icon, not chosen by preference. Pixels were
+   bucketed by hue after dropping transparent, desaturated (S < 0.45) and
+   near-black/near-white pixels:
+
+       hue 180-210  51.9%   avg #01C4E6 / #0084CC   -> cyan   (dominant)
+       hue 255-285  19.1%   avg #A036EB / #7235C8   -> violet (secondary)
+       hue  30- 60  14.8%   avg #CEA44E / #F6DB5A   -> gold   (tertiary)
+
+   Cyan therefore becomes --brand, violet becomes --accent (selection, active
+   states, emphasised figures), gold becomes --warning. Neutral greys are the
+   Slate ramp from the ui-ux-pro-max "Developer Tool / IDE" palette.
+
+   Contrast
+   --------
+   Every foreground/background pair below was measured, not estimated. Ratios
+   are recorded inline. Text pairs meet WCAG 2.1 AA (4.5:1); UI component
+   boundaries that carry meaning (input borders, focus rings) meet 3:1 per
+   SC 1.4.11. Decorative separators (--border) deliberately sit below 3:1 —
+   they divide, they do not inform, and pushing them to 3:1 would make a dense
+   workstation layout read as a spreadsheet.
+
+   Status colour discipline
+   ------------------------
+   Green means running/succeeded. Red means failed/destructive. Gold means
+   needs attention. None of the three is ever used for branding, and --brand
+   cyan is never used to signal status — otherwise "the accent colour" and
+   "something is happening" become indistinguishable, which is exactly the
+   confusion this app cannot afford with several agents running at once.
+   ========================================================================== */
+
+
+/* ==========================================================================
+   LAYER 1 — PRIMITIVE
+   Raw values. Never reference these from a component; go through the semantic
+   layer so themes stay switchable.
+   ========================================================================== */
+
+:root {
+  /* --- neutral ramp (Slate) --- */
+  --slate-50:  #F8FAFC;
+  --slate-100: #F1F5F9;
+  --slate-200: #E2E8F0;
+  --slate-300: #CBD5E1;
+  --slate-400: #94A3B8;
+  --slate-500: #64748B;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1E293B;
+  --slate-900: #0F172A;
+  --slate-950: #0B1120;
+
+  /* tuned neutrals that are not on the stock Slate ramp */
+  --neutral-surface-dark:   #131B2B;  /* card on dark: one step above --bg   */
+  --neutral-surface-dark-2: #182233;  /* raised card / hover                 */
+  --neutral-surface-dark-3: #1E293B;  /* pressed / selected row              */
+  --neutral-border-dark:    #2A3648;
+  --neutral-border-dark-hi: #66748A;  /* 3.97:1 on bg, 3.63:1 on surface     */
+  --neutral-border-light-hi:#6F8299;  /* 3.60:1 on bg, 3.94:1 on surface     */
+  --neutral-text-dark:      #E7ECF3;
+  --neutral-text-faint-dk:  #7C8CA3;
+  --neutral-text-faint-lt:  #5B6878;
+
+  /* --- brand: cyan, sampled from the app icon --- */
+  --cyan-300: #67E8F9;
+  --cyan-400: #22D3EE;
+  --cyan-600: #0891B2;
+  --cyan-700: #0E7490;
+  --cyan-800: #155E75;
+  --cyan-950: #062B34;
+
+  /* --- accent: violet, sampled from the app icon --- */
+  --violet-400: #A78BFA;
+  --violet-600: #7C3AED;
+  --violet-700: #6D28D9;
+  --violet-950: #2E1065;
+  --indigo-950: #1E1B4B;
+
+  /* --- status --- */
+  --green-400: #4ADE80;
+  --green-600: #16A34A;
+  --green-700: #15803D;
+  --amber-400: #FBBF24;
+  --amber-600: #D97706;
+  --amber-700: #B45309;
+  --red-400:   #F87171;
+  --red-600:   #DC2626;
+  --red-700:   #B91C1C;
+  --red-950:   #450A0A;
+
+  /* --- type --- */
+  --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+               'Noto Sans TC', 'Noto Sans SC', 'Noto Sans JP', 'Noto Sans KR',
+               sans-serif;
+  --font-mono: 'JetBrains Mono', 'Cascadia Mono', Consolas, 'Courier New',
+               monospace;
+
+  /* Type scale. 13px base rather than 16px: this is a dense desktop
+     workstation, not a document. 13px IBM Plex Sans at 1.55 line-height stays
+     comfortably readable at desktop viewing distance, and the whole scale can
+     be raised by the user via --font-scale without touching any component. */
+  --font-scale:  1;
+  --text-2xs:  calc(10px * var(--font-scale));
+  --text-xs:   calc(11px * var(--font-scale));
+  --text-sm:   calc(12px * var(--font-scale));
+  --text-base: calc(13px * var(--font-scale));
+  --text-md:   calc(15px * var(--font-scale));
+  --text-lg:   calc(18px * var(--font-scale));
+  --text-xl:   calc(22px * var(--font-scale));
+  --text-2xl:  calc(28px * var(--font-scale));
+
+  --leading-tight: 1.25;
+  --leading-snug:  1.4;
+  --leading-body:  1.55;
+  --leading-loose: 1.7;
+
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+
+  --tracking-tight: -0.01em;
+  --tracking-wide:  0.04em;   /* uppercase micro-labels only */
+
+  /* Reading measure for prose (help articles, message bodies). Long agent
+     replies at full workspace width would run past 120 characters, which is
+     unreadable; every prose container clamps to this. */
+  --measure: 72ch;
+
+  /* --- spacing: 4px base, dense tier (density dial 8/10) --- */
+  --space-0:  0;
+  --space-1:  2px;
+  --space-2:  4px;
+  --space-3:  6px;
+  --space-4:  8px;
+  --space-5:  12px;
+  --space-6:  16px;
+  --space-7:  20px;
+  --space-8:  24px;
+  --space-9:  32px;
+  --space-10: 40px;
+  --space-11: 56px;
+
+  /* --- radius --- */
+  --radius-xs:   3px;
+  --radius-sm:   5px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-full: 999px;
+
+  /* --- elevation: one scale, no ad-hoc shadows --- */
+  --shadow-1: 0 1px 2px rgb(2 6 23 / 0.08);
+  --shadow-2: 0 2px 6px rgb(2 6 23 / 0.10), 0 1px 2px rgb(2 6 23 / 0.06);
+  --shadow-3: 0 8px 24px rgb(2 6 23 / 0.14), 0 2px 6px rgb(2 6 23 / 0.08);
+  --shadow-4: 0 20px 48px rgb(2 6 23 / 0.22), 0 4px 12px rgb(2 6 23 / 0.12);
+
+  /* --- motion (dial 4/10: standard, restrained) ---
+     Enter uses ease-out, exit uses ease-in, and exits run at roughly 65% of
+     the enter duration so dismissal feels immediate. */
+  --dur-instant: 80ms;
+  --dur-fast:    140ms;
+  --dur-base:    200ms;
+  --dur-slow:    280ms;
+  --ease-out:    cubic-bezier(0.16, 1, 0.30, 1);
+  --ease-in:     cubic-bezier(0.55, 0, 1, 0.45);
+  --ease-inout:  cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* --- z-index: a fixed scale, never an arbitrary 9999 --- */
+  --z-base:     0;
+  --z-sticky:   10;
+  --z-dropdown: 20;
+  --z-overlay:  30;
+  --z-modal:    40;
+  --z-toast:    50;
+  --z-tooltip:  60;
+}
+
+
+/* ==========================================================================
+   LAYER 2 — SEMANTIC (LIGHT)
+   The complete light palette lives on bare :root, so every token is defined
+   even if no media query ever matches.
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* surfaces */
+  --bg:            var(--slate-100);   /* app background                     */
+  --surface:       #FFFFFF;            /* panels, cards, sidebars            */
+  --surface-2:     var(--slate-50);    /* nested / striped rows              */
+  --surface-3:     var(--slate-200);   /* pressed, selected                  */
+  --surface-overlay:#FFFFFF;           /* modals, popovers, command palette  */
+  --scrim:         rgb(15 23 42 / 0.45);
+
+  /* text — 16.30:1 / 6.92:1 / 5.19:1 on --bg */
+  --text:       var(--slate-900);
+  --text-muted: var(--slate-600);
+  --text-faint: var(--neutral-text-faint-lt);
+  --text-on-brand:  #FFFFFF;
+  --text-on-accent: #FFFFFF;   /* 5.70:1 on --accent                        */
+  --text-on-danger: #FFFFFF;   /* 4.83:1 on --danger                        */
+
+  /* lines */
+  --border:        var(--slate-300);              /* decorative, 1.36:1     */
+  --border-strong: var(--neutral-border-light-hi);/* meaningful, 3.60:1     */
+
+  /* brand — white on --brand measures 5.36:1; hover darkens rather than
+     lightens, because lightening would drop the button below AA */
+  --brand:      var(--cyan-700);
+  --brand-hover:var(--cyan-800);
+  --brand-soft: #CFFAFE;
+  --brand-text: var(--cyan-700);   /* 4.89:1 on --bg — brand-coloured text   */
+
+  /* accent (selection, active tab, emphasised figures) — 5.70:1 with white */
+  --accent:      var(--violet-600);
+  --accent-hover:var(--violet-700);
+  --accent-soft: #EDE9FE;
+  --accent-text: var(--violet-700);
+
+  /* status — a fill and a text variant, because one value cannot serve both.
+     A fill has to stay light enough for white text to clear 4.5:1 on top of
+     it; the same value used as coloured text on --bg then falls short. The
+     split was found by measurement, not assumed: --danger as text measured
+     4.41:1 on --bg, below AA, while white on --danger measured 4.83:1, above
+     it. Ratios below are text-on-bg / text-on-its-own-soft-tint. */
+  --success:      var(--green-700);
+  --success-text: #146C35;          /* 5.94 / 5.93                           */
+  --success-soft: #DCFCE7;
+  --warning:      var(--amber-700);
+  --warning-text: #A04A08;          /* 5.51 / 5.42                           */
+  --warning-soft: #FEF3C7;
+  --danger:       var(--red-600);   /* fill: 4.83:1 with white               */
+  --danger-text:  var(--red-700);   /* 5.91 / 5.30                           */
+  --danger-hover: var(--red-700);
+  --danger-soft:  #FEE2E2;
+  --info:         #0369A1;
+  --info-text:    #075985;          /* 6.90 / 6.59                           */
+  --info-soft:    #E0F2FE;
+
+  /* focus ring — 4.89:1 against --bg, always visible, never removed */
+  --ring:        var(--brand);
+  --ring-width:  2px;
+  --ring-offset: 2px;
+
+  /* provider identity. Local and cloud must be distinguishable at a glance
+     because the distinction carries privacy and cost consequences. Neither
+     hue is reused by a status colour. */
+  --provider-local: #0F766E;   /* teal  — runs on this machine              */
+  --provider-cloud: #4338CA;   /* indigo — leaves this machine              */
+}
+
+
+/* ==========================================================================
+   LAYER 2 — SEMANTIC (DARK)
+   Only the semantic layer is redefined. Guarded so an explicit light choice
+   still wins over the OS preference.
+   ========================================================================== */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --bg:             var(--slate-950);
+    --surface:        var(--neutral-surface-dark);
+    --surface-2:      var(--neutral-surface-dark-2);
+    --surface-3:      var(--neutral-surface-dark-3);
+    --surface-overlay:var(--neutral-surface-dark-2);
+    --scrim:          rgb(2 6 23 / 0.65);
+
+    /* 15.86:1 / 7.34:1 / 5.50:1 on --bg */
+    --text:       var(--neutral-text-dark);
+    --text-muted: var(--slate-400);
+    --text-faint: var(--neutral-text-faint-dk);
+    /* Every fill inverts on dark: a bright surface carries a dark label.
+       White on the dark accent measured 2.72:1 and white on the dark danger
+       2.77:1 — both well below AA — which is exactly the mistake the live
+       measurement in style-tile.html exists to catch. */
+    --text-on-brand:  var(--cyan-950);    /* 8.28:1 on --brand              */
+    --text-on-accent: var(--indigo-950);  /* 5.87:1 on --accent             */
+    --text-on-danger: var(--red-950);     /* 5.84:1 on --danger             */
+
+    --border:        var(--neutral-border-dark);
+    --border-strong: var(--neutral-border-dark-hi);  /* 3.97:1 on --bg      */
+
+    /* On dark the brand inverts: a bright fill carrying dark text. Hover
+       lightens here, the mirror of the light theme's darkening. */
+    --brand:      var(--cyan-400);
+    --brand-hover:var(--cyan-300);
+    --brand-soft: rgb(34 211 238 / 0.14);
+    --brand-text: var(--cyan-400);   /* 10.42:1 on --bg                     */
+
+    --accent:      var(--violet-400);
+    --accent-hover:#C4B5FD;
+    --accent-soft: rgb(167 139 250 / 0.16);
+    --accent-text: var(--violet-400); /* 6.92:1 on --bg                     */
+
+    /* On dark the fill values already clear AA as text (10.81 / 11.28 / 6.81
+       against --bg), so the text variants simply alias them. The split only
+       has to exist on light. */
+    --success:      var(--green-400);   /* 10.81:1                          */
+    --success-text: var(--green-400);
+    --success-soft: rgb(74 222 128 / 0.14);
+    --warning:      var(--amber-400);   /* 11.28:1                          */
+    --warning-text: var(--amber-400);
+    --warning-soft: rgb(251 191 36 / 0.14);
+    --danger:       var(--red-400);     /*  6.81:1                          */
+    --danger-text:  var(--red-400);
+    --danger-hover: #FCA5A5;
+    --danger-soft:  rgb(248 113 113 / 0.14);
+    --info:         #38BDF8;
+    --info-text:    #38BDF8;
+    --info-soft:    rgb(56 189 248 / 0.14);
+
+    --ring: var(--brand);               /* 10.42:1                          */
+
+    --provider-local: #2DD4BF;
+    --provider-cloud: #818CF8;
+
+    /* Shadows carry almost no weight on dark surfaces; elevation is
+       communicated by the surface ramp instead, with shadow only deepening
+       the sense of overlay for modals. */
+    --shadow-1: 0 1px 2px rgb(0 0 0 / 0.30);
+    --shadow-2: 0 2px 6px rgb(0 0 0 / 0.36);
+    --shadow-3: 0 8px 24px rgb(0 0 0 / 0.46);
+    --shadow-4: 0 20px 48px rgb(0 0 0 / 0.58);
+  }
+}
+
+/* Forced dark — identical to the block above so the toggle wins in both
+   directions. Kept as a duplicate rather than a shared selector list because
+   :is()/:where() with a media query cannot express "forced OR preferred". */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg:             var(--slate-950);
+  --surface:        var(--neutral-surface-dark);
+  --surface-2:      var(--neutral-surface-dark-2);
+  --surface-3:      var(--neutral-surface-dark-3);
+  --surface-overlay:var(--neutral-surface-dark-2);
+  --scrim:          rgb(2 6 23 / 0.65);
+
+  --text:       var(--neutral-text-dark);
+  --text-muted: var(--slate-400);
+  --text-faint: var(--neutral-text-faint-dk);
+  --text-on-brand:  var(--cyan-950);
+  --text-on-accent: var(--indigo-950);
+  --text-on-danger: var(--red-950);
+
+  --border:        var(--neutral-border-dark);
+  --border-strong: var(--neutral-border-dark-hi);
+
+  --brand:      var(--cyan-400);
+  --brand-hover:var(--cyan-300);
+  --brand-soft: rgb(34 211 238 / 0.14);
+  --brand-text: var(--cyan-400);
+
+  --accent:      var(--violet-400);
+  --accent-hover:#C4B5FD;
+  --accent-soft: rgb(167 139 250 / 0.16);
+  --accent-text: var(--violet-400);
+
+  --success:      var(--green-400);
+  --success-text: var(--green-400);
+  --success-soft: rgb(74 222 128 / 0.14);
+  --warning:      var(--amber-400);
+  --warning-text: var(--amber-400);
+  --warning-soft: rgb(251 191 36 / 0.14);
+  --danger:       var(--red-400);
+  --danger-text:  var(--red-400);
+  --danger-hover: #FCA5A5;
+  --danger-soft:  rgb(248 113 113 / 0.14);
+  --info:         #38BDF8;
+  --info-text:    #38BDF8;
+  --info-soft:    rgb(56 189 248 / 0.14);
+
+  --ring: var(--brand);
+
+  --provider-local: #2DD4BF;
+  --provider-cloud: #818CF8;
+
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.30);
+  --shadow-2: 0 2px 6px rgb(0 0 0 / 0.36);
+  --shadow-3: 0 8px 24px rgb(0 0 0 / 0.46);
+  --shadow-4: 0 20px 48px rgb(0 0 0 / 0.58);
+}
+
+
+/* ==========================================================================
+   LAYER 3 — COMPONENT
+   Defined once, theme-agnostic: every value here resolves through the
+   semantic layer, so nothing in this block is ever restated per theme.
+   ========================================================================== */
+
+:root {
+  /* --- app shell geometry --- */
+  --titlebar-h:      32px;
+  --statusbar-h:     24px;
+  --rail-w:          48px;   /* icon rail: 40px target + 4px inset each side */
+  --sidebar-w:       268px;
+  --sidebar-w-min:   200px;
+  --sidebar-w-max:   400px;
+  --inspector-w:     312px;
+  --inspector-w-min: 260px;
+  --inspector-w-max: 460px;
+  --panel-gap:       1px;    /* hairline seam between shell regions          */
+
+  /* --- interactive sizing ---
+     36px is the standard control height. It is below the 44px touch minimum
+     on purpose: this is a mouse-and-keyboard desktop app with no touch
+     target, where 44px everywhere would waste roughly a fifth of the
+     vertical space in a dense list. Anything that could ever be touched
+     (onboarding, dialog buttons) uses --control-h-lg instead. */
+  --control-h-sm: 26px;
+  --control-h:    32px;
+  --control-h-lg: 44px;
+  --icon-sm:  14px;
+  --icon-md:  16px;
+  --icon-lg:  20px;
+  --icon-stroke: 1.5;   /* one stroke width across the whole icon set        */
+
+  /* --- button --- */
+  --btn-radius:       var(--radius-sm);
+  --btn-px:           var(--space-5);
+  --btn-font:         var(--text-base);
+  --btn-weight:       var(--weight-medium);
+  --btn-primary-bg:   var(--brand);
+  --btn-primary-fg:   var(--text-on-brand);
+  --btn-primary-bg-hover: var(--brand-hover);
+  --btn-ghost-fg:     var(--text-muted);
+  --btn-ghost-bg-hover: var(--surface-2);
+  --btn-danger-bg:    var(--danger);
+  --btn-danger-fg:    var(--text-on-danger);
+  --btn-disabled-opacity: 0.45;
+
+  /* --- input --- */
+  --input-h:        var(--control-h);
+  --input-bg:       var(--surface);
+  --input-fg:       var(--text);
+  --input-border:   var(--border-strong);   /* meaningful boundary, 3:1+     */
+  --input-border-focus: var(--ring);
+  --input-radius:   var(--radius-sm);
+  --input-px:       var(--space-5);
+  --input-placeholder: var(--text-faint);
+
+  /* --- card / panel --- */
+  --card-bg:      var(--surface);
+  --card-border:  var(--border);
+  --card-radius:  var(--radius-md);
+  --card-pad:     var(--space-6);
+  --card-shadow:  var(--shadow-1);
+
+  /* --- rail item --- */
+  --rail-item-size:      40px;
+  --rail-item-radius:    var(--radius-md);
+  --rail-item-fg:        var(--text-muted);
+  --rail-item-fg-active: var(--brand-text);
+  --rail-item-bg-hover:  var(--surface-2);
+  --rail-item-bg-active: var(--brand-soft);
+  --rail-indicator-w:    2px;
+
+  /* --- list row (sessions, models, skills, notes) --- */
+  --row-h:         30px;
+  --row-px:        var(--space-5);
+  --row-radius:    var(--radius-xs);
+  --row-bg-hover:  var(--surface-2);
+  --row-bg-active: var(--surface-3);
+  --row-indicator: var(--accent);
+
+  /* --- chat message --- */
+  --msg-gap:            var(--space-7);
+  --msg-avatar:         22px;
+  --msg-radius:         var(--radius-md);
+  --msg-pad-y:          var(--space-5);
+  --msg-pad-x:          var(--space-6);
+  --msg-user-bg:        var(--surface-3);
+  --msg-agent-bg:       transparent;  /* agent replies read as documents,
+                                         not bubbles — long-form text in a
+                                         tinted bubble is harder to scan      */
+  --msg-system-bg:      var(--surface-2);
+  --msg-code-bg:        var(--surface-2);
+  --msg-measure:        var(--measure);
+
+  /* --- composer --- */
+  --composer-min-h:  76px;
+  --composer-max-h:  320px;
+  --composer-bg:     var(--surface);
+  --composer-radius: var(--radius-md);
+
+  /* --- command palette --- */
+  --palette-w:        640px;
+  --palette-max-h:    440px;
+  --palette-bg:       var(--surface-overlay);
+  --palette-radius:   var(--radius-lg);
+  --palette-shadow:   var(--shadow-4);
+  --palette-row-h:    38px;
+
+  /* --- dialog --- */
+  --dialog-w:      480px;
+  --dialog-w-wide: 680px;
+  --dialog-radius: var(--radius-lg);
+  --dialog-pad:    var(--space-8);
+  --dialog-shadow: var(--shadow-4);
+
+  /* --- badge / pill --- */
+  --badge-h:      18px;
+  --badge-px:     var(--space-3);
+  --badge-radius: var(--radius-full);
+  --badge-font:   var(--text-2xs);
+
+  /* --- tooltip --- */
+  --tooltip-bg:     var(--slate-900);
+  --tooltip-fg:     var(--slate-50);
+  --tooltip-radius: var(--radius-xs);
+  --tooltip-delay:  400ms;
+
+  /* --- toast --- */
+  --toast-w:       360px;
+  --toast-radius:  var(--radius-md);
+  --toast-shadow:  var(--shadow-3);
+  --toast-timeout: 5s;
+
+  /* --- scrollbar --- */
+  --scrollbar-w:          10px;
+  --scrollbar-thumb:      var(--border-strong);
+  --scrollbar-thumb-hover:var(--text-faint);
+
+  /* --- table (usage, benchmarks) --- */
+  --table-row-h:     30px;
+  --table-header-bg: var(--surface-2);
+  --table-stripe:    var(--surface-2);
+  --table-numeric-font: var(--font-mono);  /* tabular alignment, no jitter   */
+}
+
+/* Tooltip colours must not invert with the theme the way everything else
+   does: a tooltip is an overlay on top of any surface, so it keeps a fixed
+   dark chip on light and flips to a light chip on dark for the same reason. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --tooltip-bg: var(--slate-200);
+    --tooltip-fg: var(--slate-900);
+  }
+}
+:root[data-theme="dark"] {
+  --tooltip-bg: var(--slate-200);
+  --tooltip-fg: var(--slate-900);
+}
+
+
+/* ==========================================================================
+   REDUCED MOTION
+   Collapses every duration to a value low enough to be imperceptible while
+   still firing transitionend, so no JS that waits on a transition can hang.
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-instant: 1ms;
+    --dur-fast:    1ms;
+    --dur-base:    1ms;
+    --dur-slow:    1ms;
+  }
+}

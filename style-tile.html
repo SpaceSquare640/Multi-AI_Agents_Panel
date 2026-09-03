@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Style tile — Multi-AI Agents Panel UI Design</title>
+<link rel="icon" href="app-icon.png">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<script src="js/theme.js"></script>
+<style>
+  body { overflow: auto; }
+  .page { max-width: 1040px; margin: 0 auto; padding: var(--space-10) var(--space-8) var(--space-11); }
+
+  .top { display: flex; align-items: flex-end; gap: var(--space-6); margin-bottom: var(--space-9); }
+  .top h1 { font-size: var(--text-2xl); }
+  .top p { margin-top: var(--space-2); color: var(--text-muted); }
+  .themebar { display: flex; gap: var(--space-3); margin-left: auto; padding: var(--space-2);
+              background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); }
+  .themebar button { height: var(--control-h); padding: 0 var(--space-5); border-radius: var(--radius-sm);
+                     font-size: var(--text-sm); font-weight: var(--weight-medium); color: var(--text-muted); }
+  .themebar button:hover { background: var(--surface-2); color: var(--text); }
+  html[data-theme-pref="system"] .themebar button[data-theme="system"],
+  html[data-theme-pref="light"]  .themebar button[data-theme="light"],
+  html[data-theme-pref="dark"]   .themebar button[data-theme="dark"] { background: var(--brand-soft); color: var(--brand-text); }
+
+  h2 { margin: var(--space-10) 0 var(--space-6); padding-bottom: var(--space-4);
+       border-bottom: 1px solid var(--border); font-size: var(--text-lg); }
+  h3 { margin: var(--space-8) 0 var(--space-5); font-size: var(--text-base); color: var(--text-muted); }
+  .note { max-width: var(--measure); margin-bottom: var(--space-6); color: var(--text-muted);
+          font-size: var(--text-sm); line-height: var(--leading-loose); }
+
+  /* --- swatches --- */
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: var(--space-5); }
+  .sw { border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; background: var(--surface); }
+  .sw .chip { display: grid; place-items: center; height: 72px; font-size: var(--text-sm); font-weight: var(--weight-medium); }
+  .sw .meta { padding: var(--space-4) var(--space-5); }
+  .sw .name { font-size: var(--text-sm); font-weight: var(--weight-medium); }
+  .sw .val  { margin-top: var(--space-1); font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-faint); text-transform: uppercase; }
+  .ratio { display: inline-flex; align-items: center; gap: var(--space-2); margin-top: var(--space-3);
+           height: var(--badge-h); padding: 0 var(--badge-px); border-radius: var(--badge-radius);
+           font-family: var(--font-mono); font-size: var(--badge-font); font-weight: var(--weight-semibold); }
+  .ratio[data-pass="aa"]    { background: var(--success-soft); color: var(--success-text); }
+  .ratio[data-pass="large"] { background: var(--warning-soft); color: var(--warning-text); }
+  .ratio[data-pass="fail"]  { background: var(--danger-soft);  color: var(--danger-text); }
+
+  /* --- type scale --- */
+  .type-row { display: flex; align-items: baseline; gap: var(--space-6); padding: var(--space-4) 0; border-bottom: 1px solid var(--border); }
+  .type-row .tag { flex: none; width: 116px; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-faint); }
+  .type-row .spec { flex: none; width: 150px; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-faint); }
+
+  /* --- spacing --- */
+  .space-row { display: flex; align-items: center; gap: var(--space-5); padding: var(--space-2) 0; }
+  .space-row .tag { width: 116px; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-faint); }
+  .space-row .bar { height: 12px; background: var(--brand); border-radius: var(--radius-xs); }
+
+  /* --- elevation --- */
+  .elev { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--space-7); }
+  .elev div { display: grid; place-items: center; height: 84px; background: var(--surface);
+              border: 1px solid var(--border); border-radius: var(--radius-md);
+              font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); }
+
+  /* --- components --- */
+  .strip { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-5); }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-4);
+         height: var(--control-h); padding: 0 var(--btn-px); border-radius: var(--btn-radius);
+         font-size: var(--btn-font); font-weight: var(--btn-weight); white-space: nowrap;
+         transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out),
+                     border-color var(--dur-fast) var(--ease-out); }
+  .btn-primary { background: var(--btn-primary-bg); color: var(--btn-primary-fg); }
+  .btn-primary:hover:not(:disabled) { background: var(--btn-primary-bg-hover); }
+  .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border-strong); }
+  .btn-secondary:hover:not(:disabled) { background: var(--surface-2); }
+  .btn-ghost { color: var(--btn-ghost-fg); }
+  .btn-ghost:hover:not(:disabled) { background: var(--btn-ghost-bg-hover); color: var(--text); }
+  .btn-danger { background: var(--btn-danger-bg); color: var(--btn-danger-fg); }
+  .btn-danger:hover:not(:disabled) { background: var(--danger-hover); }
+
+  .field { display: flex; flex-direction: column; gap: var(--space-3); width: 260px; }
+  .field label { font-size: var(--text-sm); font-weight: var(--weight-medium); }
+  .field .hint { font-size: var(--text-xs); color: var(--text-faint); }
+  .field .err  { font-size: var(--text-xs); color: var(--danger-text); }
+  .input { height: var(--input-h); padding: 0 var(--input-px); background: var(--input-bg); color: var(--input-fg);
+           border: 1px solid var(--input-border); border-radius: var(--input-radius); font-size: var(--text-base); }
+  .input::placeholder { color: var(--input-placeholder); }
+  .input:focus-visible { border-color: var(--input-border-focus); }
+  .input[aria-invalid="true"] { border-color: var(--danger); }
+
+  .badge { display: inline-flex; align-items: center; gap: var(--space-2); height: var(--badge-h);
+           padding: 0 var(--badge-px); border-radius: var(--badge-radius);
+           font-size: var(--badge-font); font-weight: var(--weight-semibold); }
+  .badge[data-kind="running"] { background: var(--success-soft); color: var(--success-text); }
+  .badge[data-kind="attention"] { background: var(--warning-soft); color: var(--warning-text); }
+  .badge[data-kind="failed"] { background: var(--danger-soft); color: var(--danger-text); }
+  .badge[data-kind="idle"] { background: var(--surface-3); color: var(--text-muted); }
+  .badge[data-kind="local"] { background: var(--brand-soft); color: var(--provider-local); }
+  .badge[data-kind="cloud"] { background: var(--accent-soft); color: var(--provider-cloud); }
+
+  .callout { display: flex; gap: var(--space-5); max-width: var(--measure); padding: var(--space-6);
+             border-radius: var(--radius-md); font-size: var(--text-sm); line-height: var(--leading-body); }
+  .callout[data-kind="info"]    { background: var(--info-soft);    color: var(--info-text); }
+  .callout[data-kind="warning"] { background: var(--warning-soft); color: var(--warning-text); }
+  .callout[data-kind="danger"]  { background: var(--danger-soft);  color: var(--danger-text); }
+  .callout[data-kind="success"] { background: var(--success-soft); color: var(--success-text); }
+  .callout strong { font-weight: var(--weight-semibold); }
+
+  table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+  th, td { height: var(--table-row-h); padding: 0 var(--space-5); text-align: left; }
+  th { background: var(--table-header-bg); color: var(--text-muted); font-size: var(--text-xs);
+       font-weight: var(--weight-semibold); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
+  tbody tr:nth-child(even) { background: var(--table-stripe); }
+  td.num { font-family: var(--table-numeric-font); font-variant-numeric: tabular-nums; text-align: right; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="top">
+    <div>
+      <h1>Style tile</h1>
+      <p>Every token, rendered. Switch the theme to check both.</p>
+    </div>
+    <div class="themebar" role="group" aria-label="Theme">
+      <button type="button" data-action="theme-set" data-theme="system">System</button>
+      <button type="button" data-action="theme-set" data-theme="light">Light</button>
+      <button type="button" data-action="theme-set" data-theme="dark">Dark</button>
+    </div>
+  </header>
+
+  <h2>Colour</h2>
+  <p class="note">
+    Contrast ratios below are computed live from the resolved token values in
+    whichever theme is active, so they cannot drift away from the CSS. Text
+    pairs must reach 4.5:1; meaningful UI boundaries must reach 3:1.
+    <strong>Decorative separators are expected to sit below both</strong> — they
+    divide, they do not inform.
+  </p>
+  <div class="swatches" id="swatches"></div>
+
+  <h3>Brand provenance</h3>
+  <p class="note">
+    Cyan, violet and gold are sampled from the application icon rather than
+    picked: after dropping transparent, desaturated and near-black pixels, hue
+    180–210° accounts for 51.9% of the remaining colour, 255–285° for 19.1%,
+    and 30–60° for 14.8%. Cyan therefore leads, violet marks selection and
+    active state, gold means attention.
+  </p>
+
+  <h2>Type</h2>
+  <p class="note">
+    IBM Plex Sans for interface text, JetBrains Mono for identifiers, paths,
+    token counts and money. The base size is 13px rather than 16px because this
+    is a dense desktop workstation rather than a document; the entire scale can
+    be raised through a single <code>--font-scale</code> token.
+  </p>
+  <div id="typescale"></div>
+
+  <h3>Numerals</h3>
+  <p class="note">Tabular figures so a column of live-updating numbers never shifts width.</p>
+  <table>
+    <thead><tr><th>Agent</th><th>Provider</th><th style="text-align:right">Tokens</th><th style="text-align:right">Cost</th></tr></thead>
+    <tbody>
+      <tr><td>Lead Architect</td><td>Anthropic</td><td class="num">128,400</td><td class="num">$1.11</td></tr>
+      <tr><td>QA Engineer</td><td>Ollama</td><td class="num">1,004,912</td><td class="num">$0.00</td></tr>
+      <tr><td>Security Tester</td><td>OpenRouter</td><td class="num">9,338</td><td class="num">$0.07</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Spacing</h2>
+  <p class="note">4px base, dense tier. Every gap, padding and inset in the app comes from this ladder.</p>
+  <div id="spacescale"></div>
+
+  <h2>Elevation</h2>
+  <p class="note">
+    One shadow scale, four steps. On dark surfaces elevation is carried mostly
+    by the surface ramp instead, with shadow reserved for genuine overlays.
+  </p>
+  <div class="elev">
+    <div style="box-shadow: var(--shadow-1)">--shadow-1</div>
+    <div style="box-shadow: var(--shadow-2)">--shadow-2</div>
+    <div style="box-shadow: var(--shadow-3)">--shadow-3</div>
+    <div style="box-shadow: var(--shadow-4)">--shadow-4</div>
+  </div>
+
+  <h2>Components</h2>
+
+  <h3>Buttons — every state</h3>
+  <p class="note">One primary action per screen. Destructive actions are separated and never sit beside the primary.</p>
+  <div class="strip">
+    <button class="btn btn-primary">Send message</button>
+    <button class="btn btn-secondary">Cancel</button>
+    <button class="btn btn-ghost">Skip</button>
+    <button class="btn btn-danger">Delete session</button>
+    <button class="btn btn-primary" disabled>Disabled</button>
+  </div>
+
+  <h3>Inputs</h3>
+  <div class="strip" style="align-items: flex-start">
+    <div class="field">
+      <label for="f1">API key</label>
+      <input class="input" id="f1" type="password" placeholder="sk-…">
+      <span class="hint">Stored locally, never sent anywhere but the provider.</span>
+    </div>
+    <div class="field">
+      <label for="f2">Turn limit</label>
+      <input class="input" id="f2" value="notanumber" aria-invalid="true" aria-describedby="f2e">
+      <span class="err" id="f2e">Must be a whole number between 1 and 100.</span>
+    </div>
+  </div>
+
+  <h3>Status badges</h3>
+  <p class="note">
+    Green is running or succeeded, red is failed, gold needs attention. None of
+    them is ever the brand colour, and each carries a word as well as a hue.
+  </p>
+  <div class="strip">
+    <span class="badge" data-kind="running">Running</span>
+    <span class="badge" data-kind="attention">Needs approval</span>
+    <span class="badge" data-kind="failed">Failed · E5004</span>
+    <span class="badge" data-kind="idle">Idle</span>
+    <span class="badge" data-kind="local">Local</span>
+    <span class="badge" data-kind="cloud">Cloud</span>
+  </div>
+
+  <h3>Callouts</h3>
+  <div class="strip" style="flex-direction: column; align-items: stretch">
+    <div class="callout" data-kind="info"><span><strong>Ollama is not running.</strong> Local agents will fall back to their cloud provider until it starts.</span></div>
+    <div class="callout" data-kind="warning"><span><strong>Approaching the monthly budget.</strong> $18.40 of $20.00 used. Cloud calls continue until the hard cap.</span></div>
+    <div class="callout" data-kind="danger"><span><strong>Blocked by guardrails.</strong> The request asked an agent to impersonate another role. Error E9004.</span></div>
+    <div class="callout" data-kind="success"><span><strong>Skill imported.</strong> Grant it to an agent before it can be used.</span></div>
+  </div>
+
+  <h3>Keyboard</h3>
+  <p class="note">Tab through this page: focus rings are never suppressed, and appear only for keyboard input.</p>
+  <div class="strip">
+    <span><kbd>Ctrl</kbd> <kbd>K</kbd> Command palette</span>
+    <span><kbd>Ctrl</kbd> <kbd>B</kbd> Toggle sidebar</span>
+    <span><kbd>Ctrl</kbd> <kbd>J</kbd> Toggle inspector</span>
+    <span><kbd>Esc</kbd> Dismiss</span>
+  </div>
+
+</div>
+
+<script>
+/* ----------------------------------------------------------------------------
+   Live contrast: reads the resolved value of each token from the DOM, so the
+   numbers shown are the numbers actually in effect for the active theme.
+   -------------------------------------------------------------------------- */
+(function () {
+  var PAIRS = [
+    ['--text',        '--bg',      'Text on background',       'text'],
+    ['--text-muted',  '--bg',      'Muted text',               'text'],
+    ['--text-faint',  '--bg',      'Faint text',               'text'],
+    ['--text',        '--surface', 'Text on surface',           'text'],
+    ['--text-on-brand',  '--brand',  'Label on brand fill',    'text'],
+    ['--text-on-accent', '--accent', 'Label on accent fill',   'text'],
+    ['--brand-text',  '--bg',      'Brand text',               'text'],
+    ['--accent-text', '--bg',      'Accent text',              'text'],
+    ['--success-text','--bg',      'Success text',             'text'],
+    ['--warning-text','--bg',      'Warning text',             'text'],
+    ['--danger-text', '--bg',      'Danger text',              'text'],
+    ['--text-on-danger','--danger','Label on danger fill',     'text'],
+    ['--info-text',   '--bg',      'Info text',                'text'],
+    ['--provider-local', '--bg',   'Provider · local',         'text'],
+    ['--provider-cloud', '--bg',   'Provider · cloud',         'text'],
+    ['--border-strong', '--surface', 'Input border',           'ui'],
+    ['--ring',        '--bg',      'Focus ring',               'ui'],
+    ['--border',      '--bg',      'Separator (decorative)',   'none']
+  ];
+
+  function resolve(name) {
+    var probe = document.createElement('span');
+    probe.style.color = name.charAt(0) === '-' ? 'var(' + name + ')' : name;
+    probe.style.display = 'none';
+    document.body.appendChild(probe);
+    var c = getComputedStyle(probe).color;
+    probe.remove();
+    return c;
+  }
+  function rgb(str) {
+    var m = str.match(/[\d.]+/g).map(Number);
+    return { r: m[0], g: m[1], b: m[2], a: m.length > 3 ? m[3] : 1 };
+  }
+  function over(fg, bg) {              // flatten translucent tokens onto their backdrop
+    if (fg.a >= 1) return fg;
+    return {
+      r: fg.r * fg.a + bg.r * (1 - fg.a),
+      g: fg.g * fg.a + bg.g * (1 - fg.a),
+      b: fg.b * fg.a + bg.b * (1 - fg.a), a: 1
+    };
+  }
+  function lum(c) {
+    var v = [c.r, c.g, c.b].map(function (x) {
+      x /= 255;
+      return x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2];
+  }
+  function ratio(a, b) {
+    var la = lum(a), lb = lum(b);
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+  }
+  function hex(c) {
+    return '#' + [c.r, c.g, c.b].map(function (x) {
+      return ('0' + Math.round(x).toString(16)).slice(-2);
+    }).join('');
+  }
+
+  function render() {
+    var host = document.getElementById('swatches');
+    host.innerHTML = '';
+    PAIRS.forEach(function (p) {
+      var bg = rgb(resolve(p[1]));
+      var fg = over(rgb(resolve(p[0])), bg);
+      var r = ratio(fg, bg);
+      var need = p[3];
+      var pass = need === 'none' ? 'aa'
+               : need === 'ui'   ? (r >= 3 ? 'aa' : 'fail')
+               : (r >= 4.5 ? 'aa' : (r >= 3 ? 'large' : 'fail'));
+      var label = need === 'none' ? 'n/a — decorative'
+                : (Math.round(r * 100) / 100).toFixed(2) + ':1';
+
+      var el = document.createElement('div');
+      el.className = 'sw';
+      el.innerHTML =
+        '<div class="chip" style="background:' + hex(bg) + ';color:' + hex(fg) + '">Aa 13px</div>' +
+        '<div class="meta">' +
+          '<div class="name">' + p[2] + '</div>' +
+          '<div class="val">' + p[0] + ' on ' + p[1] + '</div>' +
+          '<div class="val">' + hex(fg) + ' / ' + hex(bg) + '</div>' +
+          '<span class="ratio" data-pass="' + pass + '">' + label + '</span>' +
+        '</div>';
+      host.appendChild(el);
+    });
+  }
+
+  var SIZES = [
+    ['--text-2xs', '10px', 'Badges, micro-labels'],
+    ['--text-xs',  '11px', 'Status bar, hints'],
+    ['--text-sm',  '12px', 'Secondary UI text'],
+    ['--text-base','13px', 'Body — the default'],
+    ['--text-md',  '15px', 'Screen and section titles'],
+    ['--text-lg',  '18px', 'Page headings'],
+    ['--text-xl',  '22px', 'Dialog headings'],
+    ['--text-2xl', '28px', 'Onboarding, empty states']
+  ];
+  function renderType() {
+    document.getElementById('typescale').innerHTML = SIZES.map(function (s) {
+      return '<div class="type-row">' +
+        '<span class="tag">' + s[0] + '</span>' +
+        '<span class="spec">' + s[1] + '</span>' +
+        '<span style="font-size:var(' + s[0] + ')">' + s[2] + '</span></div>';
+    }).join('');
+  }
+
+  function renderSpace() {
+    var out = '';
+    for (var i = 1; i <= 11; i++) {
+      out += '<div class="space-row">' +
+        '<span class="tag">--space-' + i + '</span>' +
+        '<span class="bar" style="width:var(--space-' + i + ')"></span></div>';
+    }
+    document.getElementById('spacescale').innerHTML = out;
+  }
+
+  /* Measurement has to happen after the new theme's styles have been
+     applied, not in the same tick as the event: reading straight away
+     returns the values that were in effect a moment ago, which is how this
+     tile first reported passing ratios for a theme that was no longer on
+     screen. One frame of delay is enough, and re-running is cheap. */
+  function all() { requestAnimationFrame(function () { requestAnimationFrame(render); }); }
+
+  document.addEventListener('themechange', all);
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', all);
+  /* Belt and braces: any attribute change on <html> (the forced-theme
+     attribute) also re-measures, in case the event above is ever bypassed. */
+  new MutationObserver(all).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  renderType(); renderSpace(); render();
+})();
+</script>
+</body>
+</html>
