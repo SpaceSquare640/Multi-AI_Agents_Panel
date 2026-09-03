@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chat — Multi-AI Agents Panel UI Design</title>
+<link rel="icon" href="../app-icon.png">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/shell.css">
+<link rel="stylesheet" href="../css/screens.css">
+<script src="../js/theme.js"></script>
+<script src="../js/icons.js"></script>
+<style>
+  .row {
+    display: flex; align-items: center; gap: var(--space-4);
+    width: 100%; height: var(--row-h); padding: 0 var(--row-px);
+    border-radius: var(--row-radius); text-align: left;
+    color: var(--text-muted); font-size: var(--text-sm);
+    white-space: nowrap; overflow: hidden;
+  }
+  .row:hover { background: var(--row-bg-hover); color: var(--text); }
+  .row[aria-current="true"] { background: var(--row-bg-active); color: var(--text); }
+  .row .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .row .badge, .row .avatar { flex: none; }
+</style>
+</head>
+<body>
+
+<a class="skip-link" href="#workspace">Skip to main content</a>
+
+<div class="shell" data-screen="chat" data-sidebar="expanded" data-inspector="expanded">
+
+  <!-- ==================== SIDEBAR ==================== -->
+  <aside class="sidebar" aria-label="Sessions">
+    <div class="sidebar-header">
+      <span class="label">Sessions</span>
+      <button class="titlebar-btn" type="button" aria-label="New session">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-plus"/></svg>
+      </button>
+    </div>
+
+    <div class="sidebar-body">
+      <div class="input-group" style="margin:var(--space-3) var(--space-2) var(--space-5)">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-search"/></svg>
+        <input class="input" type="search" placeholder="Filter sessions" aria-label="Filter sessions">
+      </div>
+
+      <div class="label" style="padding:0 var(--row-px) var(--space-3)">Group chats</div>
+      <a class="row" href="group-chat.html">
+        <span class="name">Release review</span>
+        <span class="badge" data-kind="running">Running</span>
+      </a>
+      <a class="row" href="group-chat.html"><span class="name">Architecture spike</span></a>
+
+      <div class="label" style="padding:var(--space-6) var(--row-px) var(--space-3)">Solo sessions</div>
+      <button class="row" type="button" aria-current="true">
+        <span class="avatar" data-agent="1" aria-hidden="true">LA</span>
+        <span class="name">Storage layer — write path</span>
+      </button>
+      <button class="row" type="button">
+        <span class="avatar" data-agent="2" aria-hidden="true">FD</span>
+        <span class="name">Composer auto-grow behaviour</span>
+      </button>
+      <button class="row" type="button">
+        <span class="avatar" data-agent="3" aria-hidden="true">QA</span>
+        <span class="name">Flaky CI run on Windows</span>
+      </button>
+      <button class="row" type="button">
+        <span class="avatar" data-agent="6" aria-hidden="true">ST</span>
+        <span class="name">Dependency audit</span>
+      </button>
+    </div>
+
+    <div class="sidebar-footer">
+      <span class="row" style="color:var(--text-faint)"><span class="name">6 sessions · 2 running</span></span>
+    </div>
+  </aside>
+
+  <!-- ==================== WORKSPACE ==================== -->
+  <main class="workspace" id="workspace" tabindex="-1">
+    <div class="workspace-header">
+      <span class="avatar" data-agent="1" aria-hidden="true">LA</span>
+      <span class="workspace-title">Storage layer — write path</span>
+      <span class="badge" data-kind="cloud">Cloud</span>
+      <div class="workspace-actions">
+        <button class="btn btn-ghost btn-sm" type="button">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#i-folder"/></svg>
+          2 folders
+        </button>
+        <button class="titlebar-btn" type="button" aria-label="Session settings">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#i-settings"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="workspace-body">
+      <div class="stream">
+
+        <article class="msg" data-from="user">
+          <span class="avatar" data-agent="user" aria-hidden="true">You</span>
+          <div class="msg-head">
+            <span class="msg-who">You</span>
+            <span class="msg-meta">18:04</span>
+          </div>
+          <div class="msg-body">
+            <p>The write path holds a single mutex across the whole storage module. Is that going to bite us once several agents are running at once?</p>
+          </div>
+        </article>
+
+        <article class="msg" data-from="agent">
+          <span class="avatar" data-agent="1" aria-hidden="true">LA</span>
+          <div class="msg-head">
+            <span class="msg-who">Lead Architect</span>
+            <span class="msg-meta">18:04 · claude-opus-5</span>
+          </div>
+          <div class="msg-body">
+            <p>Yes, and it already does under a group chat. Let me read the current implementation rather than answer from the module name.</p>
+
+            <details class="toolcall">
+              <summary>
+                <svg class="icon icon-sm" aria-hidden="true"><use href="#i-folder"/></svg>
+                <span class="name">read_files</span>
+                <span class="badge" data-kind="succeeded">3 files · 0.4 s</span>
+              </summary>
+              <div class="toolcall-body">src/storage/mod.rs        2478 lines
+src/storage/write.rs       412 lines
+src/session_manager/mod.rs 146 lines</div>
+            </details>
+
+            <p>One <code>Mutex&lt;Connection&gt;</code> guards every write, and reads take the same lock. So a slow write blocks every read in the process, and with four agents in a group chat that is most of them.</p>
+            <p>Two options, in the order I would try them:</p>
+            <ol>
+              <li><strong>Split the lock.</strong> A read-write lock lets concurrent readers through and only serialises writers. Smallest change, and it fixes the common case.</li>
+              <li><strong>Move to a connection pool with WAL.</strong> Readers stop blocking writers entirely, but it changes the transaction story and needs a migration.</li>
+            </ol>
+            <p>I would start with the first and measure before considering the second.</p>
+          </div>
+          <div class="msg-actions">
+            <button class="btn btn-icon btn-sm" type="button" aria-label="Copy message">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="#i-copy"/></svg>
+            </button>
+            <button class="btn btn-icon btn-sm" type="button" aria-label="Regenerate reply">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="#i-send"/></svg>
+            </button>
+          </div>
+        </article>
+
+        <div class="notice" data-kind="granted">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#i-shield"/></svg>
+          <span><strong>Folder access used.</strong> Lead Architect read 3 files from a granted folder. Every read is listed so a grant never becomes invisible.</span>
+        </div>
+
+        <article class="msg" data-from="user">
+          <span class="avatar" data-agent="user" aria-hidden="true">You</span>
+          <div class="msg-head">
+            <span class="msg-who">You</span>
+            <span class="msg-meta">18:07</span>
+          </div>
+          <div class="msg-body">
+            <p>Show me what the read-write lock version looks like.</p>
+          </div>
+        </article>
+
+        <article class="msg" data-from="agent">
+          <span class="avatar" data-agent="1" aria-hidden="true">LA</span>
+          <div class="msg-head">
+            <span class="msg-who">Lead Architect</span>
+            <span class="msg-meta">18:07 · claude-opus-5</span>
+          </div>
+          <div class="msg-body">
+            <pre><code>pub struct Storage {
+    conn: RwLock&lt;Connection&gt;,
+}
+
+impl Storage {
+    pub fn sessions(&amp;self) -&gt; Result&lt;Vec&lt;Session&gt;&gt; {
+        let conn = self.conn.read()?;   // concurrent
+        query_sessions(&amp;conn)
+    }
+
+    pub fn insert(&amp;self, m: &amp;Message) -&gt; Result&lt;()&gt; {
+        let conn = self.conn.write()?;  // exclusive
+        insert_message(&amp;conn, m)
+    }
+}</code></pre>
+            <p>One caveat worth knowing before you commit to it: SQLite serialises writers anyway, so this buys concurrency on reads only. That happens to be the shape of the problem here<span class="caret" aria-hidden="true"></span></p>
+          </div>
+        </article>
+
+      </div>
+    </div>
+
+    <!-- ==================== COMPOSER ==================== -->
+    <div class="composer">
+      <div class="composer-box">
+        <label class="sr-only" for="composer">Message Lead Architect</label>
+        <textarea class="composer-input" id="composer" rows="3"
+                  placeholder="Message Lead Architect…"></textarea>
+        <div class="composer-bar">
+          <button class="btn btn-icon btn-sm" type="button" aria-label="Grant folder access">
+            <svg class="icon icon-sm" aria-hidden="true"><use href="#i-folder"/></svg>
+          </button>
+          <button class="btn btn-icon btn-sm" type="button" aria-label="Attach a skill">
+            <svg class="icon icon-sm" aria-hidden="true"><use href="#i-skills"/></svg>
+          </button>
+          <span class="spacer"></span>
+          <span class="composer-model">
+            <svg class="icon icon-sm" aria-hidden="true"><use href="#i-cloud"/></svg>
+            claude-opus-5
+          </span>
+          <span class="composer-hint"><kbd>Ctrl</kbd> <kbd>Enter</kbd></span>
+          <button class="btn btn-primary btn-sm" type="button" id="send">
+            <svg class="icon icon-sm" aria-hidden="true"><use href="#i-send"/></svg>
+            Send
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ==================== INSPECTOR ==================== -->
+  <aside class="inspector" aria-label="Session details">
+    <div class="inspector-header"><span class="label">Session</span></div>
+    <div class="inspector-body">
+
+      <section class="inspector-section">
+        <span class="label">Agent</span>
+        <div style="display:flex;align-items:center;gap:var(--space-5);margin-bottom:var(--space-5)">
+          <span class="avatar avatar-lg" data-agent="1" aria-hidden="true">LA</span>
+          <div style="min-width:0">
+            <div style="font-weight:var(--weight-semibold)">Lead Architect</div>
+            <div style="font-size:var(--text-xs);color:var(--text-faint)">Role template · 1-person company</div>
+          </div>
+        </div>
+        <dl class="kv">
+          <dt>Provider</dt> <dd><span class="badge" data-kind="cloud">Anthropic</span></dd>
+          <dt>Model</dt>    <dd class="mono">claude-opus-5</dd>
+          <dt>Fallback</dt> <dd class="mono">qwen2.5-coder:14b</dd>
+        </dl>
+      </section>
+
+      <section class="inspector-section">
+        <span class="label">Cost so far</span>
+        <div class="meter-row">
+          <span style="font-size:var(--text-sm);color:var(--text-muted)">This session</span>
+          <span class="v">$0.42</span>
+        </div>
+        <dl class="kv">
+          <dt>Sent</dt>     <dd class="num">31,940 tokens</dd>
+          <dt>Received</dt> <dd class="num">16,270 tokens</dd>
+        </dl>
+      </section>
+
+      <section class="inspector-section">
+        <span class="label">Granted folders</span>
+        <div class="roster">
+          <div class="roster-item">
+            <svg class="icon icon-sm" aria-hidden="true" style="color:var(--text-faint)"><use href="#i-folder"/></svg>
+            <span class="roster-name mono">~/Projects/panel/src</span>
+            <button class="btn btn-icon btn-sm" type="button" aria-label="Revoke access to ~/Projects/panel/src">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="#i-close"/></svg>
+            </button>
+          </div>
+          <div class="roster-item">
+            <svg class="icon icon-sm" aria-hidden="true" style="color:var(--text-faint)"><use href="#i-folder"/></svg>
+            <span class="roster-name mono">~/Projects/panel/docs</span>
+            <button class="btn btn-icon btn-sm" type="button" aria-label="Revoke access to ~/Projects/panel/docs">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="#i-close"/></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="inspector-section">
+        <span class="label">Skills</span>
+        <div class="roster">
+          <div class="roster-item">
+            <span class="roster-name">Repository summarizer</span>
+            <span class="badge" data-kind="idle">read: files</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="inspector-section">
+        <span class="label">Memory</span>
+        <p style="font-size:var(--text-sm);color:var(--text-muted);line-height:var(--leading-loose)">
+          14 facts kept for this agent, private to it. Nothing is shared with
+          other agents unless they are in the same group chat.
+        </p>
+        <button class="btn btn-secondary btn-sm" type="button" style="margin-top:var(--space-4)">Review memory</button>
+      </section>
+
+      <section class="inspector-section">
+        <span class="label">Guardrails</span>
+        <dl class="kv">
+          <dt>Classifier</dt> <dd>Llama Guard 3</dd>
+          <dt>Screened</dt>   <dd class="num">18 messages</dd>
+          <dt>Blocked</dt>    <dd class="num">0</dd>
+        </dl>
+      </section>
+
+    </div>
+  </aside>
+
+</div>
+
+<script src="../js/mock.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/frame.js"></script>
+<script src="../js/shell.js"></script>
+<script src="../js/palette.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  /* The composer grows with its content and then scrolls, rather than either
+     staying one line or pushing the conversation off screen. Height is reset
+     before measuring, because scrollHeight only ever grows otherwise. */
+  var ta = document.getElementById('composer');
+  var max = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--composer-max-h'), 10);
+  function grow() {
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, max) + 'px';
+  }
+  ta.addEventListener('input', grow);
+
+  ta.addEventListener('keydown', function (ev) {
+    // Enter inserts a newline; Ctrl/Cmd+Enter sends. Sending on a bare Enter
+    // in a box people paste multi-line text into fires the message before it
+    // is finished more often than it saves a keystroke.
+    if ((ev.ctrlKey || ev.metaKey) && ev.key === 'Enter') {
+      document.getElementById('send').click();
+      ev.preventDefault();
+    }
+  });
+
+  document.getElementById('send').addEventListener('click', function () {
+    if (!ta.value.trim()) return;
+    window.Toast.show({
+      kind: 'info',
+      title: 'Not wired up',
+      body: 'This is a design mockup — the message was not sent.'
+    });
+    ta.value = '';
+    grow();
+  });
+
+  // Start at the newest message, the way a conversation opens.
+  var body = document.querySelector('.workspace-body');
+  body.scrollTop = body.scrollHeight;
+});
+</script>
+</body>
+</html>

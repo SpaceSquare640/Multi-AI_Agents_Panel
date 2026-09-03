@@ -204,6 +204,13 @@ button:disabled,
    Icons
    One family, one stroke width. Never an emoji: emoji render differently per
    platform and font, and cannot be recoloured by a token.
+
+   The sprite is drawn on a 20x20 grid, so a 16px icon renders its stroke at
+   1.2px rather than 1.5. That is deliberate and is what every icon set does
+   — the stroke scales with the glyph. Pinning it with non-scaling-stroke
+   does not work from here in any case: vector-effect is not an inherited
+   property, so a declaration on this element never reaches the shapes inside
+   the referenced <symbol>.
    -------------------------------------------------------------------------- */
 .icon {
   width: var(--icon-md);

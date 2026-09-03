@@ -77,11 +77,23 @@
   display: flex;
   align-items: center;
   gap: var(--space-4);
+  flex: none;
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
   color: var(--text-muted);
+  white-space: nowrap;   /* wrapping here would grow the 32px bar and shove
+                            the palette trigger out from under the pointer */
 }
 .titlebar-brand img { width: 16px; height: 16px; border-radius: var(--radius-xs); }
+
+/* Below a width no real desktop window reaches, the product name is the first
+   thing to go: the icon still identifies the app, and the palette trigger is
+   worth more than the wordmark. */
+@media (max-width: 720px) {
+  .titlebar-brand span,
+  .titlebar-brand { font-size: 0; gap: 0; }
+  .titlebar-brand img { font-size: initial; }
+}
 
 /* The palette trigger is a search-shaped affordance rather than an icon:
    the single most useful control in the app should look like what it is. */
@@ -90,6 +102,8 @@
   align-items: center;
   gap: var(--space-4);
   width: 320px;
+  min-width: 0;
+  flex-shrink: 1;
   height: 22px;
   margin-inline: auto;
   padding: 0 var(--space-4);
@@ -100,7 +114,8 @@
   font-size: var(--text-sm);
 }
 .titlebar-search:hover { border-color: var(--border-strong); color: var(--text-muted); }
-.titlebar-search kbd { margin-left: auto; }
+.titlebar-search > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.titlebar-search kbd { margin-left: auto; flex: none; }
 
 .titlebar-actions { display: flex; align-items: center; gap: var(--space-2); }
 

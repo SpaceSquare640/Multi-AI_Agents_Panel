@@ -1,0 +1,331 @@
+/* ============================================================================
+   Multi-AI Agents Panel — Screens
+   ----------------------------------------------------------------------------
+   Styles specific to individual screens, built on top of components.css.
+   ========================================================================== */
+
+
+/* ==========================================================================
+   AGENT IDENTITY
+   A monogram, not a picture. Six hues assigned in order, and the initials are
+   always present: the colour is a shortcut for recognising a speaker at a
+   glance, never the only way to tell who is talking.
+   ========================================================================== */
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: var(--msg-avatar);
+  height: var(--msg-avatar);
+  flex: none;
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
+  color: var(--text-muted);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0;
+  user-select: none;
+}
+.avatar[data-agent="1"] { background: color-mix(in srgb, var(--agent-1) 16%, transparent); color: var(--agent-1); }
+.avatar[data-agent="2"] { background: color-mix(in srgb, var(--agent-2) 16%, transparent); color: var(--agent-2); }
+.avatar[data-agent="3"] { background: color-mix(in srgb, var(--agent-3) 16%, transparent); color: var(--agent-3); }
+.avatar[data-agent="4"] { background: color-mix(in srgb, var(--agent-4) 16%, transparent); color: var(--agent-4); }
+.avatar[data-agent="5"] { background: color-mix(in srgb, var(--agent-5) 16%, transparent); color: var(--agent-5); }
+.avatar[data-agent="6"] { background: color-mix(in srgb, var(--agent-6) 16%, transparent); color: var(--agent-6); }
+.avatar[data-agent="user"] { background: var(--surface-3); color: var(--text-muted); }
+.avatar-lg { width: 28px; height: 28px; font-size: var(--text-xs); border-radius: var(--radius-md); }
+
+
+/* ==========================================================================
+   MESSAGE STREAM
+   ========================================================================== */
+
+.stream {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-7) 0 var(--space-9);
+}
+
+.msg {
+  display: grid;
+  grid-template-columns: var(--msg-avatar) minmax(0, 1fr);
+  gap: var(--space-4) var(--space-5);
+  padding: var(--space-5) var(--space-8);
+}
+/* Consecutive messages from the same speaker drop the repeated header and
+   tighten up, so a long exchange reads as a conversation rather than as a
+   stack of identical cards. */
+.msg + .msg { padding-top: var(--space-3); }
+.msg[data-same="true"] { padding-top: 0; }
+.msg[data-same="true"] .msg-head { display: none; }
+.msg[data-same="true"] .avatar { visibility: hidden; }
+
+.msg-head {
+  grid-column: 2;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+.msg-who { font-size: var(--text-base); font-weight: var(--weight-semibold); }
+.msg-meta { font-size: var(--text-xs); color: var(--text-faint); }
+.msg-head .badge { align-self: center; }
+
+.msg-body {
+  grid-column: 2;
+  max-width: var(--msg-measure);
+  font-size: var(--text-base);
+  line-height: var(--leading-loose);
+}
+.msg-body > * + * { margin-top: var(--space-6); }
+.msg-body ul, .msg-body ol { padding-left: var(--space-8); }
+.msg-body li + li { margin-top: var(--space-3); }
+.msg-body code:not(pre code) {
+  padding: 1px var(--space-3);
+  background: var(--msg-code-bg);
+  border-radius: var(--radius-xs);
+}
+.msg-body pre {
+  margin: 0;
+  padding: var(--space-5) var(--space-6);
+  background: var(--msg-code-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+  font-size: var(--text-sm);
+  line-height: var(--leading-body);
+}
+
+/* The user's own messages are tinted so the eye can find where it last spoke
+   when scrolling back. Agent replies stay untinted: they are long-form text,
+   and long-form text in a coloured bubble is measurably harder to scan. */
+.msg[data-from="user"] .msg-body {
+  padding: var(--msg-pad-y) var(--msg-pad-x);
+  background: var(--msg-user-bg);
+  border-radius: var(--msg-radius);
+}
+
+/* Actions appear on hover, but are also reachable by keyboard: focus inside
+   the row reveals them, so they are not a pointer-only feature. */
+.msg-actions {
+  grid-column: 2;
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+.msg:hover .msg-actions,
+.msg:focus-within .msg-actions { opacity: 1; }
+
+/* System notices: turn limits, guardrail interventions, folder grants. Not
+   attributed to anyone, and visually distinct from anything a model said. */
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  margin: var(--space-5) var(--space-8);
+  padding: var(--space-5) var(--space-6);
+  background: var(--msg-system-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  line-height: var(--leading-body);
+}
+.notice .icon { margin-top: 1px; flex: none; }
+.notice strong { color: var(--text); font-weight: var(--weight-semibold); }
+.notice[data-kind="blocked"] { background: var(--danger-soft); border-color: transparent; color: var(--danger-text); }
+.notice[data-kind="blocked"] strong { color: inherit; }
+.notice[data-kind="granted"] { background: var(--success-soft); border-color: transparent; color: var(--success-text); }
+.notice[data-kind="granted"] strong { color: inherit; }
+
+/* Tool and skill calls. Collapsed by default — the result is what matters,
+   the arguments are for when something looks wrong. */
+.toolcall {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.toolcall > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  list-style: none;
+}
+.toolcall > summary::-webkit-details-marker { display: none; }
+.toolcall > summary:hover { background: var(--surface-3); }
+.toolcall > summary .icon { color: var(--text-faint); }
+.toolcall > summary .name { font-family: var(--font-mono); color: var(--text); }
+.toolcall > summary .badge { margin-left: auto; }
+.toolcall-body {
+  padding: var(--space-5);
+  border-top: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: var(--leading-loose);
+  white-space: pre-wrap;
+  color: var(--text-muted);
+}
+
+/* Streaming. The caret marks a reply still arriving; it is decoration on top
+   of text that is already readable, so reduced motion simply stops it
+   blinking rather than removing it. */
+.caret {
+  display: inline-block;
+  width: 7px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: var(--brand);
+  animation: blink 1s steps(2, start) infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .caret { animation: none; } }
+
+.thinking {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--text-faint);
+}
+.thinking .dots { display: inline-flex; gap: 3px; }
+.thinking .dots i {
+  width: 4px; height: 4px;
+  background: currentColor;
+  border-radius: var(--radius-full);
+  animation: bounce 1.1s var(--ease-inout) infinite;
+}
+.thinking .dots i:nth-child(2) { animation-delay: 0.15s; }
+.thinking .dots i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes bounce { 0%, 60%, 100% { opacity: 0.3; } 30% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .thinking .dots i { animation: none; opacity: 0.6; } }
+
+
+/* ==========================================================================
+   COMPOSER
+   ========================================================================== */
+
+.composer {
+  flex: none;
+  padding: var(--space-5) var(--space-8) var(--space-6);
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+.composer-box {
+  border: 1px solid var(--input-border);
+  border-radius: var(--composer-radius);
+  background: var(--composer-bg);
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+.composer-box:focus-within { border-color: var(--ring); }
+
+.composer-input {
+  display: block;
+  width: 100%;
+  min-height: var(--composer-min-h);
+  max-height: var(--composer-max-h);
+  padding: var(--space-5) var(--space-6);
+  background: none;
+  border: 0;
+  outline: none;
+  resize: none;
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-body);
+  color: var(--text);
+}
+.composer-input::placeholder { color: var(--input-placeholder); }
+
+.composer-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4) var(--space-4) var(--space-5);
+}
+.composer-bar .spacer { flex: 1; }
+/* Which model is about to be billed, next to the button that bills it. Cost
+   surprises come from this being somewhere else. */
+.composer-model {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+.composer-hint { font-size: var(--text-xs); color: var(--text-faint); }
+
+
+/* ==========================================================================
+   GROUP CHAT
+   ========================================================================== */
+
+/* Turn state lives above the stream and stays put while messages scroll: in a
+   room where several agents talk, "who is speaking and how much longer will
+   this run" is the question the interface has to answer continuously. */
+.turnbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  flex: none;
+  padding: var(--space-4) var(--space-8);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: var(--text-sm);
+}
+.turnbar .spacer { flex: 1; }
+.turn-queue { display: flex; align-items: center; gap: var(--space-3); }
+.turn-queue .avatar { opacity: 0.45; }
+.turn-queue .avatar[data-current="true"] { opacity: 1; outline: 2px solid currentColor; outline-offset: 1px; }
+.turn-count { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text-muted); }
+
+/* Turn limit as a meter rather than a number alone: guardrails require group
+   chats to have a bound, and a bound nobody can see is not much of one. */
+.turn-meter { width: 96px; }
+
+.roster { display: flex; flex-direction: column; gap: var(--space-1); }
+.roster-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-xs);
+}
+.roster-item:hover { background: var(--surface-2); }
+.roster-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-sm); }
+.roster-sub { font-size: var(--text-2xs); color: var(--text-faint); }
+
+/* The summary that closes a meeting. Given the accent rather than a message
+   bubble because it is the artefact people come back for, not another turn
+   in the conversation. */
+.summary-card {
+  margin: var(--space-7) var(--space-8);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-md);
+  background: var(--accent-soft);
+  overflow: hidden;
+}
+.summary-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-6);
+  color: var(--accent-text);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-sm);
+}
+.summary-body {
+  padding: var(--space-6);
+  background: var(--surface);
+  font-size: var(--text-base);
+  line-height: var(--leading-loose);
+}
+.summary-body > * + * { margin-top: var(--space-5); }
+.summary-body ul { padding-left: var(--space-8); }
+.summary-body li + li { margin-top: var(--space-3); }

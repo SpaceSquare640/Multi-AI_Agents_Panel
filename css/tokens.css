@@ -274,6 +274,25 @@
      hue is reused by a status colour. */
   --provider-local: #0F766E;   /* teal  — runs on this machine              */
   --provider-cloud: #4338CA;   /* indigo — leaves this machine              */
+
+  /* agent identity. A group chat with several agents talking needs each
+     speaker recognisable before their name is read, so every agent gets a
+     hue. Six of them, spaced around the wheel and deliberately avoiding the
+     status band (green / amber / red) so a speaker colour can never be
+     mistaken for "succeeded" or "failed". They are assigned in order, and an
+     agent's monogram carries its initials as well as its colour — the hue is
+     a shortcut, never the only way to tell who is speaking.
+     Ratios below are the monogram against its own 16% tint, which is the only
+     place these are used and the pair that actually has to clear AA. The
+     first four started one step lighter and measured 3.70 / 3.93 / 3.78 /
+     4.36 — under AA for 10px bold text, which does not qualify for the
+     large-text exemption. Darkened until they cleared. */
+  --agent-1: #155E75;   /* cyan     — 5.66:1 on its tint */
+  --agent-2: #6D28D9;   /* violet   — 5.46:1 */
+  --agent-3: #115E59;   /* teal     — 5.88:1 */
+  --agent-4: #86198F;   /* fuchsia  — 6.20:1 */
+  --agent-5: #4338CA;   /* indigo   — 6.06:1 */
+  --agent-6: #9F1239;   /* rose     — 5.99:1 */
 }
 
 
@@ -345,6 +364,13 @@
     --provider-local: #2DD4BF;
     --provider-cloud: #93A1FB;   /* 5.53 on accent-soft, 7.83 on --bg       */
 
+    --agent-1: #22D3EE;
+    --agent-2: #C4B5FD;
+    --agent-3: #5EEAD4;
+    --agent-4: #F0ABFC;
+    --agent-5: #A5B4FC;
+    --agent-6: #FDA4AF;
+
     /* Shadows carry almost no weight on dark surfaces; elevation is
        communicated by the surface ramp instead, with shadow only deepening
        the sense of overlay for modals. */
@@ -406,6 +432,13 @@
 
   --provider-local: #2DD4BF;
   --provider-cloud: #93A1FB;
+
+  --agent-1: #22D3EE;
+  --agent-2: #C4B5FD;
+  --agent-3: #5EEAD4;
+  --agent-4: #F0ABFC;
+  --agent-5: #A5B4FC;
+  --agent-6: #FDA4AF;
 
   --shadow-1: 0 1px 2px rgb(0 0 0 / 0.30);
   --shadow-2: 0 2px 6px rgb(0 0 0 / 0.36);

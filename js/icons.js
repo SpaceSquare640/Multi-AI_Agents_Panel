@@ -24,7 +24,12 @@
     'i-search':      '<circle cx="9" cy="9" r="5"/><path d="M13 13l4 4"/>',
     'i-game':        '<rect x="2.5" y="6.5" width="15" height="8" rx="3"/><path d="M6 10.5h2.5M7.25 9.25v2.5M13 10h.01M15 11.5h.01"/>',
     'i-usage':       '<path d="M3 17V9M8 17V4M13 17v-5M18 17V7"/>',
-    'i-settings':    '<circle cx="10" cy="10" r="2.5"/><path d="M10 2.5v2M10 15.5v2M17.5 10h-2M4.5 10h-2M15.3 4.7l-1.4 1.4M6.1 13.9l-1.4 1.4M15.3 15.3l-1.4-1.4M6.1 6.1 4.7 4.7"/>',
+    /* Sliders rather than a gear. A gear's teeth mush into a ring at 16px,
+       and the circle-plus-radial-ticks version of it reads as a sun or a
+       brightness control instead of as settings — which is exactly what it
+       did here before this was changed. Three faders stay legible at every
+       size in the set. */
+    'i-settings':    '<path d="M4 6h8M16 6h.5M4 10h2M10 10h6M4 14h9M17 14h-.5"/><circle cx="14" cy="6" r="1.8"/><circle cx="8" cy="10" r="1.8"/><circle cx="15" cy="14" r="1.8"/>',
     'i-help':        '<circle cx="10" cy="10" r="7"/><path d="M8 8a2 2 0 1 1 2.7 1.9c-.4.2-.7.6-.7 1.1v.5M10 14h.01"/>',
 
     // shell
@@ -52,17 +57,27 @@
     'i-cloud':       '<path d="M6.5 15a3.5 3.5 0 0 1-.4-6.98A4.5 4.5 0 0 1 15 8.6 3.2 3.2 0 0 1 14.5 15z"/>'
   };
 
+  /* <symbol> with its own viewBox, not <g>.
+     A <use> pointing at a bare <g> inherits no coordinate system, so the
+     referencing <svg class="icon"> — which carries no viewBox of its own —
+     treats its CSS size as the user space. Paths drawn on this 20x20 grid
+     were then clipped at 16x16, cropping every icon on its right and bottom
+     edges. A symbol carrying viewBox="0 0 20 20" scales to fit whatever
+     viewport uses it, which fixes every icon on every page at once without
+     touching a single page's markup. */
+  var VIEWBOX = '0 0 20 20';
+
   function inject() {
     if (document.getElementById('icon-sprite')) return;
-    var defs = '';
+    var body = '';
     Object.keys(ICONS).forEach(function (id) {
-      defs += '<g id="' + id + '">' + ICONS[id] + '</g>';
+      body += '<symbol id="' + id + '" viewBox="' + VIEWBOX + '">' + ICONS[id] + '</symbol>';
     });
-    var svg = document.createElement('div');
-    svg.innerHTML =
+    var holder = document.createElement('div');
+    holder.innerHTML =
       '<svg id="icon-sprite" width="0" height="0" aria-hidden="true" focusable="false" ' +
-           'style="position:absolute"><defs>' + defs + '</defs></svg>';
-    document.body.insertBefore(svg.firstChild, document.body.firstChild);
+           'style="position:absolute">' + body + '</svg>';
+    document.body.insertBefore(holder.firstChild, document.body.firstChild);
   }
 
   if (document.readyState === 'loading') {

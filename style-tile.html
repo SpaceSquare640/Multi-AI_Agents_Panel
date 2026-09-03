@@ -280,7 +280,18 @@
     ['--provider-cloud', '--accent-soft',  'Provider · cloud',  'text'],
     ['--text-muted',     '--surface-3',    'Muted on selection','text'],
     ['--text-faint',     '--surface-2',    'Faint on striped row','text'],
-    ['--tooltip-fg',     '--tooltip-bg',   'Tooltip',           'text']
+    ['--tooltip-fg',     '--tooltip-bg',   'Tooltip',           'text'],
+
+    /* Agent identity. The monogram sits on a 16% tint of its own hue, so each
+       one is measured against exactly that. The first four light-theme hues
+       were a step lighter and measured 3.70-4.36 here — under AA for 10px
+       bold text, which gets no large-text exemption. */
+    ['--agent-1', 'color-mix(in srgb, var(--agent-1) 16%, transparent)', 'Agent 1 monogram', 'text'],
+    ['--agent-2', 'color-mix(in srgb, var(--agent-2) 16%, transparent)', 'Agent 2 monogram', 'text'],
+    ['--agent-3', 'color-mix(in srgb, var(--agent-3) 16%, transparent)', 'Agent 3 monogram', 'text'],
+    ['--agent-4', 'color-mix(in srgb, var(--agent-4) 16%, transparent)', 'Agent 4 monogram', 'text'],
+    ['--agent-5', 'color-mix(in srgb, var(--agent-5) 16%, transparent)', 'Agent 5 monogram', 'text'],
+    ['--agent-6', 'color-mix(in srgb, var(--agent-6) 16%, transparent)', 'Agent 6 monogram', 'text']
   ];
 
   function resolve(name) {
@@ -345,7 +356,7 @@
         '<div class="chip" style="background:' + hex(bg) + ';color:' + hex(fg) + '">Aa 13px</div>' +
         '<div class="meta">' +
           '<div class="name">' + p[2] + '</div>' +
-          '<div class="val">' + p[0] + ' on ' + p[1] + '</div>' +
+          '<div class="val">' + p[0] + ' on ' + (p[1].length > 28 ? p[1].slice(0, 26) + '…' : p[1]) + '</div>' +
           '<div class="val">' + hex(fg) + ' / ' + hex(bg) + '</div>' +
           '<span class="ratio" data-pass="' + pass + '">' + label + '</span>' +
         '</div>';
