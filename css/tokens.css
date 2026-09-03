@@ -340,8 +340,10 @@
 
     --ring: var(--brand);               /* 10.42:1                          */
 
+    /* #818CF8 measured 4.46:1 against --accent-soft, which is the tint the
+       "Cloud" badge sits on — under AA by a hair. Lightened one step. */
     --provider-local: #2DD4BF;
-    --provider-cloud: #818CF8;
+    --provider-cloud: #93A1FB;   /* 5.53 on accent-soft, 7.83 on --bg       */
 
     /* Shadows carry almost no weight on dark surfaces; elevation is
        communicated by the surface ramp instead, with shadow only deepening
@@ -403,7 +405,7 @@
   --ring: var(--brand);
 
   --provider-local: #2DD4BF;
-  --provider-cloud: #818CF8;
+  --provider-cloud: #93A1FB;
 
   --shadow-1: 0 1px 2px rgb(0 0 0 / 0.30);
   --shadow-2: 0 2px 6px rgb(0 0 0 / 0.36);

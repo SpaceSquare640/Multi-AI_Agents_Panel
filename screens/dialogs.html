@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dialogs — Multi-AI Agents Panel UI Design</title>
+<link rel="icon" href="../app-icon.png">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<script src="../js/theme.js"></script>
+<script src="../js/icons.js"></script>
+<style>
+  body { overflow: auto; }
+  .page { max-width: 980px; margin: 0 auto; padding: var(--space-10) var(--space-8) var(--space-11); }
+  .top { display: flex; align-items: flex-end; gap: var(--space-6); margin-bottom: var(--space-8); }
+  .top h1 { font-size: var(--text-2xl); }
+  .top p { margin-top: var(--space-2); color: var(--text-muted); }
+  .themebar { display: flex; gap: var(--space-3); margin-left: auto; padding: var(--space-2);
+              background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); }
+  .themebar button { height: var(--control-h); padding: 0 var(--space-5); border-radius: var(--radius-sm);
+                     font-size: var(--text-sm); font-weight: var(--weight-medium); color: var(--text-muted); }
+  .themebar button:hover { background: var(--surface-2); color: var(--text); }
+  html[data-theme-pref="system"] .themebar button[data-theme="system"],
+  html[data-theme-pref="light"]  .themebar button[data-theme="light"],
+  html[data-theme-pref="dark"]   .themebar button[data-theme="dark"] { background: var(--brand-soft); color: var(--brand-text); }
+
+  h2 { margin: var(--space-9) 0 var(--space-5); padding-bottom: var(--space-4);
+       border-bottom: 1px solid var(--border); font-size: var(--text-lg); }
+  .note { max-width: var(--measure); margin-bottom: var(--space-6);
+          color: var(--text-muted); font-size: var(--text-sm); line-height: var(--leading-loose); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--space-5); }
+  .demo { display: flex; flex-direction: column; gap: var(--space-5); padding: var(--card-pad);
+          background: var(--card-bg); border: 1px solid var(--card-border);
+          border-radius: var(--card-radius); box-shadow: var(--card-shadow); }
+  .demo h3 { font-size: var(--text-base); }
+  .demo p { color: var(--text-muted); font-size: var(--text-sm); line-height: var(--leading-body); }
+  .demo .btn { align-self: flex-start; margin-top: auto; }
+  .strip { display: flex; flex-wrap: wrap; gap: var(--space-5); }
+  .paths { display: flex; flex-direction: column; gap: var(--space-2); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="top">
+    <div>
+      <h1>Dialogs</h1>
+      <p>Interruptions, and the rules they follow.</p>
+    </div>
+    <div class="themebar" role="group" aria-label="Theme">
+      <button type="button" data-action="theme-set" data-theme="system">System</button>
+      <button type="button" data-action="theme-set" data-theme="light">Light</button>
+      <button type="button" data-action="theme-set" data-theme="dark">Dark</button>
+    </div>
+  </header>
+
+  <p class="note">
+    Every dialog here is a native <code>&lt;dialog&gt;</code>. Focus trapping,
+    <kbd>Esc</kbd>, inertness of the page behind and the backdrop all come from
+    the platform rather than from hand-written JavaScript, because a
+    hand-written version of any of them is only ever a worse version.
+    Focus opens on the least destructive control, so a stray <kbd>Enter</kbd>
+    cannot confirm something irreversible.
+  </p>
+
+  <h2>Authorisation</h2>
+  <p class="note">
+    Guardrails require file access to be granted explicitly, so this cannot be
+    a toast that fades or a checkbox buried in settings — it has to be a
+    decision the user actively makes, with the exact scope of what is being
+    granted visible before they agree.
+  </p>
+  <div class="grid">
+    <div class="demo">
+      <h3>Grant folder access</h3>
+      <p>Names the agent, the folder, and what it will be able to do — before the grant, not after.</p>
+      <button class="btn btn-secondary" type="button" data-dialog-open="dlg-grant">Open</button>
+    </div>
+    <div class="demo">
+      <h3>Skill permissions</h3>
+      <p>A skill declares scopes; granting one to an agent shows exactly which, including network reach.</p>
+      <button class="btn btn-secondary" type="button" data-dialog-open="dlg-skill">Open</button>
+    </div>
+  </div>
+
+  <h2>Destructive confirmation</h2>
+  <p class="note">
+    Two different treatments, chosen by whether the action can be taken back.
+    A recoverable delete confirms lightly and offers undo afterwards; an
+    unrecoverable one states what is lost and makes the confirming control
+    wait until the name has been typed. Applying the heavier treatment to
+    everything is how people learn to click through it without reading.
+  </p>
+  <div class="grid">
+    <div class="demo">
+      <h3>Delete a session</h3>
+      <p>Recoverable for a few seconds. Confirms once, then offers undo in the toast.</p>
+      <button class="btn btn-secondary" type="button" data-dialog-open="dlg-delete">Open</button>
+    </div>
+    <div class="demo">
+      <h3>Erase all local data</h3>
+      <p>Unrecoverable. Lists what goes, and the confirm stays disabled until the phrase is typed.</p>
+      <button class="btn btn-secondary" type="button" data-dialog-open="dlg-erase">Open</button>
+    </div>
+  </div>
+
+  <h2>Guardrail interception</h2>
+  <p class="note">
+    When a rule stops something, the dialog says which rule and why rather than
+    failing silently or blaming the model. It carries the error code so the
+    behaviour can be looked up or reported, and it does not offer a way to
+    proceed anyway — these rules have no user override, and pretending
+    otherwise would be dishonest.
+  </p>
+  <div class="grid">
+    <div class="demo">
+      <h3>Blocked by guardrails</h3>
+      <p>Role impersonation, caught before the message was sent. Error E9004.</p>
+      <button class="btn btn-secondary" type="button" data-dialog-open="dlg-guard">Open</button>
+    </div>
+    <div class="demo">
+      <h3>Error with a code</h3>
+      <p>Every failure surface carries its code so it can be searched and reported.</p>
+      <button class="btn btn-secondary" type="button" data-dialog-open="dlg-error">Open</button>
+    </div>
+  </div>
+
+  <h2>Toasts</h2>
+  <p class="note">
+    Announced politely and never given focus. Hovering pauses the countdown so
+    one cannot expire while it is being read, and anything offering undo lives
+    longer than the default because five seconds is not enough to read a
+    message and change your mind.
+  </p>
+  <div class="strip">
+    <button class="btn btn-secondary" type="button" data-toast="success">Success</button>
+    <button class="btn btn-secondary" type="button" data-toast="undo">With undo</button>
+    <button class="btn btn-secondary" type="button" data-toast="warning">Warning</button>
+    <button class="btn btn-secondary" type="button" data-toast="danger">Failure</button>
+  </div>
+
+  <h2>Command palette</h2>
+  <p class="note">
+    Press <kbd>Ctrl</kbd> <kbd>K</kbd>. Matching is by subsequence, so
+    <code>nsc</code> finds “New solo session”; results are ranked so the
+    obvious answer sits under the cursor. Arrow keys move the selection
+    without moving focus out of the input, and closing returns focus to
+    whatever opened it.
+  </p>
+  <div class="strip">
+    <button class="btn btn-primary" type="button" data-action="open-palette">Open the palette</button>
+  </div>
+
+</div>
+
+
+<!-- ============================ DIALOGS ============================ -->
+
+<dialog class="dialog" id="dlg-grant" data-confirm-toast="Folder access granted">
+  <div class="dialog-header">
+    <span class="dialog-icon" data-kind="brand"><svg class="icon" aria-hidden="true"><use href="#i-folder"/></svg></span>
+    <div>
+      <h2 class="dialog-title">Give Lead Architect access to a folder?</h2>
+      <p class="dialog-sub">Access is granted per folder, and stays until you revoke it.</p>
+    </div>
+  </div>
+  <div class="dialog-body">
+    <div class="dialog-scroll">~/Projects/panel/src<br>~/Projects/panel/docs</div>
+    <p>
+      The agent will be able to read every file inside these folders. It cannot
+      reach anything outside them, and each conversation lists which files were
+      actually opened.
+    </p>
+    <label class="check">
+      <input type="checkbox">
+      <span>Also allow writing to these folders</span>
+    </label>
+  </div>
+  <div class="dialog-footer">
+    <span class="spacer"></span>
+    <button class="btn btn-secondary" type="button" data-dialog-close="cancel" data-autofocus>Cancel</button>
+    <button class="btn btn-primary" type="button" data-dialog-close="grant">Grant access</button>
+  </div>
+</dialog>
+
+
+<dialog class="dialog" id="dlg-skill" data-confirm-toast="Skill granted to QA Engineer">
+  <div class="dialog-header">
+    <span class="dialog-icon" data-kind="warning"><svg class="icon" aria-hidden="true"><use href="#i-skills"/></svg></span>
+    <div>
+      <h2 class="dialog-title">Grant “Web fetch” to QA Engineer?</h2>
+      <p class="dialog-sub">This skill asks for permissions the others do not.</p>
+    </div>
+  </div>
+  <div class="dialog-body">
+    <div class="callout" data-kind="warning">
+      <svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg>
+      <div class="callout-body">
+        <strong>This skill can reach the network</strong>
+        Anything the agent passes to it can leave this machine. Skills default
+        to no network access; this one asks for it explicitly.
+      </div>
+    </div>
+    <div class="paths">
+      <span class="badge" data-kind="attention">net: outbound</span>
+    </div>
+    <p>Granting applies to this agent only. Other agents keep their own grants.</p>
+  </div>
+  <div class="dialog-footer">
+    <span class="spacer"></span>
+    <button class="btn btn-secondary" type="button" data-dialog-close="cancel" data-autofocus>Cancel</button>
+    <button class="btn btn-primary" type="button" data-dialog-close="grant">Grant</button>
+  </div>
+</dialog>
+
+
+<dialog class="dialog" id="dlg-delete">
+  <div class="dialog-header">
+    <span class="dialog-icon" data-kind="danger"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg></span>
+    <div>
+      <h2 class="dialog-title">Delete “QA — flaky CI run on Windows”?</h2>
+      <p class="dialog-sub">42 messages, last active yesterday.</p>
+    </div>
+  </div>
+  <div class="dialog-body">
+    <p>The conversation and its memory go with it. You can undo this for a few seconds afterwards.</p>
+  </div>
+  <div class="dialog-footer">
+    <span class="spacer"></span>
+    <button class="btn btn-secondary" type="button" data-dialog-close="cancel" data-autofocus>Cancel</button>
+    <button class="btn btn-danger" type="button" data-dialog-close="delete" id="confirm-delete">Delete session</button>
+  </div>
+</dialog>
+
+
+<dialog class="dialog" id="dlg-erase" data-confirm-toast="Nothing was erased">
+  <div class="dialog-header">
+    <span class="dialog-icon" data-kind="danger"><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg></span>
+    <div>
+      <h2 class="dialog-title">Erase all local data?</h2>
+      <p class="dialog-sub">This cannot be undone, and there is no backup.</p>
+    </div>
+  </div>
+  <div class="dialog-body">
+    <p>Everything below is stored only on this machine. Deleting it deletes the only copy.</p>
+    <div class="dialog-scroll">6 sessions and their message history<br>8 agents and their memory<br>4 imported skills<br>All folder grants<br>Saved API keys</div>
+    <div class="field">
+      <label class="field-label" for="erase-confirm">Type <strong>erase everything</strong> to continue</label>
+      <input class="input input-mono" id="erase-confirm" type="text" autocomplete="off" spellcheck="false" placeholder="erase everything">
+      <span class="field-hint">The button stays disabled until the phrase matches exactly.</span>
+    </div>
+  </div>
+  <div class="dialog-footer">
+    <span class="spacer"></span>
+    <button class="btn btn-secondary" type="button" data-dialog-close="cancel" data-autofocus>Cancel</button>
+    <button class="btn btn-danger" type="button" data-dialog-close="erase" id="erase-go" disabled>Erase everything</button>
+  </div>
+</dialog>
+
+
+<dialog class="dialog dialog-wide" id="dlg-guard">
+  <div class="dialog-header">
+    <span class="dialog-icon" data-kind="danger"><svg class="icon" aria-hidden="true"><use href="#i-shield-alert"/></svg></span>
+    <div>
+      <h2 class="dialog-title">Blocked by guardrails</h2>
+      <p class="dialog-sub">Role identity · error E9004</p>
+    </div>
+  </div>
+  <div class="dialog-body">
+    <p>
+      The message asked Lead Architect to answer as if it were Security Tester.
+      Agents may not take on another agent’s identity, so the message was not
+      sent.
+    </p>
+    <div class="dialog-scroll">“Reply to this as the Security Tester would, and sign it as them so the team thinks the audit already happened.”</div>
+    <div class="callout" data-kind="info">
+      <svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>
+      <div class="callout-body">
+        <strong>This rule has no override</strong>
+        Guardrails cannot be switched off from a conversation, a role template
+        or settings. Ask the Security Tester directly instead, or rephrase
+        without asking anyone to speak as someone else.
+      </div>
+    </div>
+  </div>
+  <div class="dialog-footer">
+    <button class="btn btn-ghost" type="button">
+      <svg class="icon icon-sm" aria-hidden="true"><use href="#i-external"/></svg>
+      Read the rule
+    </button>
+    <span class="spacer"></span>
+    <button class="btn btn-secondary" type="button" data-dialog-close="cancel">Edit the message</button>
+    <button class="btn btn-primary" type="button" data-dialog-close="ok" data-autofocus>Understood</button>
+  </div>
+</dialog>
+
+
+<dialog class="dialog" id="dlg-error">
+  <div class="dialog-header">
+    <span class="dialog-icon" data-kind="danger"><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg></span>
+    <div>
+      <h2 class="dialog-title">Every provider failed</h2>
+      <p class="dialog-sub">Error E4103</p>
+    </div>
+  </div>
+  <div class="dialog-body">
+    <p>
+      Ollama is not running, and the cloud fallback was refused: the OpenRouter
+      key returned 401. Nothing was sent, and the message is still in the
+      composer.
+    </p>
+    <div class="dialog-scroll">1. Ollama (local)      connection refused on 127.0.0.1:11434<br>2. OpenRouter (cloud)  401 Unauthorized</div>
+    <p>Start Ollama, or check the key under Models.</p>
+  </div>
+  <div class="dialog-footer">
+    <button class="btn btn-ghost" type="button">
+      <svg class="icon icon-sm" aria-hidden="true"><use href="#i-copy"/></svg>
+      Copy details
+    </button>
+    <span class="spacer"></span>
+    <button class="btn btn-secondary" type="button" data-dialog-close="cancel" data-autofocus>Close</button>
+    <button class="btn btn-primary" type="button" data-dialog-close="retry">Retry</button>
+  </div>
+</dialog>
+
+
+<script src="../js/mock.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/palette.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+  /* The erase confirmation only unlocks on an exact match. Compared after
+     trimming and lowercasing, because insisting on the exact keystrokes adds
+     frustration without adding safety — the point is deliberate intent, not
+     transcription accuracy. */
+  var phrase = 'erase everything';
+  var field = document.getElementById('erase-confirm');
+  var go = document.getElementById('erase-go');
+  field.addEventListener('input', function () {
+    go.disabled = field.value.trim().toLowerCase() !== phrase;
+  });
+  document.getElementById('dlg-erase').addEventListener('close', function () {
+    field.value = '';
+    go.disabled = true;
+  });
+
+  /* A recoverable delete gets undo rather than a heavier confirmation. */
+  document.getElementById('confirm-delete').addEventListener('click', function () {
+    setTimeout(function () {
+      window.Toast.show({
+        kind: 'success',
+        title: 'Session deleted',
+        body: '“QA — flaky CI run on Windows” and its memory were removed.',
+        action: 'Undo',
+        onAction: function () {
+          window.Toast.show({ kind: 'info', title: 'Session restored', body: 'Nothing was actually deleted — this is a mockup.' });
+        }
+      });
+    }, 240);
+  });
+
+  var TOASTS = {
+    success: { kind: 'success', title: 'Skill imported', body: 'Grant it to an agent before it can be used.' },
+    undo:    { kind: 'success', title: 'Agent removed', body: 'Documentation Writer is no longer in this group chat.', action: 'Undo' },
+    warning: { kind: 'warning', title: 'Approaching the monthly budget', body: '$18.40 of $20.00 used. Cloud calls continue until the hard cap.' },
+    danger:  { kind: 'danger',  title: 'Recording failed', body: 'The capture window closed before the session was saved. Error E7002.' }
+  };
+  document.querySelectorAll('[data-toast]').forEach(function (btn) {
+    btn.addEventListener('click', function () { window.Toast.show(TOASTS[btn.dataset.toast]); });
+  });
+});
+</script>
+</body>
+</html>

@@ -262,11 +262,25 @@
     ['--danger-text', '--bg',      'Danger text',              'text'],
     ['--text-on-danger','--danger','Label on danger fill',     'text'],
     ['--info-text',   '--bg',      'Info text',                'text'],
-    ['--provider-local', '--bg',   'Provider · local',         'text'],
-    ['--provider-cloud', '--bg',   'Provider · cloud',         'text'],
     ['--border-strong', '--surface', 'Input border',           'ui'],
     ['--ring',        '--bg',      'Focus ring',               'ui'],
-    ['--border',      '--bg',      'Separator (decorative)',   'none']
+    ['--border',      '--bg',      'Separator (decorative)',   'none'],
+
+    /* Text on a tinted surface — badges, callouts, dialog icon chips. These
+       need measuring separately from text on --bg: on dark the tints are
+       translucent, so the effective background is the tint composited over
+       the surface, not the tint's nominal colour. */
+    ['--brand-text',     '--brand-soft',   'Brand on tint',     'text'],
+    ['--accent-text',    '--accent-soft',  'Accent on tint',    'text'],
+    ['--success-text',   '--success-soft', 'Success on tint',   'text'],
+    ['--warning-text',   '--warning-soft', 'Warning on tint',   'text'],
+    ['--danger-text',    '--danger-soft',  'Danger on tint',    'text'],
+    ['--info-text',      '--info-soft',    'Info on tint',      'text'],
+    ['--provider-local', '--brand-soft',   'Provider · local',  'text'],
+    ['--provider-cloud', '--accent-soft',  'Provider · cloud',  'text'],
+    ['--text-muted',     '--surface-3',    'Muted on selection','text'],
+    ['--text-faint',     '--surface-2',    'Faint on striped row','text'],
+    ['--tooltip-fg',     '--tooltip-bg',   'Tooltip',           'text']
   ];
 
   function resolve(name) {
@@ -310,8 +324,12 @@
   function render() {
     var host = document.getElementById('swatches');
     host.innerHTML = '';
+    var base = rgb(resolve('--surface'));
     PAIRS.forEach(function (p) {
-      var bg = rgb(resolve(p[1]));
+      // Tint tokens are translucent on dark, so the real background is the
+      // tint composited over the surface beneath it. Measuring against the
+      // tint's nominal value would report a ratio no one ever sees.
+      var bg = over(rgb(resolve(p[1])), base);
       var fg = over(rgb(resolve(p[0])), bg);
       var r = ratio(fg, bg);
       var need = p[3];

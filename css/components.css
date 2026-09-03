@@ -1,0 +1,693 @@
+/* ============================================================================
+   Multi-AI Agents Panel — Components
+   ----------------------------------------------------------------------------
+   Every reusable piece of the interface. All values come from the component
+   token layer in tokens.css; nothing here defines a colour or size of its own,
+   so a theme change or a density change never has to touch this file.
+
+   States are defined for every interactive component: default, hover, active,
+   focus-visible, disabled, and where it applies, selected. A component with a
+   hover state but no focus state is unusable by keyboard, so they are written
+   together rather than added later.
+   ========================================================================== */
+
+
+/* ==========================================================================
+   BUTTON
+   Four intents. Exactly one primary per screen; danger is visually separated
+   from the primary rather than sitting beside it.
+   ========================================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  height: var(--control-h);
+  padding: 0 var(--btn-px);
+  border: 1px solid transparent;
+  border-radius: var(--btn-radius);
+  font-size: var(--btn-font);
+  font-weight: var(--btn-weight);
+  white-space: nowrap;
+  transition: background-color var(--dur-fast) var(--ease-out),
+              border-color    var(--dur-fast) var(--ease-out),
+              color           var(--dur-fast) var(--ease-out);
+}
+.btn:active:not(:disabled) { transform: translateY(0.5px); }
+
+.btn-primary   { background: var(--btn-primary-bg); color: var(--btn-primary-fg); }
+.btn-primary:hover:not(:disabled)  { background: var(--btn-primary-bg-hover); }
+
+.btn-secondary { background: var(--surface); color: var(--text); border-color: var(--border-strong); }
+.btn-secondary:hover:not(:disabled) { background: var(--surface-2); }
+
+.btn-ghost     { color: var(--btn-ghost-fg); }
+.btn-ghost:hover:not(:disabled)    { background: var(--btn-ghost-bg-hover); color: var(--text); }
+
+.btn-danger    { background: var(--btn-danger-bg); color: var(--btn-danger-fg); }
+.btn-danger:hover:not(:disabled)   { background: var(--danger-hover); }
+
+.btn-sm { height: var(--control-h-sm); padding: 0 var(--space-4); font-size: var(--text-sm); }
+.btn-lg { height: var(--control-h-lg); padding: 0 var(--space-7); font-size: var(--text-md); }
+
+/* Icon-only. Always needs an accessible name — see .sr-only in base.css. */
+.btn-icon {
+  width: var(--control-h);
+  padding: 0;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+}
+.btn-icon:hover:not(:disabled) { background: var(--surface-2); color: var(--text); }
+.btn-icon.btn-sm { width: var(--control-h-sm); }
+
+/* Busy state. The label stays in place and the spinner replaces the leading
+   icon, so the button does not change width mid-action and shift the layout
+   under the pointer. */
+.btn[aria-busy="true"] { pointer-events: none; }
+.btn[aria-busy="true"] .icon { display: none; }
+.btn[aria-busy="true"]::before {
+  content: "";
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: var(--radius-full);
+  opacity: 0.7;
+  animation: spin 700ms linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+
+/* ==========================================================================
+   FIELD
+   Label above, control, then either helper text or an error. Placeholders are
+   never the only label: they vanish on input, which leaves a filled form with
+   no way to tell what each value was.
+   ========================================================================== */
+
+.field { display: flex; flex-direction: column; gap: var(--space-3); }
+.field-label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text);
+}
+.field-label .req { color: var(--danger-text); margin-left: var(--space-1); }
+.field-hint { font-size: var(--text-xs); color: var(--text-faint); line-height: var(--leading-snug); }
+.field-error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--danger-text);
+  line-height: var(--leading-snug);
+}
+.field-row { display: flex; gap: var(--space-5); }
+.field-row > .field { flex: 1; min-width: 0; }
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  min-width: 0;
+  background: var(--input-bg);
+  color: var(--input-fg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--input-radius);
+  font-size: var(--text-base);
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+.input, .select { height: var(--input-h); padding: 0 var(--input-px); }
+.textarea {
+  min-height: 72px;
+  padding: var(--space-4) var(--input-px);
+  line-height: var(--leading-body);
+  resize: vertical;
+}
+.input::placeholder, .textarea::placeholder { color: var(--input-placeholder); }
+.input:hover:not(:disabled),
+.select:hover:not(:disabled),
+.textarea:hover:not(:disabled) { border-color: var(--text-faint); }
+.input:focus-visible,
+.select:focus-visible,
+.textarea:focus-visible { border-color: var(--input-border-focus); }
+.input[aria-invalid="true"],
+.textarea[aria-invalid="true"] { border-color: var(--danger); }
+
+/* Read-only is not disabled: the value still matters and is still selectable,
+   so it keeps full text contrast and only loses its editable affordances. */
+.input[readonly] { background: var(--surface-2); border-color: var(--border); cursor: default; }
+
+.input-mono { font-family: var(--font-mono); }
+
+/* Leading/trailing adornments (search icon, unit suffix, reveal toggle). */
+.input-group { position: relative; display: flex; align-items: center; }
+.input-group .icon { position: absolute; left: var(--space-5); color: var(--text-faint); pointer-events: none; }
+.input-group .input { padding-left: calc(var(--input-px) + var(--icon-md) + var(--space-4)); }
+.input-group .input-affix {
+  position: absolute;
+  right: var(--space-4);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+
+
+/* ==========================================================================
+   SWITCH / CHECKBOX / RADIO
+   Native inputs kept in the DOM for semantics and keyboard behaviour; only
+   their appearance is replaced.
+   ========================================================================== */
+
+.switch { position: relative; display: inline-flex; align-items: center; gap: var(--space-5); cursor: pointer; }
+.switch input {
+  position: absolute;
+  width: 34px; height: 20px;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.switch-track {
+  position: relative;
+  width: 34px; height: 20px;
+  flex: none;
+  background: var(--surface-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-full);
+  transition: background-color var(--dur-fast) var(--ease-out),
+              border-color     var(--dur-fast) var(--ease-out);
+}
+.switch-track::after {
+  content: "";
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 14px; height: 14px;
+  background: var(--surface);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-1);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.switch input:checked + .switch-track { background: var(--brand); border-color: var(--brand); }
+.switch input:checked + .switch-track::after { transform: translateX(14px); }
+.switch input:focus-visible + .switch-track {
+  outline: var(--ring-width) solid var(--ring);
+  outline-offset: var(--ring-offset);
+}
+.switch input:disabled ~ * { opacity: var(--btn-disabled-opacity); }
+.switch-text { display: flex; flex-direction: column; gap: var(--space-1); }
+.switch-text .t { font-size: var(--text-base); }
+.switch-text .d { font-size: var(--text-xs); color: var(--text-faint); line-height: var(--leading-snug); }
+
+.check { display: inline-flex; align-items: flex-start; gap: var(--space-4); cursor: pointer; }
+.check input { width: 15px; height: 15px; margin: 2px 0 0; accent-color: var(--brand); flex: none; cursor: pointer; }
+.check span { font-size: var(--text-base); line-height: var(--leading-snug); }
+
+
+/* ==========================================================================
+   CARD / SECTION
+   ========================================================================== */
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+}
+.card-pad { padding: var(--card-pad); }
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-5) var(--card-pad);
+  border-bottom: 1px solid var(--border);
+}
+.card-header h3 { flex: 1; min-width: 0; font-size: var(--text-base); }
+.card-body { padding: var(--card-pad); }
+.card-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--card-pad);
+  border-top: 1px solid var(--border);
+}
+
+
+/* ==========================================================================
+   TABS
+   Underline rather than a filled pill: the active tab is marked by position
+   and a bar as well as by colour.
+   ========================================================================== */
+
+.tabs { display: flex; gap: var(--space-2); border-bottom: 1px solid var(--border); }
+.tab {
+  position: relative;
+  height: 32px;
+  padding: 0 var(--space-5);
+  color: var(--text-muted);
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.tab:hover { color: var(--text); }
+.tab[aria-selected="true"] { color: var(--text); }
+.tab[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  left: var(--space-4); right: var(--space-4); bottom: -1px;
+  height: 2px;
+  background: var(--accent);
+  border-radius: var(--radius-full);
+}
+
+
+/* ==========================================================================
+   BADGE
+   Always carries a word. Colour alone never conveys the state.
+   ========================================================================== */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--badge-h);
+  padding: 0 var(--badge-px);
+  border-radius: var(--badge-radius);
+  font-size: var(--badge-font);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+.badge[data-kind="running"]   { background: var(--success-soft); color: var(--success-text); }
+.badge[data-kind="succeeded"] { background: var(--success-soft); color: var(--success-text); }
+.badge[data-kind="attention"] { background: var(--warning-soft); color: var(--warning-text); }
+.badge[data-kind="failed"]    { background: var(--danger-soft);  color: var(--danger-text); }
+.badge[data-kind="blocked"]   { background: var(--danger-soft);  color: var(--danger-text); }
+.badge[data-kind="idle"]      { background: var(--surface-3);    color: var(--text-muted); }
+.badge[data-kind="local"]     { background: var(--brand-soft);   color: var(--provider-local); }
+.badge[data-kind="cloud"]     { background: var(--accent-soft);  color: var(--provider-cloud); }
+
+
+/* ==========================================================================
+   CALLOUT
+   ========================================================================== */
+
+.callout {
+  display: flex;
+  gap: var(--space-5);
+  padding: var(--space-6);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  line-height: var(--leading-body);
+}
+.callout .icon { margin-top: 1px; }
+.callout-body { min-width: 0; }
+.callout-body strong { display: block; font-weight: var(--weight-semibold); margin-bottom: var(--space-2); }
+.callout[data-kind="info"]    { background: var(--info-soft);    color: var(--info-text); }
+.callout[data-kind="success"] { background: var(--success-soft); color: var(--success-text); }
+.callout[data-kind="warning"] { background: var(--warning-soft); color: var(--warning-text); }
+.callout[data-kind="danger"]  { background: var(--danger-soft);  color: var(--danger-text); }
+
+
+/* ==========================================================================
+   MENU (context menus, dropdowns)
+   ========================================================================== */
+
+.menu {
+  min-width: 200px;
+  padding: var(--space-3);
+  background: var(--surface-overlay);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-3);
+}
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  height: var(--control-h-sm);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-xs);
+  color: var(--text);
+  font-size: var(--text-base);
+  text-align: left;
+}
+.menu-item:hover, .menu-item[aria-selected="true"] { background: var(--surface-2); }
+.menu-item .icon { color: var(--text-muted); }
+.menu-item kbd { margin-left: auto; }
+.menu-item[data-intent="danger"] { color: var(--danger-text); }
+.menu-item[data-intent="danger"]:hover { background: var(--danger-soft); }
+.menu-sep { height: 1px; margin: var(--space-3) calc(var(--space-4) * -1); background: var(--border); }
+
+
+/* ==========================================================================
+   TOOLTIP
+   Supplementary only — never the sole carrier of a control's name.
+   ========================================================================== */
+
+.tooltip {
+  position: absolute;
+  z-index: var(--z-tooltip);
+  padding: var(--space-2) var(--space-4);
+  background: var(--tooltip-bg);
+  color: var(--tooltip-fg);
+  border-radius: var(--tooltip-radius);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: var(--shadow-2);
+}
+
+
+/* ==========================================================================
+   DIALOG
+   Built on <dialog> so focus trapping, Esc and inertness of the page behind
+   come from the platform rather than from hand-written JavaScript.
+   ========================================================================== */
+
+.dialog {
+  width: var(--dialog-w);
+  max-width: calc(100vw - var(--space-9));
+  padding: 0;
+  background: var(--surface-overlay);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--dialog-radius);
+  box-shadow: var(--dialog-shadow);
+}
+.dialog-wide { width: var(--dialog-w-wide); }
+.dialog::backdrop { background: var(--scrim); }
+
+/* Enter from the centre with a small scale so the dialog reads as arriving
+   rather than blinking into place. Exit is handled in JS at ~65% duration. */
+.dialog[open] { animation: dialog-in var(--dur-base) var(--ease-out); }
+.dialog[open]::backdrop { animation: fade-in var(--dur-base) var(--ease-out); }
+@keyframes dialog-in { from { opacity: 0; transform: scale(0.97); } }
+@keyframes fade-in   { from { opacity: 0; } }
+.dialog[data-closing="true"] { animation: dialog-out var(--dur-fast) var(--ease-in) forwards; }
+@keyframes dialog-out { to { opacity: 0; transform: scale(0.98); } }
+
+.dialog-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-5);
+  padding: var(--dialog-pad) var(--dialog-pad) var(--space-5);
+}
+.dialog-icon {
+  display: grid;
+  place-items: center;
+  width: 32px; height: 32px;
+  flex: none;
+  border-radius: var(--radius-md);
+}
+.dialog-icon[data-kind="info"]    { background: var(--info-soft);    color: var(--info-text); }
+.dialog-icon[data-kind="warning"] { background: var(--warning-soft); color: var(--warning-text); }
+.dialog-icon[data-kind="danger"]  { background: var(--danger-soft);  color: var(--danger-text); }
+.dialog-icon[data-kind="brand"]   { background: var(--brand-soft);   color: var(--brand-text); }
+.dialog-title { font-size: var(--text-md); font-weight: var(--weight-semibold); }
+.dialog-sub   { margin-top: var(--space-2); font-size: var(--text-sm); color: var(--text-muted); }
+
+.dialog-body {
+  padding: 0 var(--dialog-pad) var(--space-6);
+  font-size: var(--text-sm);
+  line-height: var(--leading-body);
+}
+.dialog-body > * + * { margin-top: var(--space-5); }
+
+.dialog-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-6) var(--dialog-pad) var(--dialog-pad);
+}
+/* The confirming action sits at the right end, the cancel beside it, and
+   anything neutral (a link to the manual) is pushed to the far left so a
+   fast click on "cancel" can never land on "confirm". */
+.dialog-footer .spacer { flex: 1; }
+
+/* A scrollable region inside a dialog — granted paths, blocked content. */
+.dialog-scroll {
+  max-height: 168px;
+  overflow-y: auto;
+  padding: var(--space-4);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: var(--leading-loose);
+}
+
+
+/* ==========================================================================
+   COMMAND PALETTE
+   ========================================================================== */
+
+.palette-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  padding-top: 12vh;
+  background: var(--scrim);
+  animation: fade-in var(--dur-fast) var(--ease-out);
+}
+.palette-backdrop[hidden] { display: none; }
+
+.palette {
+  width: var(--palette-w);
+  max-width: calc(100vw - var(--space-9));
+  background: var(--palette-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--palette-radius);
+  box-shadow: var(--palette-shadow);
+  overflow: hidden;
+  animation: palette-in var(--dur-base) var(--ease-out);
+}
+@keyframes palette-in { from { opacity: 0; transform: translateY(-6px) scale(0.99); } }
+
+.palette-input-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: 0 var(--space-6);
+  border-bottom: 1px solid var(--border);
+}
+.palette-input-row .icon { color: var(--text-faint); }
+.palette-input {
+  flex: 1;
+  height: 46px;
+  background: none;
+  border: 0;
+  outline: none;
+  font-size: var(--text-md);
+  color: var(--text);
+}
+.palette-input::placeholder { color: var(--input-placeholder); }
+
+.palette-list {
+  max-height: var(--palette-max-h);
+  overflow-y: auto;
+  padding: var(--space-3);
+}
+.palette-group { padding: var(--space-5) var(--space-4) var(--space-2); }
+
+.palette-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  width: 100%;
+  height: var(--palette-row-h);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: var(--text-base);
+  text-align: left;
+}
+/* Selection is driven by aria-selected rather than :hover, so the keyboard
+   and the pointer cannot disagree about which row is active. */
+.palette-item[aria-selected="true"] { background: var(--accent-soft); color: var(--accent-text); }
+.palette-item[aria-selected="true"] .palette-item-sub { color: var(--accent-text); opacity: 0.8; }
+.palette-item .icon { color: var(--text-muted); }
+.palette-item[aria-selected="true"] .icon { color: var(--accent-text); }
+.palette-item-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.palette-item-sub { font-size: var(--text-xs); color: var(--text-faint); white-space: nowrap; }
+.palette-item mark { background: none; color: var(--brand-text); font-weight: var(--weight-semibold); }
+.palette-item[aria-selected="true"] mark { color: inherit; text-decoration: underline; }
+
+.palette-empty { padding: var(--space-9) var(--space-6); text-align: center; color: var(--text-faint); font-size: var(--text-sm); }
+
+.palette-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+.palette-footer span { display: inline-flex; align-items: center; gap: var(--space-3); }
+
+
+/* ==========================================================================
+   TOAST
+   Announced politely and never given focus: stealing focus from whatever the
+   user is doing to report a background event is worse than the report.
+   ========================================================================== */
+
+.toast-region {
+  position: fixed;
+  right: var(--space-6);
+  bottom: calc(var(--statusbar-h) + var(--space-6));
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: var(--toast-w);
+  pointer-events: none;
+}
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-5);
+  padding: var(--space-5) var(--space-6);
+  background: var(--surface-overlay);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--text-faint);
+  border-radius: var(--toast-radius);
+  box-shadow: var(--toast-shadow);
+  font-size: var(--text-sm);
+  pointer-events: auto;
+  animation: toast-in var(--dur-base) var(--ease-out);
+}
+@keyframes toast-in { from { opacity: 0; transform: translateX(12px); } }
+.toast[data-closing="true"] { animation: toast-out var(--dur-fast) var(--ease-in) forwards; }
+@keyframes toast-out { to { opacity: 0; transform: translateX(12px); } }
+.toast[data-kind="success"] { border-left-color: var(--success); }
+.toast[data-kind="warning"] { border-left-color: var(--warning); }
+.toast[data-kind="danger"]  { border-left-color: var(--danger); }
+.toast-body { flex: 1; min-width: 0; line-height: var(--leading-snug); }
+.toast-body strong { display: block; font-weight: var(--weight-semibold); margin-bottom: var(--space-1); }
+/* Undo lives in the toast because a destructive action that can be taken back
+   needs less friction up front than one that cannot. */
+.toast-action { flex: none; color: var(--brand-text); font-weight: var(--weight-medium); font-size: var(--text-sm); }
+
+
+/* ==========================================================================
+   TABLE
+   ========================================================================== */
+
+.table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.table th, .table td {
+  height: var(--table-row-h);
+  padding: 0 var(--space-5);
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.table th {
+  position: sticky;
+  top: 0;
+  background: var(--table-header-bg);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.table td.num, .table th.num {
+  text-align: right;
+  font-family: var(--table-numeric-font);
+  font-variant-numeric: tabular-nums;
+}
+.table tbody tr:hover { background: var(--surface-2); }
+.table th[aria-sort] { cursor: pointer; }
+.table th[aria-sort="ascending"]::after  { content: " ↑"; color: var(--accent-text); }
+.table th[aria-sort="descending"]::after { content: " ↓"; color: var(--accent-text); }
+
+
+/* ==========================================================================
+   EMPTY STATE
+   A blank panel tells the user nothing about whether the app is broken, still
+   loading, or simply waiting for them — so every empty region says which.
+   ========================================================================== */
+
+.empty {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-5);
+  padding: var(--space-10) var(--space-8);
+  text-align: center;
+}
+.empty .icon-lg { color: var(--text-faint); }
+.empty h3 { font-size: var(--text-md); color: var(--text); }
+.empty p { max-width: 44ch; color: var(--text-muted); font-size: var(--text-sm); line-height: var(--leading-loose); }
+
+
+/* ==========================================================================
+   SKELETON
+   Shown instead of a spinner once a wait passes ~300ms, and sized to the
+   content it replaces so nothing shifts when the real thing arrives.
+   ========================================================================== */
+
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 37%, var(--surface-2) 63%);
+  background-size: 400% 100%;
+  border-radius: var(--radius-xs);
+  animation: shimmer 1.4s var(--ease-inout) infinite;
+}
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+.skeleton-line { height: 10px; margin-bottom: var(--space-4); }
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; background: var(--surface-2); }
+}
+
+
+/* ==========================================================================
+   SEGMENTED CONTROL
+   ========================================================================== */
+
+.segmented {
+  display: inline-flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.segmented button {
+  height: calc(var(--control-h) - 8px);
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-xs);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.segmented button:hover { color: var(--text); }
+.segmented button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: var(--shadow-1); }
+
+
+/* ==========================================================================
+   PROGRESS / METER
+   ========================================================================== */
+
+.meter {
+  height: 6px;
+  background: var(--surface-3);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+.meter-fill {
+  height: 100%;
+  background: var(--brand);
+  border-radius: inherit;
+  transition: width var(--dur-slow) var(--ease-out);
+}
+.meter[data-state="warning"] .meter-fill { background: var(--warning); }
+.meter[data-state="over"]    .meter-fill { background: var(--danger); }
+.meter-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-5); margin-bottom: var(--space-3); }
+.meter-row .v { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--text-sm); }
