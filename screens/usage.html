@@ -51,7 +51,12 @@
           rather than shown as zeroes that make the totals harder to read.
         </p>
 
-        <div class="stat-row">
+        <!-- Two figures, not four tiles. Money and tokens are not the same
+             kind of quantity, and giving "Local tokens · no cost" the fourth
+             of four identical boxes buried the screen's own argument: most of
+             the work ran here and cost nothing. It is a sentence now, which is
+             what it always was. -->
+        <div class="stat-row stat-row-pair">
           <div class="stat">
             <div class="k">Spent this month</div>
             <div class="v">$18.40</div>
@@ -62,17 +67,12 @@
             <div class="v">$1.18</div>
             <div class="d">14 requests across 3 sessions</div>
           </div>
-          <div class="stat">
-            <div class="k">Cloud tokens</div>
-            <div class="v">2.41M</div>
-            <div class="d">1.92M in · 0.49M out</div>
-          </div>
-          <div class="stat">
-            <div class="k">Local tokens</div>
-            <div class="v">6.08M</div>
-            <div class="d">no cost — ran on this machine</div>
-          </div>
         </div>
+
+        <p class="token-split">
+          <strong class="num">6.08M</strong> tokens ran on this machine at no cost.
+          <strong class="num">2.41M</strong> went to cloud providers — 1.92M in, 0.49M out.
+        </p>
 
         <!-- ---------- budget ---------- -->
         <section>
@@ -159,10 +159,10 @@
               </div>
             </div>
 
-            <p class="field-hint" style="margin-top:var(--space-7)">
-              Cloud bars are scaled against the highest spend, local bars against the
-              highest token count. They are not comparable to each other, which is why
-              each row states its own figure instead of relying on bar length alone.
+            <p class="field-hint measure-short" style="margin-top:var(--space-7)">
+              Cloud bars are scaled against the highest spend, local bars against
+              the highest token count. The two scales are not comparable, so each
+              row states its own figure rather than relying on bar length.
             </p>
           </div>
         </section>

@@ -885,3 +885,66 @@
   border-top: 1px solid var(--border);
 }
 .onboard-foot .spacer { flex: 1; }
+
+
+/* ==========================================================================
+   COMPOSER SEND / STOP
+   One slot, two states. Both buttons are given the same minimum width so the
+   control does not shift under the pointer the moment a reply begins.
+   ========================================================================== */
+
+.composer-send { min-width: 84px; }
+
+
+/* ==========================================================================
+   ACTIVE ROW INDICATOR
+   --row-indicator was defined with intent and never consumed, which left the
+   current session marked only by --surface-3 — on dark that is #1E293B against
+   #131B2B, the faintest signal on screen for the most important orientation
+   question the sidebar answers. A bar restates it by position as well as tint,
+   so it survives without colour perception.
+   ========================================================================== */
+
+.row[aria-current="true"],
+.row[aria-selected="true"],
+.tree-item[aria-current="true"] {
+  position: relative;
+}
+.row[aria-current="true"]::before,
+.row[aria-selected="true"]::before,
+.tree-item[aria-current="true"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  translate: 0 -50%;
+  width: 2px;
+  height: 60%;
+  background: var(--row-indicator);
+  border-radius: var(--radius-full);
+}
+
+
+/* ==========================================================================
+   USAGE — spend pair and the token sentence
+   Money gets the tiles; tokens get a sentence. Four identical boxes asserted
+   that "local tokens, no cost" was the same kind of quantity as a dollar
+   figure, which buried the one thing the screen is arguing.
+   ========================================================================== */
+
+.stat-row-pair { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+
+.token-split {
+  max-width: var(--measure);
+  padding: var(--space-6);
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
+  line-height: var(--leading-loose);
+  color: var(--text-muted);
+}
+.token-split strong { color: var(--text); font-weight: var(--weight-semibold); }
+
+/* Helper text runs at a shorter measure than prose: it sits under a control,
+   where a full 72ch line has to be tracked back across the whole card. */
+.measure-short { max-width: 62ch; }

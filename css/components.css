@@ -555,7 +555,6 @@
   padding: var(--space-5) var(--space-6);
   background: var(--surface-overlay);
   border: 1px solid var(--border);
-  border-left: 3px solid var(--text-faint);
   border-radius: var(--toast-radius);
   box-shadow: var(--toast-shadow);
   font-size: var(--text-sm);
@@ -565,9 +564,15 @@
 @keyframes toast-in { from { opacity: 0; transform: translateX(12px); } }
 .toast[data-closing="true"] { animation: toast-out var(--dur-fast) var(--ease-in) forwards; }
 @keyframes toast-out { to { opacity: 0; transform: translateX(12px); } }
-.toast[data-kind="success"] { border-left-color: var(--success); }
-.toast[data-kind="warning"] { border-left-color: var(--warning); }
-.toast[data-kind="danger"]  { border-left-color: var(--danger); }
+/* The kind is carried by the leading icon, not by a coloured left edge. A
+   recoloured 3px border against 1px on the other three sides reads as a
+   rendering fault at this size, and it repeats what the icon and title already
+   say. .notice in screens.css does the same job with a tint and no stripe. */
+.toast-icon { flex: none; margin-top: 1px; color: var(--text-faint); }
+.toast[data-kind="success"] .toast-icon { color: var(--success-text); }
+.toast[data-kind="warning"] .toast-icon { color: var(--warning-text); }
+.toast[data-kind="danger"]  .toast-icon { color: var(--danger-text); }
+.toast[data-kind="info"]    .toast-icon { color: var(--info-text); }
 .toast-body { flex: 1; min-width: 0; line-height: var(--leading-snug); }
 .toast-body strong { display: block; font-weight: var(--weight-semibold); margin-bottom: var(--space-1); }
 /* Undo lives in the toast because a destructive action that can be taken back

@@ -234,7 +234,7 @@
 </dialog>
 
 
-<dialog class="dialog" id="dlg-erase" data-confirm-toast="Nothing was erased">
+<dialog class="dialog" id="dlg-erase" data-confirm-toast="Erase confirmed">
   <div class="dialog-header">
     <span class="dialog-icon" data-kind="danger"><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg></span>
     <div>
@@ -290,8 +290,11 @@
       Read the rule
     </button>
     <span class="spacer"></span>
-    <button class="btn btn-secondary" type="button" data-dialog-close="cancel">Edit the message</button>
-    <button class="btn btn-primary" type="button" data-dialog-close="ok" data-autofocus>Understood</button>
+    <!-- The recovery path leads. The user was just stopped; making "Understood"
+         the loudest suggestion tells them to give up, when the dialog's own copy
+         has already explained how to rephrase. Esc still dismisses. -->
+    <button class="btn btn-secondary" type="button" data-dialog-close="ok">Understood</button>
+    <button class="btn btn-primary" type="button" data-dialog-close="cancel" data-autofocus>Edit the message</button>
   </div>
 </dialog>
 

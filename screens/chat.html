@@ -198,9 +198,18 @@ impl Storage {
             claude-opus-5
           </span>
           <span class="composer-hint"><kbd>Ctrl</kbd> <kbd>Enter</kbd></span>
-          <button class="btn btn-primary btn-sm" type="button" id="send">
+          <!-- Send and Stop occupy the same slot at the same width, so the
+               control does not move out from under the pointer when a reply
+               starts. A cloud generation that cannot be stopped is a cost
+               problem as much as a control one, which is why group chat has
+               Pause and this now has its match. Esc stops it too. -->
+          <button class="btn btn-primary btn-sm composer-send" type="button" id="send">
             <svg class="icon icon-sm" aria-hidden="true"><use href="#i-send"/></svg>
             Send
+          </button>
+          <button class="btn btn-secondary btn-sm composer-send" type="button" id="stop" hidden>
+            <svg class="icon icon-sm" aria-hidden="true"><use href="#i-stop"/></svg>
+            Stop
           </button>
         </div>
       </div>
@@ -212,8 +221,10 @@ impl Storage {
     <div class="inspector-header"><span class="label">Session</span></div>
     <div class="inspector-body">
 
+      <!-- No "Agent" header: the panel is titled Session and this block is
+           self-evidently the agent. A header with nothing to distinguish it
+           from the row below is a line of noise. -->
       <section class="inspector-section">
-        <span class="label">Agent</span>
         <div style="display:flex;align-items:center;gap:var(--space-5);margin-bottom:var(--space-5)">
           <span class="avatar avatar-lg" data-agent="1" aria-hidden="true">LA</span>
           <div style="min-width:0">
@@ -241,7 +252,7 @@ impl Storage {
       </section>
 
       <section class="inspector-section">
-        <span class="label">Granted folders</span>
+        <span class="label label-lead">Granted folders</span>
         <div class="roster">
           <div class="roster-item">
             <svg class="icon icon-sm" aria-hidden="true" style="color:var(--text-faint)"><use href="#i-folder"/></svg>
@@ -280,7 +291,7 @@ impl Storage {
       </section>
 
       <section class="inspector-section">
-        <span class="label">Guardrails</span>
+        <span class="label label-lead">Guardrails</span>
         <dl class="kv">
           <dt>Classifier</dt> <dd>Llama Guard 3</dd>
           <dt>Screened</dt>   <dd class="num">18 messages</dd>
@@ -321,15 +332,47 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  document.getElementById('send').addEventListener('click', function () {
-    if (!ta.value.trim()) return;
+  /* Send / Stop share one slot. Sending swaps to Stop for as long as the
+     reply is streaming; stopping swaps back. Esc stops as well, because
+     reaching for the mouse to halt something that is costing money is the
+     wrong reflex to design in. */
+  var send = document.getElementById('send');
+  var stop = document.getElementById('stop');
+  var streamTimer = null;
+
+  function setStreaming(on) {
+    send.hidden = on;
+    stop.hidden = !on;
+    if (on) stop.focus();
+  }
+
+  function endStream(reason) {
+    if (!streamTimer) return;
+    clearTimeout(streamTimer);
+    streamTimer = null;
+    setStreaming(false);
     window.Toast.show({
-      kind: 'info',
-      title: 'Not wired up',
-      body: 'This is a design mockup — the message was not sent.'
+      kind: reason === 'stopped' ? 'warning' : 'info',
+      title: reason === 'stopped' ? 'Reply stopped' : 'Not wired up',
+      body: reason === 'stopped'
+        ? 'The partial reply is kept. Nothing further was requested from the provider.'
+        : 'This is a design mockup — the message was not sent.'
     });
+  }
+
+  send.addEventListener('click', function () {
+    if (!ta.value.trim()) return;
     ta.value = '';
     grow();
+    setStreaming(true);
+    // Stands in for a reply arriving, so the Stop state can actually be seen.
+    streamTimer = setTimeout(function () { endStream('finished'); }, 4000);
+  });
+
+  stop.addEventListener('click', function () { endStream('stopped'); });
+
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Escape' && streamTimer) { endStream('stopped'); ev.preventDefault(); }
   });
 
   // Start at the newest message, the way a conversation opens.

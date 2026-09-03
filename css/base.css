@@ -66,6 +66,14 @@ ul, ol { margin: 0; padding: 0; }
   text-transform: uppercase;
   color: var(--text-faint);
 }
+/* A second tier, for the one or two sections on a panel that carry
+   consequence. Seven headers at one weight and the faintest colour in the
+   system means nothing leads; two tiers means the eye knows where to start.
+   Used sparingly — if everything is promoted, nothing is. */
+.label-lead {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
 
 /* Numeric and identifier data: tabular figures so columns never jitter as
    values update. */
@@ -118,6 +126,12 @@ hr {
 }
 
 img, svg { display: block; max-width: 100%; }
+
+/* The UA stylesheet's [hidden] { display: none } is a type-level rule, so any
+   class that sets display wins over it — .btn's inline-flex left a "hidden"
+   button fully visible. Restating it as a class-level declaration puts it back
+   in charge, which is what every `el.hidden = true` in the mockup assumes. */
+[hidden] { display: none !important; }
 
 button, input, select, textarea {
   font: inherit;

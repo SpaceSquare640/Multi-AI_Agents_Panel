@@ -473,7 +473,7 @@
   --panel-gap:       1px;    /* hairline seam between shell regions          */
 
   /* --- interactive sizing ---
-     36px is the standard control height. It is below the 44px touch minimum
+     32px is the standard control height. It is below the 44px touch minimum
      on purpose: this is a mouse-and-keyboard desktop app with no touch
      target, where 44px everywhere would waste roughly a fifth of the
      vertical space in a dense list. Anything that could ever be touched

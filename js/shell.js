@@ -112,6 +112,65 @@
       });
     });
 
+    /* ---- rail tooltips ---------------------------------------------------
+       The rail is nine icon-only destinations. Their accessible names are
+       already in .sr-only, but a sighted user hovering gets whatever delay the
+       browser gives native `title` — around a second, and unstyled. The
+       .tooltip component and --tooltip-delay existed for this and had no
+       consumer, so the rail relied on the thing they were written to replace.
+
+       title is removed once JS takes over, otherwise both appear. Focus shows
+       the tooltip immediately: a keyboard user arriving on an item has already
+       committed to it, and making them wait is pointless. */
+    (function railTooltips() {
+      var rail = document.querySelector('.rail');
+      if (!rail) return;
+
+      var delay = parseFloat(getComputedStyle(document.documentElement)
+                    .getPropertyValue('--tooltip-delay')) || 400;
+      var tip = null, timer = null;
+
+      function hide() {
+        clearTimeout(timer);
+        if (tip) { tip.remove(); tip = null; }
+      }
+
+      function show(item, immediate) {
+        hide();
+        var label = item.dataset.tip;
+        if (!label) return;
+        function place() {
+          tip = document.createElement('div');
+          tip.className = 'tooltip';
+          tip.setAttribute('role', 'presentation');   // the name is on the item
+          tip.textContent = label;
+          document.body.appendChild(tip);
+          var r = item.getBoundingClientRect();
+          tip.style.left = (r.right + 8) + 'px';
+          tip.style.top = Math.round(r.top + (r.height - tip.offsetHeight) / 2) + 'px';
+        }
+        if (immediate) place();
+        else timer = setTimeout(place, delay);
+      }
+
+      rail.querySelectorAll('.rail-item').forEach(function (item) {
+        var name = item.querySelector('.sr-only');
+        var group = item.closest('[role="group"]');
+        item.dataset.tip = (name ? name.textContent : '') +
+          (group && group.getAttribute('aria-label') ? ' · ' + group.getAttribute('aria-label') : '');
+        item.removeAttribute('title');
+
+        item.addEventListener('mouseenter', function () { show(item, false); });
+        item.addEventListener('mouseleave', hide);
+        item.addEventListener('focus', function () { show(item, true); });
+        item.addEventListener('blur', hide);
+        item.addEventListener('click', hide);
+      });
+
+      window.addEventListener('scroll', hide, true);
+      document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') hide(); });
+    })();
+
     /* ---- rail navigation -------------------------------------------------
        The rail is a real toolbar: arrow keys move between destinations and
        only the active item is in the tab order, which is the expected

@@ -44,7 +44,10 @@
       el.className = 'toast';
       el.dataset.kind = opts.kind || 'info';
 
-      var html = '<div class="toast-body">';
+      var ICON = { success: 'i-check', warning: 'i-alert', danger: 'i-alert', info: 'i-info' };
+      var html = '<svg class="icon toast-icon" aria-hidden="true"><use href="#' +
+                 (ICON[el.dataset.kind] || 'i-info') + '"/></svg>' +
+                 '<div class="toast-body">';
       if (opts.title) html += '<strong>' + esc(opts.title) + '</strong>';
       if (opts.body) html += esc(opts.body);
       html += '</div>';
@@ -62,9 +65,13 @@
 
       host.appendChild(el);
 
-      // An undoable action gets longer than the default: five seconds is not
-      // enough to read a message and decide to take it back.
-      var life = opts.timeout || (opts.action ? 9000 : 5000);
+      /* The default comes from --toast-timeout rather than a number written
+         here, so the documented token is the one actually in force. An
+         undoable action gets longer: five seconds is not enough to read a
+         message and decide to take it back. */
+      var base = parseFloat(getComputedStyle(document.documentElement)
+                   .getPropertyValue('--toast-timeout')) || 5;
+      var life = opts.timeout || (opts.action ? base * 1800 : base * 1000);
       var timer = setTimeout(function () { dismiss(el); }, life);
       // Hovering pauses the countdown, so a toast cannot expire while it is
       // being read.
