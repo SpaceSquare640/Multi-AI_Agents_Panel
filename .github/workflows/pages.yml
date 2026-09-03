@@ -1,0 +1,55 @@
+# Publishes the UI design mockup to GitHub Pages.
+#
+# The mockup is plain HTML, CSS and vanilla JS with no build step, so the
+# branch is uploaded as-is — there is nothing to compile, bundle or install.
+# Landing on the site lands on index.html, the screen index.
+#
+# This deploys from the design branch only. The Source_Code branch is not
+# involved and is never checked out here.
+#
+# Requires the repository's Pages source to be set to "GitHub Actions"
+# (Settings -> Pages -> Source). Until that is set, this workflow fails at the
+# configure step with a message saying Pages is not enabled.
+
+name: Pages
+
+on:
+  push:
+    branches: [Multi-AI_Agents_Panel_UI_Design]
+  workflow_dispatch:
+
+# Read the repo, mint the OIDC token deploy-pages needs, write the Pages
+# deployment. Nothing else.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time. Queued rather than cancelled: an in-flight deploy
+# that gets cancelled can leave the site on the previous commit with no
+# indication, which is worse than waiting.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out the design branch
+        uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload the mockup
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
