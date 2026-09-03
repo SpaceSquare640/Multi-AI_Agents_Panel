@@ -691,3 +691,39 @@
 .meter[data-state="over"]    .meter-fill { background: var(--danger); }
 .meter-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-5); margin-bottom: var(--space-3); }
 .meter-row .v { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--text-sm); }
+
+
+/* ==========================================================================
+   LIST ROW
+   The sidebar's unit of content on every screen: sessions, models, skills,
+   notes, recordings. It lived in a per-page <style> block for the first three
+   screens, which was already three copies of the same rules — promoted here
+   before it became seven.
+   ========================================================================== */
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  height: var(--row-h);
+  padding: 0 var(--row-px);
+  border-radius: var(--row-radius);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.row:hover { background: var(--row-bg-hover); color: var(--text); }
+.row[aria-current="true"],
+.row[aria-selected="true"] { background: var(--row-bg-active); color: var(--text); }
+.row .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.row .badge,
+.row .avatar,
+.row .icon { flex: none; }
+/* Rows that carry a second line need the height to give way rather than
+   clipping the descender. */
+.row-tall { height: auto; min-height: var(--row-h); padding-block: var(--space-3); white-space: normal; }
+.row-tall .name { white-space: normal; }
+.row-sub { font-size: var(--text-2xs); color: var(--text-faint); }

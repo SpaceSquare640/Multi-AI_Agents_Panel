@@ -26,12 +26,17 @@
   letter-spacing: 0;
   user-select: none;
 }
-.avatar[data-agent="1"] { background: color-mix(in srgb, var(--agent-1) 16%, transparent); color: var(--agent-1); }
-.avatar[data-agent="2"] { background: color-mix(in srgb, var(--agent-2) 16%, transparent); color: var(--agent-2); }
-.avatar[data-agent="3"] { background: color-mix(in srgb, var(--agent-3) 16%, transparent); color: var(--agent-3); }
-.avatar[data-agent="4"] { background: color-mix(in srgb, var(--agent-4) 16%, transparent); color: var(--agent-4); }
-.avatar[data-agent="5"] { background: color-mix(in srgb, var(--agent-5) 16%, transparent); color: var(--agent-5); }
-.avatar[data-agent="6"] { background: color-mix(in srgb, var(--agent-6) 16%, transparent); color: var(--agent-6); }
+/* The tint composites against --surface explicitly rather than against
+   whatever is behind it. Mixed with transparent it inherited the row beneath,
+   so the same monogram measured 5.01:1 on a normal row and 4.10:1 inside a
+   selected one — the tint was landing on --surface-3 instead of --surface.
+   Mixing to an opaque colour makes the pair fixed wherever the avatar sits. */
+.avatar[data-agent="1"] { background: color-mix(in srgb, var(--agent-1) 16%, var(--surface)); color: var(--agent-1); }
+.avatar[data-agent="2"] { background: color-mix(in srgb, var(--agent-2) 16%, var(--surface)); color: var(--agent-2); }
+.avatar[data-agent="3"] { background: color-mix(in srgb, var(--agent-3) 16%, var(--surface)); color: var(--agent-3); }
+.avatar[data-agent="4"] { background: color-mix(in srgb, var(--agent-4) 16%, var(--surface)); color: var(--agent-4); }
+.avatar[data-agent="5"] { background: color-mix(in srgb, var(--agent-5) 16%, var(--surface)); color: var(--agent-5); }
+.avatar[data-agent="6"] { background: color-mix(in srgb, var(--agent-6) 16%, var(--surface)); color: var(--agent-6); }
 .avatar[data-agent="user"] { background: var(--surface-3); color: var(--text-muted); }
 .avatar-lg { width: 28px; height: 28px; font-size: var(--text-xs); border-radius: var(--radius-md); }
 
@@ -329,3 +334,288 @@
 .summary-body > * + * { margin-top: var(--space-5); }
 .summary-body ul { padding-left: var(--space-8); }
 .summary-body li + li { margin-top: var(--space-3); }
+
+
+/* ==========================================================================
+   CAPABILITY SCREENS
+   Models, Skills, Semantic Search and Game Agent share a shape: a settings
+   surface rather than a conversation. They get a scrolling column of cards at
+   a fixed measure rather than a full-bleed grid — a form stretched across a
+   1400px window is unreadable however much space there is.
+   ========================================================================== */
+
+.pane {
+  max-width: 780px;
+  padding: var(--space-8);
+}
+.pane-wide { max-width: 1040px; }
+.pane > * + * { margin-top: var(--space-8); }
+
+.pane-intro {
+  max-width: var(--measure);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-loose);
+}
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+.section-head h2 { font-size: var(--text-md); }
+.section-head .count {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+.section-head .spacer { flex: 1; }
+
+
+/* --------------------------------------------------------------------------
+   Provider list (Models)
+   Each provider is a card rather than a table row: it carries a key, a
+   reachability state, a model list and a fallback position, which is more
+   than a row can hold without becoming unreadable.
+   -------------------------------------------------------------------------- */
+
+.provider {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  gap: var(--space-4) var(--space-5);
+  align-items: center;
+  padding: var(--space-6);
+}
+.provider + .provider { margin-top: var(--space-5); }
+.provider-mark {
+  display: grid;
+  place-items: center;
+  width: 28px; height: 28px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
+  color: var(--text-muted);
+}
+.provider-mark[data-where="local"] { background: var(--brand-soft); color: var(--provider-local); }
+.provider-mark[data-where="cloud"] { background: var(--accent-soft); color: var(--provider-cloud); }
+.provider-name { font-size: var(--text-base); font-weight: var(--weight-semibold); }
+.provider-sub {
+  margin-top: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+.provider-actions { display: flex; align-items: center; gap: var(--space-4); }
+/* The expanded detail spans the whole card, under all three columns. */
+.provider-detail {
+  grid-column: 1 / -1;
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--border);
+}
+
+/* Fallback order. Position is the entire meaning, so the numbers are visible
+   rather than implied by a stack of names. */
+.fallback { display: flex; flex-direction: column; gap: var(--space-3); counter-reset: fb; }
+.fallback li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  list-style: none;
+}
+.fallback li::before {
+  counter-increment: fb;
+  content: counter(fb);
+  display: grid;
+  place-items: center;
+  width: 18px; height: 18px;
+  flex: none;
+  background: var(--surface-3);
+  border-radius: var(--radius-full);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--text-muted);
+}
+.fallback .name { flex: 1; min-width: 0; font-size: var(--text-sm); }
+.fallback .grip { color: var(--text-faint); cursor: grab; }
+
+
+/* --------------------------------------------------------------------------
+   Hardware fit (Models)
+   -------------------------------------------------------------------------- */
+
+.fit-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-5); }
+.fit-stat { padding: var(--space-5); background: var(--surface-2); border-radius: var(--radius-sm); }
+.fit-stat .k { font-size: var(--text-2xs); letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--text-faint); }
+.fit-stat .v { margin-top: var(--space-2); font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--text-md); }
+
+/* Verdict rows. The tint repeats what the label already says rather than
+   replacing it: fits and will swap have to be distinguishable without colour
+   perception. */
+.verdict { display: flex; align-items: center; gap: var(--space-5); padding: var(--space-4) var(--space-5); border-radius: var(--radius-sm); }
+.verdict + .verdict { margin-top: var(--space-3); }
+.verdict .model { flex: 1; min-width: 0; font-family: var(--font-mono); font-size: var(--text-sm); overflow: hidden; text-overflow: ellipsis; }
+.verdict .size { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--text-xs); color: var(--text-faint); }
+.verdict[data-fit="good"]  { background: var(--success-soft); }
+.verdict[data-fit="tight"] { background: var(--warning-soft); }
+.verdict[data-fit="no"]    { background: var(--danger-soft); }
+
+/* A tinted badge inside a tinted row stacks two layers of the same hue, and
+   the text on top then fails: the danger badge on the danger row measured
+   4.12:1 and the faint size label 4.46:1. The row tint is the scanning
+   signal, so the badge inside it drops back to a single opaque layer and the
+   secondary label steps up from faint to muted. Neither change removes any
+   meaning — the badge still says what it said in words. */
+.verdict .badge { background: var(--surface); color: var(--text); }
+.verdict .size  { color: var(--text-muted); }
+
+
+/* --------------------------------------------------------------------------
+   Skill card
+   -------------------------------------------------------------------------- */
+
+.skill { padding: var(--space-6); }
+.skill + .skill { margin-top: var(--space-5); }
+.skill-head { display: flex; align-items: flex-start; gap: var(--space-5); }
+.skill-title { flex: 1; min-width: 0; }
+.skill-title h3 { font-size: var(--text-base); }
+.skill-title p { margin-top: var(--space-2); font-size: var(--text-sm); color: var(--text-muted); line-height: var(--leading-body); }
+.scopes { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-5); }
+
+/* Grants. An agent that has the skill and one that does not must be tellable
+   apart at a glance, so granted agents are filled and the rest outlined,
+   rather than both being chips of the same weight. */
+.grants { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-5); }
+.grant {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: 24px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  transition: background-color var(--dur-fast) var(--ease-out),
+              border-color     var(--dur-fast) var(--ease-out),
+              color            var(--dur-fast) var(--ease-out);
+}
+.grant:hover { border-color: var(--text-faint); color: var(--text); }
+.grant[aria-pressed="true"] {
+  background: var(--brand-soft);
+  border-color: transparent;
+  color: var(--brand-text);
+  font-weight: var(--weight-medium);
+}
+.grant[aria-pressed="true"]:hover { color: var(--brand-text); }
+
+
+/* --------------------------------------------------------------------------
+   Semantic search
+   -------------------------------------------------------------------------- */
+
+.searchbar { display: flex; gap: var(--space-4); }
+.searchbar .input-group { flex: 1; }
+
+.hit { padding: var(--space-6); }
+.hit + .hit { margin-top: var(--space-4); }
+.hit-head { display: flex; align-items: center; gap: var(--space-5); }
+.hit-path {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hit-score {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+.hit-snippet {
+  margin-top: var(--space-4);
+  font-size: var(--text-sm);
+  line-height: var(--leading-body);
+}
+.hit-snippet mark {
+  padding: 0 2px;
+  background: var(--warning-soft);
+  color: var(--warning-text);
+  border-radius: 2px;
+}
+
+/* Index state. A search box over a stale or partial index that does not say so
+   is worse than no search box, so the state sits above the results. */
+.index-state { display: flex; align-items: center; gap: var(--space-5); font-size: var(--text-sm); }
+.index-state .meter { flex: 1; }
+
+
+/* --------------------------------------------------------------------------
+   Game agent pipeline
+   The stages are ordered and each depends on the one before, so they read as a
+   numbered sequence with an explicit state — not four buttons that all look
+   equally available when three of them are not.
+   -------------------------------------------------------------------------- */
+
+.stages { display: flex; flex-direction: column; }
+.stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  gap: var(--space-4) var(--space-5);
+  align-items: start;
+  padding: var(--space-6) 0;
+}
+.stage + .stage { border-top: 1px solid var(--border); }
+
+.stage-num {
+  display: grid;
+  place-items: center;
+  width: 28px; height: 28px;
+  border-radius: var(--radius-full);
+  background: var(--surface-3);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+.stage[data-state="done"]    .stage-num { background: var(--success-soft); color: var(--success-text); }
+.stage[data-state="running"] .stage-num { background: var(--brand-soft);   color: var(--brand-text); }
+.stage[data-state="blocked"] .stage-num { background: var(--surface-3);    color: var(--text-faint); }
+
+/* The connector makes the dependency visible: a stage cannot start until the
+   line above it is complete. */
+.stage:not(:last-child) .stage-num::after {
+  content: "";
+  position: absolute;
+  left: 13px;
+  top: 28px;
+  bottom: calc(var(--space-6) * -1);
+  width: 2px;
+  background: var(--border);
+}
+.stage[data-state="done"]:not(:last-child) .stage-num::after { background: var(--success); }
+
+.stage-body { min-width: 0; }
+.stage-body h3 { font-size: var(--text-base); }
+.stage-body p { margin-top: var(--space-2); font-size: var(--text-sm); color: var(--text-muted); line-height: var(--leading-body); }
+.stage-out {
+  margin-top: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  overflow-x: auto;
+  white-space: pre;
+}
+.stage-actions { display: flex; align-items: center; gap: var(--space-4); }
+.stage[data-state="blocked"] .stage-body h3,
+.stage[data-state="blocked"] .stage-body p { color: var(--text-faint); }

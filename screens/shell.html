@@ -26,17 +26,6 @@
   }
   .placeholder h2 { color: var(--text); }
   .placeholder p { max-width: 48ch; color: var(--text-muted); font-size: var(--text-sm); line-height: var(--leading-loose); }
-  .row {
-    display: flex; align-items: center; gap: var(--space-4);
-    height: var(--row-h); padding: 0 var(--row-px);
-    border-radius: var(--row-radius);
-    color: var(--text-muted); font-size: var(--text-sm);
-    white-space: nowrap; overflow: hidden;
-  }
-  .row:hover { background: var(--row-bg-hover); color: var(--text); }
-  .row[aria-selected="true"] { background: var(--row-bg-active); color: var(--text); }
-  .row .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-  .row .badge { flex: none; }
 </style>
 </head>
 <body>

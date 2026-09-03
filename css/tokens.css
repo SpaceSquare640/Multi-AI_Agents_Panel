@@ -83,7 +83,13 @@
   --neutral-border-dark-hi: #66748A;  /* 3.97:1 on bg, 3.63:1 on surface     */
   --neutral-border-light-hi:#6F8299;  /* 3.60:1 on bg, 3.94:1 on surface     */
   --neutral-text-dark:      #E7ECF3;
-  --neutral-text-faint-dk:  #7C8CA3;
+  /* Faint text has to clear AA on every surface it can land on, not just on
+     --bg. At #7C8CA3 it measured 5.50 on --bg but only 4.28 on --surface-3,
+     the selected-row tint — so a secondary line inside a selected row failed
+     while the same line one row above passed. Lightened until the worst case
+     clears: 6.53 / 5.97 / 5.54 / 5.07 across bg, surface, surface-2 and
+     surface-3. */
+  --neutral-text-faint-dk:  #8B99B0;
   --neutral-text-faint-lt:  #5B6878;
 
   /* --- brand: cyan, sampled from the app icon --- */

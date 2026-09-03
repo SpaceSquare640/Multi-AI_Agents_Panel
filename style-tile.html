@@ -280,6 +280,10 @@
     ['--provider-cloud', '--accent-soft',  'Provider · cloud',  'text'],
     ['--text-muted',     '--surface-3',    'Muted on selection','text'],
     ['--text-faint',     '--surface-2',    'Faint on striped row','text'],
+    /* The selected-row tint is the worst case for faint text and was the pair
+       that caught it failing, so it is measured here rather than assumed from
+       the lighter surfaces. */
+    ['--text-faint',     '--surface-3',    'Faint on selected row','text'],
     ['--tooltip-fg',     '--tooltip-bg',   'Tooltip',           'text'],
 
     /* Agent identity. The monogram sits on a 16% tint of its own hue, so each

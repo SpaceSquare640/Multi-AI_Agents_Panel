@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skills — Multi-AI Agents Panel UI Design</title>
+<link rel="icon" href="../app-icon.png">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/shell.css">
+<link rel="stylesheet" href="../css/screens.css">
+<script src="../js/theme.js"></script>
+<script src="../js/icons.js"></script>
+</head>
+<body>
+
+<a class="skip-link" href="#workspace">Skip to main content</a>
+
+<div class="shell" data-screen="skills" data-sidebar="expanded" data-inspector="expanded">
+
+  <!-- ==================== SIDEBAR ==================== -->
+  <aside class="sidebar" aria-label="Skills">
+    <div class="sidebar-header">
+      <span class="label">Skills</span>
+      <button class="titlebar-btn" type="button" aria-label="Import a skill">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-plus"/></svg>
+      </button>
+    </div>
+
+    <div class="sidebar-body">
+      <div class="input-group" style="margin:var(--space-3) var(--space-2) var(--space-5)">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-search"/></svg>
+        <input class="input" type="search" placeholder="Filter skills" aria-label="Filter skills">
+      </div>
+
+      <div class="label" style="padding:0 var(--row-px) var(--space-3)">Bundled</div>
+      <button class="row" type="button" aria-current="true">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-skills"/></svg>
+        <span class="name">Raffle winner picker</span>
+        <span class="badge" data-kind="idle">2</span>
+      </button>
+      <button class="row" type="button">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-skills"/></svg>
+        <span class="name">Repository summarizer</span>
+        <span class="badge" data-kind="idle">3</span>
+      </button>
+
+      <div class="label" style="padding:var(--space-6) var(--row-px) var(--space-3)">Imported</div>
+      <button class="row" type="button">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-skills"/></svg>
+        <span class="name">CSV cleaner</span>
+        <span class="badge" data-kind="idle">1</span>
+      </button>
+      <button class="row" type="button">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-skills"/></svg>
+        <span class="name">Web fetch</span>
+        <span class="badge" data-kind="attention">!</span>
+      </button>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="row"><span class="name">4 skills · 6 grants</span></div>
+    </div>
+  </aside>
+
+  <!-- ==================== WORKSPACE ==================== -->
+  <main class="workspace" id="workspace" tabindex="-1">
+    <div class="workspace-header">
+      <span class="workspace-title">Skills</span>
+      <div class="workspace-actions">
+        <button class="btn btn-ghost btn-sm" type="button">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#i-copy"/></svg>
+          Export
+        </button>
+        <button class="btn btn-secondary btn-sm" type="button">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#i-plus"/></svg>
+          Import
+        </button>
+      </div>
+    </div>
+
+    <div class="workspace-body">
+      <div class="pane">
+
+        <p class="pane-intro">
+          Skills are Python programs that run in their own process, outside the
+          app. Each one declares the permissions it needs, and holds none of
+          them until an agent is granted the skill — installing is not the same
+          as trusting.
+        </p>
+
+        <div class="callout" data-kind="info">
+          <svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>
+          <div class="callout-body">
+            <strong>A skill with no grants cannot run</strong>
+            Grants are per agent, not global. An agent can only call the skills
+            it has been given, which is what keeps one agent's tools out of
+            another agent's reach.
+          </div>
+        </div>
+
+        <!-- ---------- skill cards ---------- -->
+        <section>
+          <div class="section-head">
+            <h2>Installed</h2>
+            <span class="count">4 skills</span>
+          </div>
+
+          <div class="card skill">
+            <div class="skill-head">
+              <div class="skill-title">
+                <h3>Raffle winner picker</h3>
+                <p>Draws entries from a list without replacement, with a seed so a draw can be repeated and checked.</p>
+              </div>
+              <span class="badge" data-kind="succeeded">Bundled</span>
+            </div>
+            <div class="scopes">
+              <span class="badge" data-kind="idle">read: session</span>
+            </div>
+            <div class="grants" role="group" aria-label="Agents granted Raffle winner picker">
+              <button class="grant" type="button" aria-pressed="true">
+                <svg class="icon icon-sm" aria-hidden="true"><use href="#i-check"/></svg>
+                Product Lead
+              </button>
+              <button class="grant" type="button" aria-pressed="true">
+                <svg class="icon icon-sm" aria-hidden="true"><use href="#i-check"/></svg>
+                Documentation Writer
+              </button>
+              <button class="grant" type="button" aria-pressed="false">QA Engineer</button>
+              <button class="grant" type="button" aria-pressed="false">Lead Architect</button>
+              <button class="grant" type="button" aria-pressed="false">Security Tester</button>
+            </div>
+          </div>
+
+          <div class="card skill">
+            <div class="skill-head">
+              <div class="skill-title">
+                <h3>Repository summarizer</h3>
+                <p>Walks a granted folder and returns a structure summary. Reads files; never writes, and never opens a socket.</p>
+              </div>
+              <span class="badge" data-kind="succeeded">Bundled</span>
+            </div>
+            <div class="scopes">
+              <span class="badge" data-kind="idle">read: files</span>
+              <span class="badge" data-kind="idle">net: none</span>
+            </div>
+            <div class="grants" role="group" aria-label="Agents granted Repository summarizer">
+              <button class="grant" type="button" aria-pressed="true">
+                <svg class="icon icon-sm" aria-hidden="true"><use href="#i-check"/></svg>
+                Lead Architect
+              </button>
+              <button class="grant" type="button" aria-pressed="true">
+                <svg class="icon icon-sm" aria-hidden="true"><use href="#i-check"/></svg>
+                Full-Stack Developer
+              </button>
+              <button class="grant" type="button" aria-pressed="true">
+                <svg class="icon icon-sm" aria-hidden="true"><use href="#i-check"/></svg>
+                QA Engineer
+              </button>
+              <button class="grant" type="button" aria-pressed="false">Security Tester</button>
+            </div>
+          </div>
+
+          <div class="card skill">
+            <div class="skill-head">
+              <div class="skill-title">
+                <h3>Web fetch</h3>
+                <p>Retrieves a URL and returns its text. The only installed skill that can reach the network.</p>
+              </div>
+              <span class="badge" data-kind="attention">Imported</span>
+            </div>
+            <div class="scopes">
+              <span class="badge" data-kind="attention">net: outbound</span>
+            </div>
+
+            <!-- The warning sits on the skill that earns it rather than at the
+                 top of the screen: a banner above four skills says nothing
+                 about which one is the risk. -->
+            <div class="callout" data-kind="warning" style="margin-top:var(--space-5)">
+              <svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg>
+              <div class="callout-body">
+                <strong>Anything passed to this skill can leave the machine</strong>
+                Skills have no network access by default. This one asks for it, so grant it
+                only to agents whose conversations you would be comfortable sending outward.
+              </div>
+            </div>
+
+            <div class="grants" role="group" aria-label="Agents granted Web fetch">
+              <button class="grant" type="button" aria-pressed="false">Product Lead</button>
+              <button class="grant" type="button" aria-pressed="false">Lead Architect</button>
+              <button class="grant" type="button" aria-pressed="false">QA Engineer</button>
+              <button class="grant" type="button" aria-pressed="false">Security Tester</button>
+            </div>
+          </div>
+
+          <div class="card skill">
+            <div class="skill-head">
+              <div class="skill-title">
+                <h3>CSV cleaner</h3>
+                <p>Normalises headers, trims whitespace and writes the result beside the original.</p>
+              </div>
+              <span class="badge" data-kind="attention">Imported</span>
+            </div>
+            <div class="scopes">
+              <span class="badge" data-kind="idle">read: files</span>
+              <span class="badge" data-kind="attention">write: files</span>
+            </div>
+            <div class="grants" role="group" aria-label="Agents granted CSV cleaner">
+              <button class="grant" type="button" aria-pressed="true">
+                <svg class="icon icon-sm" aria-hidden="true"><use href="#i-check"/></svg>
+                Full-Stack Developer
+              </button>
+              <button class="grant" type="button" aria-pressed="false">QA Engineer</button>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- ==================== INSPECTOR ==================== -->
+  <aside class="inspector" aria-label="Skill">
+    <div class="inspector-header"><span class="label">Skill</span></div>
+    <div class="inspector-body">
+
+      <section class="inspector-section">
+        <div style="font-weight:var(--weight-semibold)">Raffle winner picker</div>
+        <div class="row-sub" style="margin-top:var(--space-2)">Bundled · refreshed on every app update</div>
+      </section>
+
+      <section class="inspector-section">
+        <span class="label">Declared permissions</span>
+        <dl class="kv">
+          <dt>Files</dt>   <dd>None</dd>
+          <dt>Network</dt> <dd>None</dd>
+          <dt>Session</dt> <dd>Read</dd>
+          <dt>Process</dt> <dd>Own only</dd>
+        </dl>
+      </section>
+
+      <section class="inspector-section">
+        <span class="label">Sandbox</span>
+        <p style="font-size:var(--text-sm);color:var(--text-muted);line-height:var(--leading-loose)">
+          Runs in a separate process with a default-deny permission set. Module-level
+          code is sandboxed at import time, not only at call time — a skill that did
+          its work on import would otherwise slip past the check entirely.
+        </p>
+      </section>
+
+      <section class="inspector-section">
+        <span class="label">Recent calls</span>
+        <dl class="kv">
+          <dt>Today</dt>     <dd class="num">3</dd>
+          <dt>Failed</dt>    <dd class="num">0</dd>
+          <dt>Last run</dt>  <dd>17:52</dd>
+        </dl>
+      </section>
+
+      <section class="inspector-section">
+        <button class="btn btn-secondary" type="button" style="width:100%">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#i-external"/></svg>
+          Open the skill folder
+        </button>
+      </section>
+
+    </div>
+  </aside>
+
+</div>
+
+<script src="../js/mock.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/frame.js"></script>
+<script src="../js/shell.js"></script>
+<script src="../js/palette.js"></script>
+<script>
+/* Grant toggles are real so the pressed/unpressed distinction can be judged by
+   clicking rather than by description. Granting a skill that asks for the
+   network says so, because a permission change that happens silently is the
+   kind users discover afterwards. */
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.grant').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var on = btn.getAttribute('aria-pressed') === 'true';
+      btn.setAttribute('aria-pressed', String(!on));
+
+      var mark = btn.querySelector('.icon');
+      if (!on && !mark) {
+        btn.insertAdjacentHTML('afterbegin',
+          '<svg class="icon icon-sm" aria-hidden="true"><use href="#i-check"/></svg>');
+      } else if (on && mark) {
+        mark.remove();
+      }
+
+      var card = btn.closest('.skill');
+      var skill = card.querySelector('h3').textContent;
+      var risky = !!card.querySelector('.badge[data-kind="attention"]');
+      var agent = btn.textContent.trim();
+
+      window.Toast.show({
+        kind: !on && risky ? 'warning' : 'success',
+        title: (on ? 'Revoked' : 'Granted') + ' · ' + skill,
+        body: !on && risky
+          ? agent + ' can now reach the network through this skill.'
+          : agent + (on ? ' can no longer call it.' : ' can now call it.')
+      });
+    });
+  });
+});
+</script>
+</body>
+</html>

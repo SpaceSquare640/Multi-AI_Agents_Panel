@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Semantic search — Multi-AI Agents Panel UI Design</title>
+<link rel="icon" href="../app-icon.png">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/shell.css">
+<link rel="stylesheet" href="../css/screens.css">
+<script src="../js/theme.js"></script>
+<script src="../js/icons.js"></script>
+</head>
+<body>
+
+<a class="skip-link" href="#workspace">Skip to main content</a>
+
+<div class="shell" data-screen="search" data-sidebar="expanded" data-inspector="expanded">
+
+  <!-- ==================== SIDEBAR ==================== -->
+  <aside class="sidebar" aria-label="Indexed folders">
+    <div class="sidebar-header">
+      <span class="label">Indexed folders</span>
+      <button class="titlebar-btn" type="button" aria-label="Add a folder">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-plus"/></svg>
+      </button>
+    </div>
+
+    <div class="sidebar-body">
+      <button class="row row-tall" type="button" aria-current="true">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-folder"/></svg>
+        <span class="name">
+          panel/src
+          <span class="row-sub" style="display:block">184 files · indexed 17:40</span>
+        </span>
+      </button>
+      <button class="row row-tall" type="button">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-folder"/></svg>
+        <span class="name">
+          panel/docs
+          <span class="row-sub" style="display:block">62 files · indexed 17:41</span>
+        </span>
+      </button>
+      <button class="row row-tall" type="button">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-folder"/></svg>
+        <span class="name">
+          notes/architecture
+          <span class="row-sub" style="display:block">31 of 40 files · indexing</span>
+        </span>
+      </button>
+
+      <div class="empty" style="padding:var(--space-8) var(--space-5)">
+        <p style="font-size:var(--text-xs)">
+          Only folders you have granted are indexed. Nothing else on the machine
+          is read or embedded.
+        </p>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="row"><span class="name">277 files · 8,412 chunks</span></div>
+    </div>
+  </aside>
+
+  <!-- ==================== WORKSPACE ==================== -->
+  <main class="workspace" id="workspace" tabindex="-1">
+    <div class="workspace-header">
+      <span class="workspace-title">Semantic search</span>
+      <div class="workspace-actions">
+        <div class="segmented" role="group" aria-label="Match mode">
+          <button type="button" aria-pressed="true">Meaning</button>
+          <button type="button" aria-pressed="false">Exact</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="workspace-body">
+      <div class="pane pane-wide">
+
+        <div class="searchbar">
+          <div class="input-group">
+            <svg class="icon icon-sm" aria-hidden="true"><use href="#i-search"/></svg>
+            <input class="input" id="q" type="search" value="where do we decide the fallback order"
+                   aria-label="Search indexed folders">
+          </div>
+          <button class="btn btn-primary" type="button" id="go">Search</button>
+        </div>
+
+        <!-- The index state comes before the results, not after. A search box
+             over a partial index that does not say so is worse than no search
+             box: the missing answer looks like an absent answer. -->
+        <div class="card card-pad">
+          <div class="index-state">
+            <span class="status-dot" data-state="running" aria-hidden="true"></span>
+            <span>Indexing <strong>notes/architecture</strong> — 31 of 40 files</span>
+            <span class="spacer" style="flex:1"></span>
+            <span class="num" style="font-size:var(--text-xs);color:var(--text-faint)">78%</span>
+          </div>
+          <div class="meter" style="margin-top:var(--space-5)" role="progressbar"
+               aria-valuenow="78" aria-valuemin="0" aria-valuemax="100" aria-label="Indexing progress">
+            <div class="meter-fill" style="width:78%"></div>
+          </div>
+          <p class="field-hint" style="margin-top:var(--space-5)">
+            Results below cover the folders already indexed. Anything still in
+            progress is not searchable yet, so a missing answer may simply not
+            have been read.
+          </p>
+        </div>
+
+        <section>
+          <div class="section-head">
+            <h2>Results</h2>
+            <span class="count">4 of 8,412 chunks</span>
+            <span class="spacer"></span>
+            <span class="count">by meaning, not by keyword</span>
+          </div>
+
+          <div class="card hit">
+            <div class="hit-head">
+              <svg class="icon icon-sm" aria-hidden="true" style="color:var(--text-faint)"><use href="#i-notes"/></svg>
+              <span class="hit-path">panel/docs/architecture.md</span>
+              <span class="hit-score">0.91</span>
+            </div>
+            <p class="hit-snippet">
+              Fallback defaults to <mark>local first, cloud as backup</mark> — it costs
+              nothing and keeps the request on the machine. Each agent may override its
+              own provider order in settings, and a role template can carry a suggested
+              order as its starting value.
+            </p>
+          </div>
+
+          <div class="card hit">
+            <div class="hit-head">
+              <svg class="icon icon-sm" aria-hidden="true" style="color:var(--text-faint)"><use href="#i-models"/></svg>
+              <span class="hit-path">panel/src/fallback/mod.rs</span>
+              <span class="hit-score">0.87</span>
+            </div>
+            <p class="hit-snippet">
+              Tries each provider in order and returns the first success. When
+              <mark>every provider fails</mark>, surfaces the error and its code rather
+              than retrying silently or reporting a partial result as a whole one.
+            </p>
+          </div>
+
+          <div class="card hit">
+            <div class="hit-head">
+              <svg class="icon icon-sm" aria-hidden="true" style="color:var(--text-faint)"><use href="#i-notes"/></svg>
+              <span class="hit-path">notes/architecture/error-codes.md</span>
+              <span class="hit-score">0.74</span>
+            </div>
+            <p class="hit-snippet">
+              <mark>E4103</mark> — every provider in the fallback chain refused or was
+              unreachable. The message is not sent and stays in the composer, so nothing
+              is lost while the cause is fixed.
+            </p>
+          </div>
+
+          <div class="card hit">
+            <div class="hit-head">
+              <svg class="icon icon-sm" aria-hidden="true" style="color:var(--text-faint)"><use href="#i-models"/></svg>
+              <span class="hit-path">panel/src/agent_manager/providers/mod.rs</span>
+              <span class="hit-score">0.68</span>
+            </div>
+            <p class="hit-snippet">
+              Every provider implements the same adapter interface, so the
+              <mark>order can be rearranged</mark> without any caller knowing which
+              provider it will end up talking to.
+            </p>
+          </div>
+        </section>
+
+        <!-- What an empty result has to say. A blank panel cannot distinguish
+             "nothing matched" from "nothing indexed" from "it broke". -->
+        <section>
+          <div class="section-head"><h2>When nothing matches</h2></div>
+          <div class="card">
+            <div class="empty">
+              <svg class="icon icon-lg" aria-hidden="true"><use href="#i-search"/></svg>
+              <h3>No chunk came close enough</h3>
+              <p>
+                Nothing in the indexed folders scored above the similarity floor. Try
+                fewer words, or check whether the folder holding the answer has been
+                granted and indexed yet.
+              </p>
+              <button class="btn btn-secondary btn-sm" type="button">Add a folder</button>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- ==================== INSPECTOR ==================== -->
+  <aside class="inspector" aria-label="Index">
+    <div class="inspector-header"><span class="label">Index</span></div>
+    <div class="inspector-body">
+
+      <section class="inspector-section">
+        <span class="label">Model</span>
+        <dl class="kv">
+          <dt>Embedding</dt> <dd class="mono">all-MiniLM-L6-v2</dd>
+          <dt>Dimensions</dt><dd class="num">384</dd>
+          <dt>Runs on</dt>   <dd>This machine</dd>
+        </dl>
+        <p class="field-hint" style="margin-top:var(--space-5)">
+          Embedding happens locally in a separate Python process. File contents
+          are never sent to a provider, cloud or otherwise.
+        </p>
+      </section>
+
+      <section class="inspector-section">
+        <span class="label">Store</span>
+        <dl class="kv">
+          <dt>Chunks</dt>   <dd class="num">8,412</dd>
+          <dt>On disk</dt>  <dd class="num">42 MB</dd>
+          <dt>Index</dt>    <dd>ANN, native</dd>
+        </dl>
+      </section>
+
+      <section class="inspector-section">
+        <span class="label">Threshold</span>
+        <div class="field">
+          <label class="field-label" for="floor">Similarity floor</label>
+          <input class="input input-mono" id="floor" value="0.60">
+          <span class="field-hint">
+            Chunks below this are dropped. Lower it to see weaker matches — and
+            more noise with them.
+          </span>
+        </div>
+      </section>
+
+      <section class="inspector-section">
+        <span class="label">Granted to</span>
+        <div class="grants">
+          <button class="grant" type="button" aria-pressed="true">
+            <svg class="icon icon-sm" aria-hidden="true"><use href="#i-check"/></svg>
+            Lead Architect
+          </button>
+          <button class="grant" type="button" aria-pressed="true">
+            <svg class="icon icon-sm" aria-hidden="true"><use href="#i-check"/></svg>
+            Documentation Writer
+          </button>
+          <button class="grant" type="button" aria-pressed="false">QA Engineer</button>
+        </div>
+      </section>
+
+      <section class="inspector-section">
+        <button class="btn btn-secondary" type="button" style="width:100%">Rebuild the index</button>
+        <p class="field-hint" style="margin-top:var(--space-4)">
+          Re-reads every granted folder. Takes a few minutes for this many files.
+        </p>
+      </section>
+
+    </div>
+  </aside>
+
+</div>
+
+<script src="../js/mock.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/frame.js"></script>
+<script src="../js/shell.js"></script>
+<script src="../js/palette.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  document.getElementById('go').addEventListener('click', function () {
+    window.Toast.show({
+      kind: 'info',
+      title: 'Search',
+      body: 'This is a design mockup — the results above are fixed sample data.'
+    });
+  });
+
+  /* Match mode is a segmented control, so exactly one option is pressed at a
+     time and the pressed state is what conveys it — not a colour alone. */
+  var seg = document.querySelectorAll('.segmented button');
+  seg.forEach(function (b) {
+    b.addEventListener('click', function () {
+      seg.forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); });
+    });
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Game agent — Multi-AI Agents Panel UI Design</title>
+<link rel="icon" href="../app-icon.png">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/shell.css">
+<link rel="stylesheet" href="../css/screens.css">
+<script src="../js/theme.js"></script>
+<script src="../js/icons.js"></script>
+</head>
+<body>
+
+<a class="skip-link" href="#workspace">Skip to main content</a>
+
+<div class="shell" data-screen="game" data-sidebar="expanded" data-inspector="expanded">
+
+  <!-- ==================== SIDEBAR ==================== -->
+  <aside class="sidebar" aria-label="Sessions">
+    <div class="sidebar-header">
+      <span class="label">Recordings</span>
+      <button class="titlebar-btn" type="button" aria-label="New recording">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-plus"/></svg>
+      </button>
+    </div>
+
+    <div class="sidebar-body">
+      <button class="row row-tall" type="button" aria-current="true">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-game"/></svg>
+        <span class="name">
+          session-2026-09-03-1
+          <span class="row-sub" style="display:block">14,208 frames · 6 min · labelled</span>
+        </span>
+      </button>
+      <button class="row row-tall" type="button">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-game"/></svg>
+        <span class="name">
+          session-2026-09-02-3
+          <span class="row-sub" style="display:block">9,940 frames · 4 min · unlabelled</span>
+        </span>
+      </button>
+      <button class="row row-tall" type="button">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-game"/></svg>
+        <span class="name">
+          example-synthetic
+          <span class="row-sub" style="display:block">1,200 frames · practice data</span>
+        </span>
+      </button>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="row"><span class="name">3 recordings · 25,348 frames</span></div>
+    </div>
+  </aside>
+
+  <!-- ==================== WORKSPACE ==================== -->
+  <main class="workspace" id="workspace" tabindex="-1">
+    <div class="workspace-header">
+      <span class="workspace-title">Game agent</span>
+      <span class="badge" data-kind="local">Local only</span>
+      <div class="workspace-actions">
+        <button class="btn btn-ghost btn-sm" type="button">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#i-help"/></svg>
+          How this works
+        </button>
+      </div>
+    </div>
+
+    <div class="workspace-body">
+      <div class="pane">
+
+        <p class="pane-intro">
+          Teaches an agent to play by watching, then by practising. Every stage
+          runs on this machine, and each one needs the stage before it — which
+          is why they are a numbered sequence rather than four buttons that all
+          look equally ready.
+        </p>
+
+        <div class="callout" data-kind="warning">
+          <svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg>
+          <div class="callout-body">
+            <strong>This one takes over the screen and the input devices</strong>
+            Recording captures the screen; playing moves the real mouse and keyboard.
+            Both stop on <kbd>Esc</kbd>, and neither starts without the button below
+            being pressed.
+          </div>
+        </div>
+
+        <section>
+          <div class="section-head">
+            <h2>Pipeline</h2>
+            <span class="count">session-2026-09-03-1</span>
+          </div>
+
+          <div class="card card-pad">
+            <div class="stages">
+
+              <div class="stage" data-state="done">
+                <span class="stage-num" aria-hidden="true">
+                  <svg class="icon icon-sm"><use href="#i-check"/></svg>
+                </span>
+                <div class="stage-body">
+                  <h3>Record</h3>
+                  <p>Captures frames and the input that went with them while you play normally.</p>
+                  <div class="stage-out">14,208 frames · 1280x720 · 30 fps · 6 min 12 s</div>
+                </div>
+                <div class="stage-actions">
+                  <span class="badge" data-kind="succeeded">Done</span>
+                  <button class="btn btn-ghost btn-sm" type="button">Re-record</button>
+                </div>
+              </div>
+
+              <div class="stage" data-state="done">
+                <span class="stage-num" aria-hidden="true">
+                  <svg class="icon icon-sm"><use href="#i-check"/></svg>
+                </span>
+                <div class="stage-body">
+                  <h3>Label</h3>
+                  <p>Pairs each frame with the action taken, and drops frames where nothing happened.</p>
+                  <div class="stage-out">13,104 usable pairs · 1,104 idle frames dropped</div>
+                </div>
+                <div class="stage-actions">
+                  <span class="badge" data-kind="succeeded">Done</span>
+                  <button class="btn btn-ghost btn-sm" type="button">Re-label</button>
+                </div>
+              </div>
+
+              <div class="stage" data-state="running">
+                <span class="stage-num" aria-hidden="true">3</span>
+                <div class="stage-body">
+                  <h3>Train by imitation</h3>
+                  <p>Learns to reproduce what you did. This is the stage that makes the agent playable at all.</p>
+                  <div class="meter" style="margin-top:var(--space-5)" role="progressbar"
+                       aria-valuenow="62" aria-valuemin="0" aria-valuemax="100" aria-label="Training progress">
+                    <div class="meter-fill" style="width:62%"></div>
+                  </div>
+                  <div class="stage-out">epoch 12 of 20 · loss 0.184 · 3 min 40 s remaining</div>
+                </div>
+                <div class="stage-actions">
+                  <span class="badge" data-kind="running">Running</span>
+                  <button class="btn btn-secondary btn-sm" type="button">Stop</button>
+                </div>
+              </div>
+
+              <div class="stage" data-state="blocked">
+                <span class="stage-num" aria-hidden="true">4</span>
+                <div class="stage-body">
+                  <h3>Improve by practice</h3>
+                  <p>Plays against itself and keeps what scores better. Optional — imitation alone is often enough.</p>
+                  <div class="stage-out">Waiting for imitation training to finish</div>
+                </div>
+                <div class="stage-actions">
+                  <span class="badge" data-kind="idle">Blocked</span>
+                  <button class="btn btn-secondary btn-sm" type="button" disabled>Start</button>
+                </div>
+              </div>
+
+              <div class="stage" data-state="blocked">
+                <span class="stage-num" aria-hidden="true">5</span>
+                <div class="stage-body">
+                  <h3>Play</h3>
+                  <p>Hands the mouse and keyboard to the trained agent. Stops on <kbd>Esc</kbd>.</p>
+                  <div class="stage-out">Needs a trained model</div>
+                </div>
+                <div class="stage-actions">
+                  <span class="badge" data-kind="idle">Blocked</span>
+                  <button class="btn btn-primary btn-sm" type="button" disabled>Play</button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div class="section-head">
+            <h2>Capture</h2>
+          </div>
+          <div class="card card-pad">
+            <div class="field-row">
+              <div class="field">
+                <label class="field-label" for="out">Output folder</label>
+                <div style="display:flex;gap:var(--space-4)">
+                  <input class="input input-mono" id="out" readonly value="~/MultiAIAgentsPanel/recordings">
+                  <button class="btn btn-secondary" type="button">
+                    <svg class="icon icon-sm" aria-hidden="true"><use href="#i-folder"/></svg>
+                    Choose
+                  </button>
+                </div>
+                <span class="field-hint">Recordings can be large. This folder is on the same drive as the app data.</span>
+              </div>
+            </div>
+            <div class="field-row" style="margin-top:var(--space-6)">
+              <div class="field">
+                <label class="field-label" for="fps">Frame rate</label>
+                <select class="select" id="fps">
+                  <option>15 fps — smaller files</option>
+                  <option selected>30 fps</option>
+                  <option>60 fps — larger files</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label" for="res">Resolution</label>
+                <select class="select" id="res">
+                  <option selected>1280 x 720</option>
+                  <option>960 x 540</option>
+                  <option>1920 x 1080</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- ==================== INSPECTOR ==================== -->
+  <aside class="inspector" aria-label="Recording">
+    <div class="inspector-header"><span class="label">Recording</span></div>
+    <div class="inspector-body">
+
+      <section class="inspector-section">
+        <div style="font-weight:var(--weight-semibold)" class="mono">session-2026-09-03-1</div>
+        <div class="row-sub" style="margin-top:var(--space-2)">Recorded 17:14 today</div>
+      </section>
+
+      <section class="inspector-section">
+        <span class="label">Frames</span>
+        <dl class="kv">
+          <dt>Captured</dt> <dd class="num">14,208</dd>
+          <dt>Usable</dt>   <dd class="num">13,104</dd>
+          <dt>Dropped</dt>  <dd class="num">1,104</dd>
+          <dt>On disk</dt>  <dd class="num">2.1 GB</dd>
+        </dl>
+      </section>
+
+      <section class="inspector-section">
+        <span class="label">Action distribution</span>
+        <div class="meter-row"><span>move</span><span class="v">58%</span></div>
+        <div class="meter"><div class="meter-fill" style="width:58%"></div></div>
+        <div class="meter-row" style="margin-top:var(--space-5)"><span>attack</span><span class="v">27%</span></div>
+        <div class="meter"><div class="meter-fill" style="width:27%"></div></div>
+        <div class="meter-row" style="margin-top:var(--space-5)"><span>interact</span><span class="v">15%</span></div>
+        <div class="meter"><div class="meter-fill" style="width:15%"></div></div>
+        <p class="field-hint" style="margin-top:var(--space-5)">
+          A recording where one action dominates trains an agent that mostly does
+          that action. Worth checking before training rather than after.
+        </p>
+      </section>
+
+      <section class="inspector-section">
+        <span class="label">Guardrails</span>
+        <p style="font-size:var(--text-sm);color:var(--text-muted);line-height:var(--leading-loose)">
+          Screen capture and input control are the most invasive things the app can
+          do, so both are explicit actions with a visible stop key, never
+          background behaviour and never triggered by an agent on its own.
+        </p>
+      </section>
+
+      <section class="inspector-section">
+        <button class="btn btn-danger" type="button" style="width:100%" data-dialog-open="dlg-del-rec">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#i-trash"/></svg>
+          Delete this recording
+        </button>
+      </section>
+
+    </div>
+  </aside>
+
+</div>
+
+<dialog class="dialog" id="dlg-del-rec">
+  <div class="dialog-header">
+    <span class="dialog-icon" data-kind="danger"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg></span>
+    <div>
+      <h2 class="dialog-title">Delete session-2026-09-03-1?</h2>
+      <p class="dialog-sub">14,208 frames, 2.1 GB, and the labels made from them.</p>
+    </div>
+  </div>
+  <div class="dialog-body">
+    <p>
+      The trained model stays; only the recording it came from is removed. You will
+      not be able to re-label or re-train from this data afterwards.
+    </p>
+  </div>
+  <div class="dialog-footer">
+    <span class="spacer"></span>
+    <button class="btn btn-secondary" type="button" data-dialog-close="cancel" data-autofocus>Cancel</button>
+    <button class="btn btn-danger" type="button" data-dialog-close="delete">Delete recording</button>
+  </div>
+</dialog>
+
+<script src="../js/mock.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/frame.js"></script>
+<script src="../js/shell.js"></script>
+<script src="../js/palette.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  document.getElementById('dlg-del-rec').addEventListener('close', function (ev) {
+    if (this.returnValue !== 'delete') return;
+    window.Toast.show({
+      kind: 'success',
+      title: 'Recording deleted',
+      body: '2.1 GB freed. The trained model was kept.',
+      action: 'Undo',
+      onAction: function () {
+        window.Toast.show({ kind: 'info', title: 'Restored', body: 'Nothing was deleted — this is a mockup.' });
+      }
+    });
+  });
+});
+</script>
+</body>
+</html>

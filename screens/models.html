@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Models — Multi-AI Agents Panel UI Design</title>
+<link rel="icon" href="../app-icon.png">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/shell.css">
+<link rel="stylesheet" href="../css/screens.css">
+<script src="../js/theme.js"></script>
+<script src="../js/icons.js"></script>
+</head>
+<body>
+
+<a class="skip-link" href="#workspace">Skip to main content</a>
+
+<div class="shell" data-screen="models" data-sidebar="expanded" data-inspector="expanded">
+
+  <!-- ==================== SIDEBAR ==================== -->
+  <aside class="sidebar" aria-label="Agents">
+    <div class="sidebar-header">
+      <span class="label">Agents</span>
+      <button class="titlebar-btn" type="button" aria-label="New agent">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-plus"/></svg>
+      </button>
+    </div>
+
+    <div class="sidebar-body">
+      <div class="input-group" style="margin:var(--space-3) var(--space-2) var(--space-5)">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-search"/></svg>
+        <input class="input" type="search" placeholder="Filter agents" aria-label="Filter agents">
+      </div>
+      <div id="agent-rows"></div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="row"><span class="name">8 agents · 3 local, 5 cloud</span></div>
+    </div>
+  </aside>
+
+  <!-- ==================== WORKSPACE ==================== -->
+  <main class="workspace" id="workspace" tabindex="-1">
+    <div class="workspace-header">
+      <span class="workspace-title">Models</span>
+      <div class="workspace-actions">
+        <button class="btn btn-secondary btn-sm" type="button">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#i-external"/></svg>
+          Install Ollama
+        </button>
+      </div>
+    </div>
+
+    <div class="workspace-body">
+      <div class="pane">
+
+        <p class="pane-intro">
+          Providers, the keys they need, and which model each agent uses. Keys
+          are stored on this machine and sent only to the provider they belong
+          to. Nothing here reaches a server of ours, because there is not one.
+        </p>
+
+        <!-- ---------- providers ---------- -->
+        <section>
+          <div class="section-head">
+            <h2>Providers</h2>
+            <span class="count">2 of 5 configured</span>
+          </div>
+
+          <div class="card provider">
+            <span class="provider-mark" data-where="local">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="#i-local"/></svg>
+            </span>
+            <div>
+              <div class="provider-name">Ollama</div>
+              <div class="provider-sub">Local · 4 models pulled · 127.0.0.1:11434</div>
+            </div>
+            <div class="provider-actions">
+              <span class="badge" data-kind="running">Reachable</span>
+              <button class="btn btn-secondary btn-sm" type="button">Manage models</button>
+            </div>
+          </div>
+
+          <div class="card provider">
+            <span class="provider-mark" data-where="cloud">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="#i-cloud"/></svg>
+            </span>
+            <div>
+              <div class="provider-name">Anthropic</div>
+              <div class="provider-sub">Cloud · key ending 4f2a · added 12 Aug</div>
+            </div>
+            <div class="provider-actions">
+              <span class="badge" data-kind="running">Key valid</span>
+              <button class="btn btn-ghost btn-sm" type="button">Replace key</button>
+            </div>
+          </div>
+
+          <div class="card provider">
+            <span class="provider-mark" data-where="cloud">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="#i-cloud"/></svg>
+            </span>
+            <div>
+              <div class="provider-name">OpenRouter</div>
+              <div class="provider-sub">Cloud · key ending 9c17 · last call returned 401</div>
+            </div>
+            <div class="provider-actions">
+              <span class="badge" data-kind="failed">Key rejected</span>
+              <button class="btn btn-secondary btn-sm" type="button">Replace key</button>
+            </div>
+            <!-- A rejected key is the one case where the detail is open by
+                 default: the state is actionable and hiding the action behind
+                 a disclosure is how a broken provider stays broken. -->
+            <div class="provider-detail">
+              <div class="field">
+                <label class="field-label" for="or-key">API key</label>
+                <div class="input-group">
+                  <svg class="icon icon-sm" aria-hidden="true"><use href="#i-key"/></svg>
+                  <input class="input input-mono" id="or-key" type="password" value="sk-or-v1-000000000000009c17" aria-describedby="or-hint">
+                </div>
+                <span class="field-hint" id="or-hint">
+                  Stored locally. The last call returned 401, which usually means the key
+                  was revoked or copied incompletely.
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card provider">
+            <span class="provider-mark" data-where="cloud">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="#i-cloud"/></svg>
+            </span>
+            <div>
+              <div class="provider-name">OpenAI</div>
+              <div class="provider-sub">Cloud · no key</div>
+            </div>
+            <div class="provider-actions">
+              <span class="badge" data-kind="idle">Not configured</span>
+              <button class="btn btn-secondary btn-sm" type="button">Add key</button>
+            </div>
+          </div>
+
+          <div class="card provider">
+            <span class="provider-mark" data-where="local">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="#i-local"/></svg>
+            </span>
+            <div>
+              <div class="provider-name">colibrì</div>
+              <div class="provider-sub">Local · not detected on this machine</div>
+            </div>
+            <div class="provider-actions">
+              <span class="badge" data-kind="idle">Not configured</span>
+              <button class="btn btn-ghost btn-sm" type="button">Set up</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ---------- fallback ---------- -->
+        <section>
+          <div class="section-head">
+            <h2>Fallback order</h2>
+            <span class="spacer"></span>
+            <span class="count">applies to every agent unless overridden</span>
+          </div>
+
+          <p class="pane-intro" style="margin-bottom:var(--space-5)">
+            Tried top to bottom. Local sits first by default: it costs nothing
+            and the request never leaves the machine. If every provider in the
+            list fails, the failure is shown with its error code rather than
+            being retried silently.
+          </p>
+
+          <ol class="fallback">
+            <li>
+              <svg class="icon icon-sm grip" aria-hidden="true"><use href="#i-settings"/></svg>
+              <span class="name">Ollama</span>
+              <span class="badge" data-kind="local">Local</span>
+            </li>
+            <li>
+              <svg class="icon icon-sm grip" aria-hidden="true"><use href="#i-settings"/></svg>
+              <span class="name">Anthropic</span>
+              <span class="badge" data-kind="cloud">Cloud</span>
+            </li>
+            <li>
+              <svg class="icon icon-sm grip" aria-hidden="true"><use href="#i-settings"/></svg>
+              <span class="name">OpenRouter</span>
+              <span class="badge" data-kind="failed">Key rejected</span>
+            </li>
+          </ol>
+        </section>
+
+        <!-- ---------- hardware fit ---------- -->
+        <section>
+          <div class="section-head">
+            <h2>Hardware fit</h2>
+            <span class="count">measured on this machine</span>
+          </div>
+
+          <p class="pane-intro" style="margin-bottom:var(--space-5)">
+            Which local models this machine can actually run, from its real
+            memory rather than a general recommendation. A model larger than
+            available VRAM still runs — it swaps to system memory and becomes
+            slow, which is worth knowing before a download rather than after.
+          </p>
+
+          <div class="card card-pad">
+            <div class="fit-grid">
+              <div class="fit-stat"><div class="k">GPU</div><div class="v">RTX 4070</div></div>
+              <div class="fit-stat"><div class="k">VRAM</div><div class="v">12 GB</div></div>
+              <div class="fit-stat"><div class="k">System RAM</div><div class="v">32 GB</div></div>
+              <div class="fit-stat"><div class="k">Free disk</div><div class="v">418 GB</div></div>
+            </div>
+
+            <div style="margin-top:var(--space-7)">
+              <div class="verdict" data-fit="good">
+                <span class="model">qwen2.5-coder:14b</span>
+                <span class="size">9.0 GB</span>
+                <span class="badge" data-kind="succeeded">Fits in VRAM</span>
+              </div>
+              <div class="verdict" data-fit="good">
+                <span class="model">llama3.1:8b</span>
+                <span class="size">4.9 GB</span>
+                <span class="badge" data-kind="succeeded">Fits in VRAM</span>
+              </div>
+              <div class="verdict" data-fit="tight">
+                <span class="model">mistral-small:24b</span>
+                <span class="size">14 GB</span>
+                <span class="badge" data-kind="attention">Will swap — slower</span>
+              </div>
+              <div class="verdict" data-fit="no">
+                <span class="model">llama3.1:70b</span>
+                <span class="size">43 GB</span>
+                <span class="badge" data-kind="failed">Exceeds system memory</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- ==================== INSPECTOR ==================== -->
+  <aside class="inspector" aria-label="Agent">
+    <div class="inspector-header"><span class="label">Agent</span></div>
+    <div class="inspector-body">
+
+      <section class="inspector-section">
+        <div style="display:flex;align-items:center;gap:var(--space-5)">
+          <span class="avatar avatar-lg" data-agent="2">LA</span>
+          <div style="min-width:0">
+            <div style="font-weight:var(--weight-semibold)">Lead Architect</div>
+            <div class="row-sub">Role template · 1 人公司</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="inspector-section">
+        <span class="label">Model</span>
+        <div class="field">
+          <label class="field-label" for="m-provider">Provider</label>
+          <select class="select" id="m-provider">
+            <option selected>Anthropic — Cloud</option>
+            <option>Ollama — Local</option>
+            <option>OpenRouter — Cloud</option>
+          </select>
+        </div>
+        <div class="field" style="margin-top:var(--space-5)">
+          <label class="field-label" for="m-model">Model</label>
+          <select class="select input-mono" id="m-model">
+            <option selected>claude-opus-5</option>
+            <option>claude-sonnet-5</option>
+            <option>claude-haiku-4-5</option>
+          </select>
+          <span class="field-hint">Curated list. Every model the provider offers is available under Show all.</span>
+        </div>
+      </section>
+
+      <section class="inspector-section">
+        <span class="label">Fallback</span>
+        <label class="switch" style="margin-top:var(--space-4)">
+          <input type="checkbox">
+          <span class="switch-track" aria-hidden="true"></span>
+          <span class="switch-text">
+            <span class="t">Override the global order</span>
+            <span class="d">This agent will use its own provider order instead of the app-wide one.</span>
+          </span>
+        </label>
+      </section>
+
+      <section class="inspector-section">
+        <span class="label">Cost so far</span>
+        <dl class="kv">
+          <dt>This month</dt> <dd class="num">$11.04</dd>
+          <dt>Tokens in</dt>  <dd class="num">1,284,900</dd>
+          <dt>Tokens out</dt> <dd class="num">208,410</dd>
+        </dl>
+      </section>
+
+    </div>
+  </aside>
+
+</div>
+
+<script src="../js/mock.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/frame.js"></script>
+<script src="../js/shell.js"></script>
+<script src="../js/palette.js"></script>
+<script>
+/* The agent list comes from mock.js so the sidebar shows the same eight agents
+   the palette and the group chat do, rather than a third hand-written set that
+   quietly drifts from both. */
+document.addEventListener('DOMContentLoaded', function () {
+  var host = document.getElementById('agent-rows');
+  host.innerHTML = window.Mock.agents.map(function (a, i) {
+    var initials = a.name.split(/[\s\/-]+/).slice(0, 2).map(function (w) { return w[0]; }).join('').toUpperCase();
+    return '<button class="row" type="button"' + (i === 1 ? ' aria-current="true"' : '') + '>' +
+             '<span class="avatar" data-agent="' + ((i % 6) + 1) + '">' + initials + '</span>' +
+             '<span class="name">' + a.name + '</span>' +
+             '<span class="badge" data-kind="' + a.where + '">' + (a.where === 'local' ? 'Local' : 'Cloud') + '</span>' +
+           '</button>';
+  }).join('');
+});
+</script>
+</body>
+</html>
