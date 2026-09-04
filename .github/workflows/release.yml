@@ -96,7 +96,7 @@ jobs:
         # Runs BEFORE the full-CHANGELOG.md step below, deliberately — `git
         # cliff --current` needs HEAD to still be exactly the tagged commit
         # to resolve "the current tag" at all; committing CHANGELOG.md back
-        # to main first would move HEAD past the tag and break this with
+        # to the default branch first would move HEAD past the tag and break it with
         # `ChangelogError("No tag exists for the current commit")` (hit
         # this for real in v0.1.84-alpha before reordering — see Backlog).
         id: git-cliff-current
@@ -116,10 +116,10 @@ jobs:
           args: --verbose
         env:
           OUTPUT: CHANGELOG.md
-      - name: Commit updated CHANGELOG.md back to main
+      - name: Commit updated CHANGELOG.md back to the default branch
         # A tag push doesn't update any branch, so this has to be a
-        # separate explicit push to main — safe to do here since this
-        # workflow only triggers on tag push, not on push to main, so
+        # separate explicit push to the default branch — safe to do here
+        # since this workflow only triggers on tag push, not on branch push, so
         # there's no risk of it re-triggering itself in a loop (ci.yml
         # picking up the push is expected and fine, it's just the normal
         # fast-checks job).
@@ -144,9 +144,18 @@ jobs:
         # already a strict superset of whatever an earlier tag's bot
         # commit added. So on conflict, the correct resolution isn't to
         # merge two textual diffs at all: reset straight to the latest
-        # origin/main and re-apply this run's already-correct generated
+        # default branch and re-apply this run's already-correct generated
         # content as a fresh commit.
+        #
+        # The branch is read from the repository rather than written here.
+        # It was hardcoded as `main` in five places, and the default branch
+        # has since been renamed to `Source_Code` — every one of those five
+        # would have had to be found and changed together, and this step
+        # would have failed on the next release with the tag already pushed
+        # and the release already published. One variable cannot half-apply.
         shell: bash
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -155,18 +164,18 @@ jobs:
           git diff --staged --quiet && exit 0
           git commit -m "chore: update CHANGELOG.md for ${{ github.ref_name }} [skip ci]"
           for attempt in 1 2 3 4 5; do
-            if git push origin HEAD:main; then
+            if git push origin "HEAD:$DEFAULT_BRANCH"; then
               exit 0
             fi
-            echo "Push rejected (attempt $attempt) — resetting to origin/main and reapplying the generated CHANGELOG.md"
-            git fetch origin main
-            git reset --hard origin/main
+            echo "Push rejected (attempt $attempt) — resetting to origin/$DEFAULT_BRANCH and reapplying the generated CHANGELOG.md"
+            git fetch origin "$DEFAULT_BRANCH"
+            git reset --hard "origin/$DEFAULT_BRANCH"
             cp /tmp/generated-changelog.md CHANGELOG.md
             git add CHANGELOG.md
             git diff --staged --quiet && exit 0
             git commit -m "chore: update CHANGELOG.md for ${{ github.ref_name }} [skip ci]"
           done
-          echo "::error::Failed to push CHANGELOG.md commit to main after 5 attempts"
+          echo "::error::Failed to push CHANGELOG.md commit to $DEFAULT_BRANCH after 5 attempts"
           exit 1
       - name: Set the GitHub Release notes to this version's changelog section
         # Deliberately routed through an env var + --notes-file rather than
