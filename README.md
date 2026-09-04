@@ -49,6 +49,8 @@ screens/
   group-chat.html       Several agents in one room
   notes.html            Hierarchical local notes
   models.html           Providers, keys, fallback order, hardware fit
+  role-templates.html   The instructions an agent starts with
+  new-agent.html        Creating one: role, name, model, permissions
   skills.html           Installed skills, declared scopes, per-agent grants
   semantic-search.html  Local embedding search over granted folders
   game-agent.html       Record, label, train, play
@@ -119,9 +121,9 @@ without touching a component.
 
 The target is WCAG 2.1 AA, carried over from the application's existing
 commitment, and it is checked by measurement rather than by eye: a script walks
-every text-bearing element on all fifteen pages, composites each translucent
+every text-bearing element on all seventeen pages, composites each translucent
 layer up the ancestor chain to find the effective background, and reports
-anything below the threshold for its own font size. All fifteen pages pass in
+anything below the threshold for its own font size. All seventeen pages pass in
 both themes.
 
 That pass found defects repeatedly, and always the same kind — a tint designed

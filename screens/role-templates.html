@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Role templates — Multi-AI Agents Panel UI Design</title>
+<link rel="icon" href="../app-icon.png">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/shell.css">
+<link rel="stylesheet" href="../css/screens.css">
+<script src="../js/theme.js"></script>
+<script src="../js/icons.js"></script>
+</head>
+<body>
+
+<a class="skip-link" href="#workspace">Skip to main content</a>
+
+<div class="shell" data-screen="models" data-sidebar="expanded" data-inspector="expanded">
+
+  <!-- ==================== SIDEBAR ==================== -->
+  <aside class="sidebar" aria-label="Role templates">
+    <div class="sidebar-header">
+      <span class="label">Role templates</span>
+      <button class="titlebar-btn" type="button" aria-label="New role template">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-plus"/></svg>
+      </button>
+    </div>
+
+    <div class="sidebar-body">
+      <div class="input-group" style="margin:var(--space-3) var(--space-2) var(--space-5)">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-search"/></svg>
+        <input class="input" type="search" placeholder="Filter templates" aria-label="Filter templates">
+      </div>
+
+      <!-- Bundled and custom are separated because they behave differently:
+           one is replaced on every app update, the other is yours. Mixing them
+           in one list is how someone loses an edit to an update. -->
+      <div class="label" style="padding:0 var(--row-px) var(--space-3)">Bundled</div>
+      <button class="row" type="button"><span class="name">Product Lead</span></button>
+      <button class="row" type="button" aria-current="true"><span class="name">Lead Architect</span></button>
+      <button class="row" type="button"><span class="name">UI/UX Designer</span></button>
+      <button class="row" type="button"><span class="name">Full-Stack Developer</span></button>
+      <button class="row" type="button"><span class="name">QA Engineer</span></button>
+      <button class="row" type="button"><span class="name">Security Tester</span></button>
+      <button class="row" type="button"><span class="name">Release Manager</span></button>
+      <button class="row" type="button"><span class="name">Documentation Writer</span></button>
+
+      <div class="label" style="padding:var(--space-6) var(--row-px) var(--space-3)">Yours</div>
+      <button class="row" type="button">
+        <span class="name">Data Analyst</span>
+        <span class="badge" data-kind="idle">2</span>
+      </button>
+      <button class="row" type="button">
+        <span class="name">Release notes drafter</span>
+        <span class="badge" data-kind="idle">1</span>
+      </button>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="row"><span class="name">8 bundled · 2 yours</span></div>
+    </div>
+  </aside>
+
+  <!-- ==================== WORKSPACE ==================== -->
+  <main class="workspace" id="workspace" tabindex="-1">
+    <div class="workspace-header">
+      <span class="workspace-title">Lead Architect</span>
+      <span class="badge" data-kind="idle">Bundled</span>
+      <div class="workspace-actions">
+        <button class="btn btn-ghost btn-sm" type="button">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#i-copy"/></svg>
+          Duplicate
+        </button>
+        <button class="btn btn-primary btn-sm" type="button" id="save" disabled>Save</button>
+      </div>
+    </div>
+
+    <div class="workspace-body">
+      <div class="pane">
+
+        <!-- A bundled template is read-only, and says so up front rather than
+             letting someone type into it and lose the work on the next update.
+             Duplicating is the way forward, and the notice offers it. -->
+        <div class="callout" data-kind="info" id="readonly-notice">
+          <svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>
+          <div class="callout-body">
+            <strong>Bundled templates are replaced on every app update</strong>
+            Editing this one directly would lose your changes the next time the app
+            updates. Duplicate it first — the copy is yours and is never touched.
+          </div>
+        </div>
+
+        <section>
+          <div class="section-head"><h2>Identity</h2></div>
+          <div class="card card-pad">
+            <div class="field-row">
+              <div class="field">
+                <label class="field-label" for="tpl-name">Name</label>
+                <input class="input" id="tpl-name" value="Lead Architect" readonly>
+              </div>
+              <div class="field">
+                <label class="field-label" for="tpl-initials">Monogram</label>
+                <input class="input input-mono" id="tpl-initials" value="LA" readonly maxlength="2">
+                <span class="field-hint">Two letters, shown on the agent's avatar.</span>
+              </div>
+            </div>
+            <div class="field" style="margin-top:var(--space-6)">
+              <label class="field-label" for="tpl-desc">One-line description</label>
+              <input class="input" id="tpl-desc" readonly
+                     value="Technical selection, data model, module boundaries.">
+              <span class="field-hint">Shown when choosing a template for a new agent.</span>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div class="section-head">
+            <h2>Instructions</h2>
+            <span class="spacer"></span>
+            <span class="count" id="tpl-count">1,284 characters</span>
+          </div>
+          <div class="card card-pad">
+            <div class="field">
+              <label class="field-label" for="tpl-prompt">What this role is, and how it works</label>
+              <textarea class="textarea" id="tpl-prompt" rows="14" readonly aria-describedby="tpl-prompt-hint">You are the Lead Architect. You own the parts of the system that are expensive to change later: technical selection, the data model, the contracts between modules.
+
+Before producing any schema or infrastructure code, show the structure first — a diagram or a numbered breakdown — and wait for it to be agreed. A schema is cheap to argue about and expensive to migrate.
+
+State your assumptions explicitly when a requirement is ambiguous, rather than picking one silently and building on it.
+
+When you believe there is a better option than the one asked for, say so once, with the trade-off, and then follow the decision that is made.
+
+Do not widen your remit into implementation detail that belongs to the developer, or into product scope that belongs to the product lead. Say which role a question belongs to and hand it over.</textarea>
+              <span class="field-hint" id="tpl-prompt-hint">
+                Added ahead of every message this agent receives. It cannot override the
+                guardrails, and an instruction that tries to is ignored rather than
+                silently obeyed.
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div class="section-head">
+            <h2>Suggested defaults</h2>
+            <span class="count">a starting point, not a lock</span>
+          </div>
+
+          <div class="card settings-group">
+            <div class="settings-row">
+              <div class="settings-label">
+                <div class="t">Provider order</div>
+                <div class="d">
+                  Where an agent made from this template starts. It can be changed per
+                  agent afterwards, and changing it here does not touch agents that
+                  already exist.
+                </div>
+              </div>
+              <div class="settings-control">
+                <select class="select" aria-label="Suggested provider order" disabled>
+                  <option selected>Cloud first — reasoning-heavy</option>
+                  <option>Local first — cheapest</option>
+                  <option>Follow the app-wide order</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="settings-row">
+              <div class="settings-label">
+                <div class="t">Skills</div>
+                <div class="d">Granted automatically when an agent is created from this template.</div>
+              </div>
+              <div class="settings-control">
+                <div class="grants" style="margin-top:0;justify-content:flex-end">
+                  <span class="grant" aria-pressed="true">
+                    <svg class="icon icon-sm" aria-hidden="true"><use href="#i-check"/></svg>
+                    Repository summarizer
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div class="section-head"><h2>In use</h2></div>
+          <div class="card card-pad">
+            <p class="pane-intro" style="margin-bottom:var(--space-5)">
+              Editing a template never reaches back into agents already made from it.
+              An agent takes a copy of these instructions when it is created, so a
+              change here affects the next agent, not the ones already talking.
+            </p>
+            <div class="row row-tall">
+              <span class="avatar" data-agent="2" aria-hidden="true">LA</span>
+              <span class="name">
+                Lead Architect
+                <span class="row-sub" style="display:block">Anthropic · claude-opus-5 · created 12 Aug</span>
+              </span>
+              <span class="badge" data-kind="cloud">Cloud</span>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- ==================== INSPECTOR ==================== -->
+  <aside class="inspector" aria-label="Template">
+    <div class="inspector-header"><span class="label">Template</span></div>
+    <div class="inspector-body">
+
+      <section class="inspector-section">
+        <dl class="kv">
+          <dt>Source</dt>   <dd>Bundled</dd>
+          <dt>Agents</dt>   <dd class="num">1</dd>
+          <dt>Updated</dt>  <dd>With the app</dd>
+        </dl>
+      </section>
+
+      <section class="inspector-section">
+        <span class="label label-lead">Editing rules</span>
+        <p style="font-size:var(--text-sm);color:var(--text-muted);line-height:var(--leading-loose)">
+          Bundled templates are read-only because the installer replaces them.
+          Duplicating gives you a copy under <strong>Yours</strong>, which survives
+          updates and can be edited freely.
+        </p>
+      </section>
+
+      <section class="inspector-section">
+        <span class="label label-lead">What a template cannot do</span>
+        <p style="font-size:var(--text-sm);color:var(--text-muted);line-height:var(--leading-loose)">
+          Grant itself file access, widen a skill's permissions, or relax a guardrail.
+          Those are decisions you make per agent, and a template that asked for them
+          would be a way of asking on someone else's behalf.
+        </p>
+      </section>
+
+      <section class="inspector-section">
+        <span class="label">Translations</span>
+        <dl class="kv">
+          <dt>Source</dt>  <dd>English</dd>
+          <dt>Others</dt>  <dd class="num">6 of 6</dd>
+        </dl>
+        <p class="field-hint" style="margin-top:var(--space-4)">
+          Where a translation is missing, the English text is used rather than a blank.
+        </p>
+      </section>
+
+    </div>
+  </aside>
+
+</div>
+
+<script src="../js/mock.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/frame.js"></script>
+<script src="../js/shell.js"></script>
+<script src="../js/palette.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var prompt = document.getElementById('tpl-prompt');
+  var count = document.getElementById('tpl-count');
+
+  function recount() {
+    count.textContent = prompt.value.length.toLocaleString() + ' characters';
+  }
+  prompt.addEventListener('input', recount);
+  recount();
+
+  /* Duplicating is the only way forward from a bundled template, so the button
+     that offers it does the whole thing rather than dropping the user into an
+     empty form to retype what they were already looking at. */
+  document.querySelector('.btn-ghost').addEventListener('click', function () {
+    document.querySelectorAll('#tpl-name, #tpl-initials, #tpl-desc, #tpl-prompt')
+      .forEach(function (el) { el.removeAttribute('readonly'); });
+    document.querySelectorAll('.settings-control select').forEach(function (el) { el.disabled = false; });
+
+    document.getElementById('tpl-name').value = 'Lead Architect (copy)';
+    document.querySelector('.workspace-title').textContent = 'Lead Architect (copy)';
+    var badge = document.querySelector('.workspace-header .badge');
+    badge.textContent = 'Yours';
+    badge.dataset.kind = 'succeeded';
+    document.getElementById('readonly-notice').remove();
+    document.getElementById('save').disabled = false;
+
+    window.Toast.show({
+      kind: 'success',
+      title: 'Duplicated',
+      body: 'The copy is yours and will not be replaced when the app updates.'
+    });
+  });
+
+  document.getElementById('save').addEventListener('click', function () {
+    window.Toast.show({
+      kind: 'info', title: 'Not wired up',
+      body: 'This is a design mockup — nothing was saved.'
+    });
+  });
+
+  document.querySelectorAll('.sidebar .row').forEach(function (r) {
+    r.addEventListener('click', function () {
+      document.querySelectorAll('.sidebar .row[aria-current]').forEach(function (o) {
+        o.removeAttribute('aria-current');
+      });
+      r.setAttribute('aria-current', 'true');
+    });
+  });
+});
+</script>
+</body>
+</html>

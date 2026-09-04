@@ -948,3 +948,42 @@
 /* Helper text runs at a shorter measure than prose: it sits under a control,
    where a full 72ch line has to be tracked back across the whole card. */
 .measure-short { max-width: 62ch; }
+
+
+/* ==========================================================================
+   TEMPLATE PICKER (new agent)
+   A radiogroup of rows rather than a grid of cards. The choice is a list of
+   named things with descriptions — cards would give each one a container it
+   does not need and make five of them look like a product page.
+   ========================================================================== */
+
+.tpl {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-5);
+  width: 100%;
+  padding: var(--space-6);
+  text-align: left;
+  color: var(--text);
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.tpl + .tpl { border-top: 1px solid var(--border); }
+.tpl:hover { background: var(--surface-2); }
+.tpl[aria-checked="true"] { background: var(--brand-soft); }
+.tpl .avatar { margin-top: 1px; }
+
+.tpl-body { flex: 1; min-width: 0; }
+.tpl-name { display: block; font-size: var(--text-base); font-weight: var(--weight-medium); }
+.tpl-desc {
+  display: block;
+  margin-top: var(--space-2);
+  max-width: 62ch;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  line-height: var(--leading-body);
+}
+
+/* The tick is the second signal, so the choice is not carried by the tint
+   alone — the same rule the rest of the set follows. */
+.tpl-tick { flex: none; margin-top: 2px; color: var(--brand-text); visibility: hidden; }
+.tpl[aria-checked="true"] .tpl-tick { visibility: visible; }

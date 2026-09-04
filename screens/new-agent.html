@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>New agent — Multi-AI Agents Panel UI Design</title>
+<link rel="icon" href="../app-icon.png">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/shell.css">
+<link rel="stylesheet" href="../css/screens.css">
+<script src="../js/theme.js"></script>
+<script src="../js/icons.js"></script>
+</head>
+<body>
+
+<a class="skip-link" href="#workspace">Skip to main content</a>
+
+<div class="shell" data-screen="models" data-sidebar="expanded" data-inspector="expanded">
+
+  <!-- ==================== SIDEBAR ==================== -->
+  <aside class="sidebar" aria-label="Agents">
+    <div class="sidebar-header">
+      <span class="label">Agents</span>
+      <button class="titlebar-btn" type="button" aria-label="New agent">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-plus"/></svg>
+      </button>
+    </div>
+
+    <div class="sidebar-body">
+      <div class="input-group" style="margin:var(--space-3) var(--space-2) var(--space-5)">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-search"/></svg>
+        <input class="input" type="search" placeholder="Filter agents" aria-label="Filter agents">
+      </div>
+
+      <!-- The agent being created holds its own row from the first keystroke,
+           so the list never jumps when it is saved and there is somewhere
+           obvious to press Escape back to. -->
+      <button class="row" type="button" aria-current="true" id="draft-row">
+        <span class="avatar" data-agent="3" aria-hidden="true" id="draft-mono">?</span>
+        <span class="name" id="draft-row-name">New agent</span>
+        <span class="badge" data-kind="attention">Draft</span>
+      </button>
+      <div id="agent-rows"></div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="row"><span class="name">8 agents · 1 draft</span></div>
+    </div>
+  </aside>
+
+  <!-- ==================== WORKSPACE ==================== -->
+  <main class="workspace" id="workspace" tabindex="-1">
+    <div class="workspace-header">
+      <span class="workspace-title" id="title">New agent</span>
+      <span class="badge" data-kind="attention">Not created yet</span>
+      <div class="workspace-actions">
+        <button class="btn btn-ghost btn-sm" type="button" id="cancel">Cancel</button>
+        <button class="btn btn-primary btn-sm" type="button" id="create" disabled>Create agent</button>
+      </div>
+    </div>
+
+    <div class="workspace-body">
+      <div class="pane">
+
+        <p class="pane-intro">
+          An agent is a role, a model, and the permissions you give it. None of
+          it is fixed — everything here can be changed afterwards, and nothing
+          is granted until you grant it.
+        </p>
+
+        <!-- ---------- 1. role ---------- -->
+        <section>
+          <div class="section-head">
+            <h2>Role</h2>
+            <span class="count">what it is for</span>
+          </div>
+
+          <p class="pane-intro" style="margin-bottom:var(--space-5)">
+            A template supplies the instructions this agent starts with. The copy
+            is taken now, so editing the template later does not reach back into
+            this agent.
+          </p>
+
+          <div class="card" id="templates" role="radiogroup" aria-label="Role template">
+            <button class="tpl" type="button" role="radio" aria-checked="true" data-mono="LA" data-name="Lead Architect">
+              <span class="avatar" data-agent="2" aria-hidden="true">LA</span>
+              <span class="tpl-body">
+                <span class="tpl-name">Lead Architect</span>
+                <span class="tpl-desc">Technical selection, data model, module boundaries. Shows the structure before writing the schema.</span>
+              </span>
+              <svg class="icon tpl-tick" aria-hidden="true"><use href="#i-check"/></svg>
+            </button>
+
+            <button class="tpl" type="button" role="radio" aria-checked="false" data-mono="FD" data-name="Full-Stack Developer">
+              <span class="avatar" data-agent="1" aria-hidden="true">FD</span>
+              <span class="tpl-body">
+                <span class="tpl-name">Full-Stack Developer</span>
+                <span class="tpl-desc">Turns an agreed spec into code. Asks for the flow before it starts, not after.</span>
+              </span>
+              <svg class="icon tpl-tick" aria-hidden="true"><use href="#i-check"/></svg>
+            </button>
+
+            <button class="tpl" type="button" role="radio" aria-checked="false" data-mono="QA" data-name="QA Engineer">
+              <span class="avatar" data-agent="3" aria-hidden="true">QA</span>
+              <span class="tpl-body">
+                <span class="tpl-name">QA Engineer</span>
+                <span class="tpl-desc">Edge cases, failing builds, and the tests nobody wrote. Runs well on a local model.</span>
+              </span>
+              <svg class="icon tpl-tick" aria-hidden="true"><use href="#i-check"/></svg>
+            </button>
+
+            <button class="tpl" type="button" role="radio" aria-checked="false" data-mono="ST" data-name="Security Tester">
+              <span class="avatar" data-agent="6" aria-hidden="true">ST</span>
+              <span class="tpl-body">
+                <span class="tpl-name">Security Tester</span>
+                <span class="tpl-desc">Reviews for injection, leaked credentials and dependency advisories. Reads; never writes.</span>
+              </span>
+              <svg class="icon tpl-tick" aria-hidden="true"><use href="#i-check"/></svg>
+            </button>
+
+            <button class="tpl" type="button" role="radio" aria-checked="false" data-mono="?" data-name="No template">
+              <span class="avatar" data-agent="user" aria-hidden="true">
+                <svg class="icon icon-sm" aria-hidden="true"><use href="#i-plus"/></svg>
+              </span>
+              <span class="tpl-body">
+                <span class="tpl-name">Start from nothing</span>
+                <span class="tpl-desc">No instructions. You write them yourself, on the agent or in a template of your own.</span>
+              </span>
+              <svg class="icon tpl-tick" aria-hidden="true"><use href="#i-check"/></svg>
+            </button>
+          </div>
+
+          <p class="field-hint measure-short" style="margin-top:var(--space-5)">
+            Templates live under Models · Role templates, where they can be read,
+            duplicated and edited. <a href="role-templates.html">Open role templates</a>
+          </p>
+        </section>
+
+        <!-- ---------- 2. identity ---------- -->
+        <section>
+          <div class="section-head">
+            <h2>Name</h2>
+            <span class="count">how you will refer to it</span>
+          </div>
+          <div class="card card-pad">
+            <div class="field-row">
+              <div class="field">
+                <label class="field-label" for="agent-name">Agent name<span class="req" aria-hidden="true">*</span></label>
+                <input class="input" id="agent-name" placeholder="Lead Architect" autocomplete="off"
+                       aria-describedby="agent-name-hint">
+                <span class="field-hint" id="agent-name-hint">
+                  Two agents can share a role but not a name — the name is what tells them
+                  apart in a group chat.
+                </span>
+              </div>
+              <div class="field">
+                <label class="field-label" for="agent-mono">Monogram</label>
+                <input class="input input-mono" id="agent-mono" maxlength="2" placeholder="LA">
+                <span class="field-hint">Taken from the name unless you set it.</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ---------- 3. model ---------- -->
+        <section>
+          <div class="section-head">
+            <h2>Model</h2>
+            <span class="count">where its answers come from</span>
+          </div>
+
+          <div class="card settings-group">
+            <div class="settings-row">
+              <div class="settings-label">
+                <div class="t">Provider</div>
+                <div class="d">
+                  Local costs nothing and the request never leaves this machine.
+                  Cloud is stronger at long reasoning and is billed per token.
+                </div>
+              </div>
+              <div class="settings-control">
+                <select class="select" id="provider" aria-label="Provider">
+                  <option value="cloud" selected>Anthropic — Cloud</option>
+                  <option value="local">Ollama — Local</option>
+                  <option value="cloud">OpenRouter — Cloud</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="settings-row">
+              <div class="settings-label">
+                <div class="t">Model</div>
+                <div class="d">The template suggests one; anything the provider offers will work.</div>
+              </div>
+              <div class="settings-control">
+                <select class="select input-mono" id="model" aria-label="Model">
+                  <option selected>claude-opus-5</option>
+                  <option>claude-sonnet-5</option>
+                  <option>claude-haiku-4-5</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="callout" data-kind="info" style="margin-top:var(--space-5)" id="cost-note">
+            <svg class="icon" aria-hidden="true"><use href="#i-cloud"/></svg>
+            <div class="callout-body">
+              <strong>This agent will cost money to run</strong>
+              Cloud calls are billed per token by the provider. The status bar shows the
+              running total, and Usage has a warning threshold you can set.
+            </div>
+          </div>
+        </section>
+
+        <!-- ---------- 4. permissions ---------- -->
+        <section>
+          <div class="section-head">
+            <h2>Permissions</h2>
+            <span class="count">none by default</span>
+          </div>
+
+          <p class="pane-intro" style="margin-bottom:var(--space-5)">
+            A new agent can read nothing and call nothing. Granting is a separate,
+            deliberate act — offered here so it is not hidden, and left off so that
+            creating an agent is never the moment permissions are given away by
+            accident.
+          </p>
+
+          <div class="card settings-group">
+            <div class="settings-row">
+              <div class="settings-label">
+                <div class="t">Folder access</div>
+                <div class="d">Grant after creating, from the session's inspector, one folder at a time.</div>
+              </div>
+              <div class="settings-control"><span class="badge" data-kind="idle">None</span></div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label">
+                <div class="t">Skills</div>
+                <div class="d">The template suggests one. It is still a grant, so it is listed rather than applied silently.</div>
+              </div>
+              <div class="settings-control">
+                <label class="switch">
+                  <input type="checkbox" id="grant-skill" checked>
+                  <span class="switch-track" aria-hidden="true"></span>
+                  <span class="switch-text"><span class="t">Repository summarizer</span></span>
+                </label>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label">
+                <div class="t">Guardrails</div>
+                <div class="d">Apply to every agent. There is nothing to configure, on this screen or any other.</div>
+              </div>
+              <div class="settings-control"><span class="badge" data-kind="running">Enforced</span></div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- ==================== INSPECTOR ==================== -->
+  <aside class="inspector" aria-label="Summary">
+    <div class="inspector-header"><span class="label">Summary</span></div>
+    <div class="inspector-body">
+
+      <section class="inspector-section">
+        <div style="display:flex;align-items:center;gap:var(--space-5)">
+          <span class="avatar avatar-lg" data-agent="3" aria-hidden="true" id="sum-mono">?</span>
+          <div style="min-width:0">
+            <div style="font-weight:var(--weight-semibold)" id="sum-name">Not named yet</div>
+            <div class="row-sub" id="sum-role">Lead Architect</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="inspector-section">
+        <span class="label">Will start as</span>
+        <dl class="kv">
+          <dt>Provider</dt> <dd id="sum-provider">Anthropic</dd>
+          <dt>Model</dt>    <dd class="mono" id="sum-model">claude-opus-5</dd>
+          <dt>Where</dt>    <dd id="sum-where">Cloud</dd>
+        </dl>
+      </section>
+
+      <section class="inspector-section">
+        <span class="label label-lead">Starts with no access</span>
+        <dl class="kv">
+          <dt>Folders</dt> <dd class="num">0</dd>
+          <dt>Skills</dt>  <dd class="num" id="sum-skills">1</dd>
+          <dt>Memory</dt>  <dd>Empty</dd>
+        </dl>
+      </section>
+
+      <section class="inspector-section">
+        <span class="label">Afterwards</span>
+        <p style="font-size:var(--text-sm);color:var(--text-muted);line-height:var(--leading-loose)">
+          Everything on this screen can be changed later, and deleting an agent
+          takes its memory with it. Nothing here is a one-way door.
+        </p>
+      </section>
+
+    </div>
+  </aside>
+
+</div>
+
+<script src="../js/mock.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/frame.js"></script>
+<script src="../js/shell.js"></script>
+<script src="../js/palette.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var name = document.getElementById('agent-name');
+  var mono = document.getElementById('agent-mono');
+  var create = document.getElementById('create');
+  var provider = document.getElementById('provider');
+  var model = document.getElementById('model');
+  var skill = document.getElementById('grant-skill');
+  var costNote = document.getElementById('cost-note');
+
+  var chosen = { name: 'Lead Architect', mono: 'LA' };
+
+  function initials(s) {
+    return s.trim().split(/\s+/).slice(0, 2).map(function (w) { return w[0]; }).join('').toUpperCase();
+  }
+
+  /* Everything the user has decided so far is restated in the inspector as
+     they go, so "Create" is never pressed against a summary they have not
+     seen. The draft row in the sidebar updates with it, which is what makes
+     the row worth having rather than a placeholder. */
+  function sync() {
+    var n = name.value.trim();
+    var m = (mono.value.trim() || (n ? initials(n) : chosen.mono)).slice(0, 2).toUpperCase();
+
+    document.getElementById('title').textContent = n || 'New agent';
+    document.getElementById('draft-row-name').textContent = n || 'New agent';
+    document.getElementById('draft-mono').textContent = m || '?';
+    document.getElementById('sum-mono').textContent = m || '?';
+    document.getElementById('sum-name').textContent = n || 'Not named yet';
+    document.getElementById('sum-role').textContent = chosen.name;
+
+    var label = provider.options[provider.selectedIndex].text;
+    document.getElementById('sum-provider').textContent = label.split('—')[0].trim();
+    document.getElementById('sum-where').textContent = provider.value === 'local' ? 'Local' : 'Cloud';
+    document.getElementById('sum-model').textContent = model.value;
+    document.getElementById('sum-skills').textContent = skill.checked ? '1' : '0';
+
+    // A local agent costs nothing, so the note about being billed would be a lie.
+    costNote.hidden = provider.value === 'local';
+
+    create.disabled = !n;
+  }
+
+  name.addEventListener('input', sync);
+  mono.addEventListener('input', sync);
+  provider.addEventListener('change', function () {
+    if (provider.value === 'local') {
+      model.innerHTML = '<option selected>qwen2.5-coder:14b</option><option>llama3.1:8b</option><option>mistral-small:24b</option>';
+    } else {
+      model.innerHTML = '<option selected>claude-opus-5</option><option>claude-sonnet-5</option><option>claude-haiku-4-5</option>';
+    }
+    sync();
+  });
+  model.addEventListener('change', sync);
+  skill.addEventListener('change', sync);
+
+  /* A radiogroup, so arrow keys move between templates and only one is in the
+     tab order — the same behaviour the rail has, for the same reason. */
+  var tpls = [].slice.call(document.querySelectorAll('.tpl'));
+  function choose(el) {
+    tpls.forEach(function (t) {
+      var on = t === el;
+      t.setAttribute('aria-checked', String(on));
+      t.tabIndex = on ? 0 : -1;
+    });
+    chosen = { name: el.dataset.name, mono: el.dataset.mono };
+    if (!name.value.trim() && el.dataset.name !== 'No template') name.placeholder = el.dataset.name;
+    sync();
+  }
+  tpls.forEach(function (t, i) {
+    t.tabIndex = t.getAttribute('aria-checked') === 'true' ? 0 : -1;
+    t.addEventListener('click', function () { choose(t); });
+    t.addEventListener('keydown', function (ev) {
+      var next = null;
+      if (ev.key === 'ArrowDown' || ev.key === 'ArrowRight') next = tpls[(i + 1) % tpls.length];
+      if (ev.key === 'ArrowUp' || ev.key === 'ArrowLeft') next = tpls[(i - 1 + tpls.length) % tpls.length];
+      if (!next) return;
+      choose(next); next.focus(); ev.preventDefault();
+    });
+  });
+
+  create.addEventListener('click', function () {
+    window.Toast.show({
+      kind: 'success',
+      title: 'Agent created',
+      body: name.value.trim() + ' — ' + chosen.name + ', starting with no folder access.'
+    });
+  });
+
+  document.getElementById('cancel').addEventListener('click', function () {
+    window.Toast.show({ kind: 'info', title: 'Discarded', body: 'Nothing was created.' });
+  });
+
+  // Same eight agents the rest of the app shows, not a third hand-written set.
+  document.getElementById('agent-rows').innerHTML = window.Mock.agents.map(function (a, i) {
+    return '<button class="row" type="button">' +
+             '<span class="avatar" data-agent="' + ((i % 6) + 1) + '" aria-hidden="true">' +
+               initials(a.name) + '</span>' +
+             '<span class="name">' + a.name + '</span>' +
+             '<span class="badge" data-kind="' + a.where + '">' +
+               (a.where === 'local' ? 'Local' : 'Cloud') + '</span>' +
+           '</button>';
+  }).join('');
+
+  sync();
+
+  /* Deliberately no autofocus. Focusing the name field scrolls it into view,
+     which opened the page already past the role picker — the first decision
+     the flow asks for. The picker is the first interactive element in source
+     order, so a keyboard user reaches it with one Tab from the skip link,
+     which is where they should start anyway. */
+});
+</script>
+</body>
+</html>
