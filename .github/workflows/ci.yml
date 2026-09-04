@@ -1,12 +1,23 @@
 name: CI
 
-# Fast checks on every push/PR to main. Full release builds are a
-# separate workflow triggered by version tags.
+# Fast checks on every push/PR to the default branch. Full release builds are
+# a separate workflow triggered by version tags.
+#
+# The branch filter must name the branch this repository actually uses. It said
+# `main` after the default branch had been renamed to `Source_Code`, which did
+# not turn CI red — it stopped CI from running at all, so nothing was left to
+# go red. A workflow that never fires is worse than a failing one: the failing
+# one still tells you something.
 on:
   push:
-    branches: [main]
+    branches: [Source_Code]
   pull_request:
-    branches: [main]
+    branches: [Source_Code]
+
+# Declared rather than inherited from the repository default, so a change to
+# that setting cannot silently widen or narrow what these jobs can do.
+permissions:
+  contents: read
 
 jobs:
   secret-scan:
@@ -24,12 +35,29 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: gitleaks/gitleaks-action@v3
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # GITLEAKS_LICENSE is only required for GitHub Organizations, not
-          # personal accounts (confirmed this repo's owner is a personal
-          # account via `gh api users/SpaceSquare640`) — omitted on purpose.
+      # The gitleaks CLI directly, not gitleaks-action.
+      #
+      # The action's pull-request mode calls the GitHub API to post findings
+      # back onto the PR, which needs `pull-requests: write`. This repository's
+      # default workflow permission is read-only, and GITHUB_TOKEN is forced
+      # read-only on Dependabot pull requests regardless of what the workflow
+      # asks for — so the action could never succeed here. It failed on every
+      # single PR, which meant secret scanning, the control that exists because
+      # a public repo must not leak keys, had never actually run on a PR.
+      #
+      # Scanning is the part that matters; the PR comment was decoration that
+      # happened to be the thing that broke. The CLI exits non-zero on a
+      # finding, and a failed job is a loud enough signal.
+      - name: Install gitleaks
+        run: |
+          VERSION=8.24.3
+          curl -sSfL -o /tmp/gitleaks.tar.gz             "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz"
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+          sudo install -m 0755 /tmp/gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+
+      - name: Scan history for secrets
+        run: gitleaks detect --source . --redact --verbose --exit-code 1
 
   lint-workflows:
     # Validates the workflow YAML files themselves (ci.yml, release.yml) —
