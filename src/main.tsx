@@ -1,5 +1,17 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+// Imported before App so the token layer is defined before any stylesheet
+// that reads it. Vite emits CSS in import order, and a var() that resolves
+// before its :root definition is loaded falls back to nothing rather than
+// erroring — a failure that shows up as an invisible element, not a build
+// break, so the ordering is load-bearing.
+//
+// The v2 token layer only DEFINES custom properties (plus color-scheme);
+// it selects nothing and styles nothing on its own. Loading it alongside
+// the v1 stylesheets is therefore inert until a v2 component reads from
+// it. See src/styles/tokens.css for the one place the two vocabularies
+// would have collided, and what was done about it.
+import "./styles/tokens.css";
 import App from "./App";
 import { applyStoredTheme } from "./Settings";
 import "./i18n";
