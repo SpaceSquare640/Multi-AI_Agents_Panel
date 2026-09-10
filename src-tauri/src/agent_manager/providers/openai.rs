@@ -59,7 +59,7 @@ pub fn parse_response(body: &Value) -> Result<String, ProviderError> {
 }
 
 pub fn send(api_key: &str, model: &str, messages: &[ChatMessage]) -> Result<String, ProviderError> {
-    let client = reqwest::blocking::Client::new();
+    let client = crate::http::cloud_inference();
     let response = client
         .post(API_URL)
         .bearer_auth(api_key)

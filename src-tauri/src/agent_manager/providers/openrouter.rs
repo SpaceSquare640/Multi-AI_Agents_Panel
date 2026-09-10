@@ -70,7 +70,7 @@ fn parse_usage(body: &Value) -> Option<TokenUsage> {
 /// that only need the reply) is unaffected, and every existing test
 /// against `send`/`parse_response` still holds.
 pub fn send_with_usage(api_key: &str, model: &str, messages: &[ChatMessage]) -> Result<(String, Option<TokenUsage>), ProviderError> {
-    let client = reqwest::blocking::Client::new();
+    let client = crate::http::cloud_inference();
     let response = client
         .post(API_URL)
         .bearer_auth(api_key)

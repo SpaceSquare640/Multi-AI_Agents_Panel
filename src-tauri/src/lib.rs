@@ -1,11 +1,11 @@
 mod agent_manager;
 mod bridge_support;
-mod cherrytree;
 mod commands;
 mod fallback;
 mod file_access;
 mod game_agent;
 mod guardrails;
+mod http;
 mod key_vault;
 mod mcp_manager;
 mod ml_engine;
@@ -203,8 +203,6 @@ pub fn run() {
             commands::list_ollama_installed_models,
             commands::pull_ollama_model,
             commands::delete_ollama_model,
-            commands::install_ollama,
-            commands::install_cherrytree,
             commands::ollama_models_env_hint,
             commands::suggest_ollama_models_dir,
             commands::list_agents,

@@ -143,7 +143,7 @@ pub fn send_tooled(
     raw_messages: &[Value],
     tools: &[Value],
 ) -> Result<AnthropicReply, ProviderError> {
-    let client = reqwest::blocking::Client::new();
+    let client = crate::http::cloud_inference();
     let response = client
         .post(API_URL)
         .header("x-api-key", api_key)
@@ -161,7 +161,7 @@ pub fn send_tooled(
 }
 
 pub fn send(api_key: &str, model: &str, messages: &[ChatMessage]) -> Result<String, ProviderError> {
-    let client = reqwest::blocking::Client::new();
+    let client = crate::http::cloud_inference();
     let response = client
         .post(API_URL)
         .header("x-api-key", api_key)

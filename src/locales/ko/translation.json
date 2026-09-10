@@ -429,11 +429,6 @@
       "statusChecking": "확인 중…",
       "statusRunning": "실행 중",
       "statusNotRunning": "실행되지 않음",
-      "installOllama": "Ollama 설치",
-      "installingOllama": "설치 프로그램 다운로드 중…",
-      "installOllamaConfirmTitle": "Ollama를 설치하시겠습니까?",
-      "installOllamaConfirm": "ollama.com에서 공식 설치 프로그램을 다운로드하여 실행합니다——이후에는 Ollama 자체 설치 과정(Windows 권한 확인 포함)으로 진행됩니다. 계속하시겠습니까?",
-      "installOllamaStarted": "설치 프로그램이 실행되었습니다——안내에 따라 설치를 완료한 후 '새로고침'을 클릭하세요.",
       "refresh": "새로고침",
       "storageHintSummary": "Ollama의 모델은 어디에 저장되나요?",
       "storageHintIntro": "Ollama는 이 앱이 제어하거나 설치하지 않는 별도의 프로그램입니다——{{endpoint}}를 통해서만 호출됩니다. 이 앱 자체는 Ollama의 모델 파일을 이동하거나 관리하지 않습니다.",
@@ -558,10 +553,13 @@
     "saving": "저장 중…",
     "saved": "저장됨.",
     "cherryTreeHeading": "더 강력한 기능이 필요하신가요? CherryTree 설치",
-    "cherryTreeHint": "이 앱 자체의 노트는 의도적으로 간단합니다(트리 구조 + 일반 텍스트). CherryTree는 서식 있는 텍스트, 코드 하이라이트, 암호화를 지원하는 완전한 기능의 독립 노트 앱입니다 -- 설치하면 이 앱의 탭이 아니라 별도의 프로그램이 열립니다.",
-    "cherryTreeInstall": "CherryTree 설치",
-    "cherryTreeInstalling": "다운로드 중…",
-    "installCherryTreeConfirmTitle": "CherryTree 설치",
-    "installCherryTreeConfirm": "CherryTree의 공식 GitHub 릴리스에서 실제 설치 프로그램을 다운로드하여 실행합니다. 이후에는 CherryTree 자체의 설치 프로그램을 직접 조작하게 됩니다 -- 계속하시겠습니까?"
+    "cherryTreeHint": "이 앱 자체의 노트는 의도적으로 간단합니다(트리 구조 + 일반 텍스트). CherryTree는 서식 있는 텍스트, 코드 하이라이트, 암호화를 지원하는 완전한 기능의 독립 노트 앱입니다 -- 설치하면 이 앱의 탭이 아니라 별도의 프로그램이 열립니다."
+  },
+  "install": {
+    "intro": "Windows 패키지 관리자로 설치하세요 — 다음 줄을 PowerShell 또는 명령 프롬프트에 붙여넣습니다:",
+    "copy": "복사",
+    "copied": "복사됨",
+    "orDownload": "또는 공식 사이트에서 내려받으세요:",
+    "afterwards": "설치가 끝나면 여기로 돌아와 '새로 고침'을 클릭하세요. 재시작할 필요는 없습니다."
   }
 }

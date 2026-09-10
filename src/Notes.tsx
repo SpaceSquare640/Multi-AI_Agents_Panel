@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import { ask } from "@tauri-apps/plugin-dialog";
+import InstallGuidance from "./InstallGuidance";
 import type { Note } from "./types";
 import "./Notes.css";
 
@@ -35,7 +36,6 @@ export default function Notes() {
   const [editContent, setEditContent] = useState("");
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [installingCherryTree, setInstallingCherryTree] = useState(false);
 
   const tree = useMemo(() => buildTree(notes), [notes]);
   const selected = notes.find((n) => n.id === selectedId) ?? null;
@@ -113,23 +113,6 @@ export default function Notes() {
       setError(String(err));
     } finally {
       setSaving(false);
-    }
-  }
-
-  async function handleInstallCherryTree() {
-    const confirmed = await ask(t("notes.installCherryTreeConfirm"), {
-      title: t("notes.installCherryTreeConfirmTitle"),
-      kind: "info",
-    });
-    if (!confirmed) return;
-    setInstallingCherryTree(true);
-    setError(null);
-    try {
-      await invoke("install_cherrytree");
-    } catch (err) {
-      setError(String(err));
-    } finally {
-      setInstallingCherryTree(false);
     }
   }
 
@@ -220,9 +203,10 @@ export default function Notes() {
         <section className="acc-section notes-cherrytree-section">
           <h2>{t("notes.cherryTreeHeading")}</h2>
           <p className="acc-hint">{t("notes.cherryTreeHint")}</p>
-          <button disabled={installingCherryTree} onClick={() => void handleInstallCherryTree()}>
-            {installingCherryTree ? t("notes.cherryTreeInstalling") : t("notes.cherryTreeInstall")}
-          </button>
+          <InstallGuidance
+            command="winget install Giuspen.Cherrytree"
+            url="https://www.giuspen.net/cherrytree/#downl"
+          />
         </section>
       </div>
     </div>

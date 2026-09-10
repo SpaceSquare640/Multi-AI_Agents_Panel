@@ -78,7 +78,7 @@ pub fn build_classify_request(model: &str, text: &str) -> Value {
 /// a `Err` (Ollama unreachable, model not pulled, malformed response) as
 /// "classifier unavailable," not as a safety verdict either way.
 pub fn classify(model: &str, text: &str) -> Result<LlamaGuardVerdict, String> {
-    let client = reqwest::blocking::Client::new();
+    let client = crate::http::guardrail_classifier();
     let response = client
         .post(format!("{BASE_URL}/api/chat"))
         .json(&build_classify_request(model, text))

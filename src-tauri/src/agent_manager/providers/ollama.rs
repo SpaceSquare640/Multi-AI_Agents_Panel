@@ -19,8 +19,38 @@ pub struct OllamaModel {
     pub modified_at: Option<String>,
 }
 
+/// Chat calls: a long overall budget, because a cold local model load is
+/// slow and that is not an error. See `crate::http` for the measurements
+/// that set these numbers.
 fn client() -> reqwest::blocking::Client {
-    reqwest::blocking::Client::new()
+    crate::http::local_inference()
+}
+
+/// Listing and deleting models: small, fast JSON calls that should not
+/// wait on the inference budget.
+fn metadata_client() -> reqwest::blocking::Client {
+    crate::http::metadata()
+}
+
+/// Maps a transport failure onto the Error Code Registry.
+///
+/// E1001 is "本地推理服務未啟動" and E1004 is "本地推理逾時". The registry
+/// recorded E1004 as unimplemented because "reqwest 逾時與連不上是同一種
+/// 錯誤路徑" — they no longer are. Reporting a timeout as E1001 told users
+/// their local service was unreachable when it was running and answering,
+/// just not within the budget.
+fn transport_error(e: &reqwest::Error) -> ProviderError {
+    if crate::http::is_timeout(e) {
+        ProviderError::Network {
+            error_code: "E1004",
+            message: format!("Ollama did not answer in time: {e}"),
+        }
+    } else {
+        ProviderError::Network {
+            error_code: "E1001",
+            message: format!("could not reach Ollama: {e}"),
+        }
+    }
 }
 
 /// Builds the JSON request body for `/api/chat`. Pure function, unit-testable.
@@ -109,14 +139,11 @@ pub fn send_vision(model: &str, prompt: &str, image_base64: &str) -> Result<Stri
         .post(format!("{BASE_URL}/api/chat"))
         .json(&build_vision_chat_request(model, prompt, image_base64))
         .send()
-        .map_err(|e| ProviderError::Network {
-            error_code: "E1001",
-            message: format!("could not reach Ollama: {e}"),
-        })?;
+        .map_err(|e| transport_error(&e))?;
 
     let body: Value = response
         .json()
-        .map_err(|e| ProviderError::Network { error_code: "E1001", message: e.to_string() })?;
+        .map_err(|e| transport_error(&e))?;
     parse_chat_response(&body)
 }
 
@@ -125,21 +152,18 @@ pub fn send(model: &str, messages: &[ChatMessage]) -> Result<String, ProviderErr
         .post(format!("{BASE_URL}/api/chat"))
         .json(&build_chat_request(model, messages))
         .send()
-        .map_err(|e| ProviderError::Network {
-            error_code: "E1001",
-            message: format!("could not reach Ollama: {e}"),
-        })?;
+        .map_err(|e| transport_error(&e))?;
 
     let body: Value = response
         .json()
-        .map_err(|e| ProviderError::Network { error_code: "E1001", message: e.to_string() })?;
+        .map_err(|e| transport_error(&e))?;
     parse_chat_response(&body)
 }
 
 /// Cheap reachability check — used by the UI to show "Ollama not running"
 /// instead of a confusing network error.
 pub fn is_running() -> bool {
-    client()
+    metadata_client()
         .get(format!("{BASE_URL}/api/tags"))
         .send()
         .map(|r| r.status().is_success())
@@ -147,16 +171,13 @@ pub fn is_running() -> bool {
 }
 
 pub fn list_installed() -> Result<Vec<OllamaModel>, ProviderError> {
-    let response = client()
+    let response = metadata_client()
         .get(format!("{BASE_URL}/api/tags"))
         .send()
-        .map_err(|e| ProviderError::Network {
-            error_code: "E1001",
-            message: format!("could not reach Ollama: {e}"),
-        })?;
+        .map_err(|e| transport_error(&e))?;
     let body: Value = response
         .json()
-        .map_err(|e| ProviderError::Network { error_code: "E1001", message: e.to_string() })?;
+        .map_err(|e| transport_error(&e))?;
     Ok(parse_tags_response(&body))
 }
 
@@ -206,14 +227,12 @@ pub fn pull_model_with_progress(
     name: &str,
     mut on_progress: impl FnMut(PullProgress),
 ) -> Result<(), ProviderError> {
-    let response = client()
+    let response = // A model pull is gigabytes; it must not share the chat budget.
+    crate::http::large_download()
         .post(format!("{BASE_URL}/api/pull"))
         .json(&json!({ "name": name, "stream": true }))
         .send()
-        .map_err(|e| ProviderError::Network {
-            error_code: "E1001",
-            message: format!("could not reach Ollama: {e}"),
-        })?;
+        .map_err(|e| transport_error(&e))?;
 
     if !response.status().is_success() {
         return Err(ProviderError::Api {
@@ -238,14 +257,11 @@ pub fn pull_model_with_progress(
 }
 
 pub fn delete_model(name: &str) -> Result<(), ProviderError> {
-    let response = client()
+    let response = metadata_client()
         .delete(format!("{BASE_URL}/api/delete"))
         .json(&json!({ "name": name }))
         .send()
-        .map_err(|e| ProviderError::Network {
-            error_code: "E1001",
-            message: format!("could not reach Ollama: {e}"),
-        })?;
+        .map_err(|e| transport_error(&e))?;
 
     if !response.status().is_success() {
         return Err(ProviderError::Api {
@@ -254,48 +270,6 @@ pub fn delete_model(name: &str) -> Result<(), ProviderError> {
         });
     }
     Ok(())
-}
-
-/// Ollama's own official Windows installer, fetched fresh on every call
-/// rather than pinned to a version — Ollama doesn't publish a stable
-/// "latest" URL for older releases, only this one that always serves
-/// whatever's current. Pure so it's directly testable without a network
-/// call.
-#[cfg(windows)]
-pub(crate) fn windows_installer_url() -> &'static str {
-    "https://ollama.com/download/OllamaSetup.exe"
-}
-
-/// Downloads the real Ollama installer and hands off to it — the
-/// installer's own UI (including any Windows UAC elevation prompt) is
-/// what the user actually interacts with from here; this function only
-/// fetches it and launches it, it never runs anything silently or
-/// automatically. Only ever called from the Tauri command below, which
-/// only ever fires after the user clicks an explicit "Install Ollama"
-/// button behind its own confirmation dialog (see AIControlCenter.tsx) —
-/// there is no path that reaches this without that explicit user action.
-#[cfg(windows)]
-pub fn download_and_run_installer() -> Result<(), String> {
-    let url = windows_installer_url();
-    let response = reqwest::blocking::get(url)
-        .and_then(|r| r.error_for_status())
-        .map_err(|e| format!("failed to download the Ollama installer from {url}: {e}"))?;
-    let bytes = response.bytes().map_err(|e| format!("failed to read the downloaded installer: {e}"))?;
-
-    let temp_path = std::env::temp_dir().join("OllamaSetup.exe");
-    std::fs::write(&temp_path, &bytes).map_err(|e| format!("failed to save the installer to disk: {e}"))?;
-
-    let mut command = std::process::Command::new(&temp_path);
-    crate::bridge_support::hide_console_window(&mut command);
-    command.spawn().map_err(|e| format!("failed to launch the installer: {e}"))?;
-    Ok(())
-}
-
-#[cfg(not(windows))]
-pub fn download_and_run_installer() -> Result<(), String> {
-    Err("Automatic Ollama installation is only implemented for Windows — \
-         download it yourself from https://ollama.com/download"
-        .to_string())
 }
 
 #[cfg(test)]
@@ -405,20 +379,6 @@ mod tests {
         assert_eq!(progress.percent, None);
     }
 
-    #[test]
-    #[cfg(windows)]
-    fn windows_installer_url_points_at_ollamas_own_domain_over_https() {
-        let url = windows_installer_url();
-        assert!(url.starts_with("https://ollama.com/"), "expected an official ollama.com URL, got {url}");
-    }
-
-    #[test]
-    #[cfg(not(windows))]
-    fn download_and_run_installer_fails_closed_on_non_windows_rather_than_attempting_anything() {
-        let result = download_and_run_installer();
-        assert!(result.is_err());
-        assert!(result.unwrap_err().contains("ollama.com/download"));
-    }
 }
 
 /// Live smoke tests against a real local Ollama install. Not run by
@@ -436,22 +396,46 @@ mod live {
         println!("installed models: {models:?}");
     }
 
-    /// Proves the download half actually reaches a real Windows PE
-    /// executable, not just that the URL string looks plausible — checks
-    /// the "MZ" header real .exe files start with. Deliberately does NOT
-    /// call the full `download_and_run_installer` (that would actually
-    /// launch a real installer on whatever machine runs this test), so it
-    /// downloads the same URL directly instead.
+    /// The reply path, end to end against a real Ollama.
+    ///
+    /// Everything else in this file tests request construction or response
+    /// parsing in isolation, and the other live test only lists models. Until
+    /// this existed, nothing anywhere in the crate proved that a message goes
+    /// out and an answer comes back — the single thing a user does first, and
+    /// the one step no unit test can stand in for, because `send` builds its
+    /// own HTTP client against a hardcoded base URL with no seam to fake.
+    ///
+    /// Picks the smallest installed model rather than naming one: a test that
+    /// hardcodes a model fails on any machine that happens not to have pulled
+    /// it, which makes it a test of the machine rather than of the adapter.
     #[test]
     #[ignore]
-    #[cfg(windows)]
-    fn the_windows_installer_url_serves_a_real_windows_executable() {
-        let bytes = reqwest::blocking::get(windows_installer_url())
-            .and_then(|r| r.error_for_status())
-            .unwrap()
-            .bytes()
-            .unwrap();
-        assert!(bytes.len() > 1_000_000, "expected a real installer, got {} bytes", bytes.len());
-        assert_eq!(&bytes[0..2], b"MZ", "expected a Windows PE executable (MZ header)");
+    fn sends_a_message_and_gets_a_reply() {
+        assert!(is_running(), "Ollama does not appear to be running on localhost:11434");
+
+        let mut models = list_installed().expect("could not list installed models");
+        assert!(!models.is_empty(), "no models are installed; pull one first");
+        models.sort_by_key(|m| m.size.unwrap_or(u64::MAX));
+        let model = models[0].name.clone();
+        println!("using smallest installed model: {model}");
+
+        let messages = vec![ChatMessage {
+            role: "user".to_string(),
+            content: "Reply with exactly the word: pong".to_string(),
+        }];
+
+        let reply = send(&model, &messages).expect("send() returned an error");
+        println!("reply: {reply:?}");
+
+        // Deliberately not asserting on the wording. A 0.6 GB model will not
+        // reliably obey "reply with exactly one word", and asserting that it
+        // does would make this a test of the model's instruction-following
+        // rather than of the adapter. What matters is that a request reached
+        // Ollama, a response came back, and it parsed into non-empty text.
+        assert!(
+            !reply.trim().is_empty(),
+            "adapter returned an empty reply, so either the request or the response parsing is wrong"
+        );
     }
+
 }

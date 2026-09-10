@@ -429,11 +429,6 @@
       "statusChecking": "檢查中…",
       "statusRunning": "執行中",
       "statusNotRunning": "未執行",
-      "installOllama": "安裝 Ollama",
-      "installingOllama": "下載安裝程式中…",
-      "installOllamaConfirmTitle": "安裝 Ollama？",
-      "installOllamaConfirm": "這會從 ollama.com 下載官方安裝程式並執行它——之後會進入 Ollama 自己的安裝流程（包含任何 Windows 權限提示）。要繼續嗎？",
-      "installOllamaStarted": "安裝程式已啟動——請依照其指示完成安裝，完成後點擊「重新整理」。",
       "refresh": "重新整理",
       "storageHintSummary": "Ollama 的模型儲存在哪裡？",
       "storageHintIntro": "Ollama 是本應用程式不控制也不安裝的獨立程式——僅透過 {{endpoint}} 呼叫。本應用程式本身不會移動或管理 Ollama 的模型檔案。",
@@ -558,10 +553,13 @@
     "saving": "儲存中…",
     "saved": "已儲存。",
     "cherryTreeHeading": "想要更強大的功能？安裝 CherryTree",
-    "cherryTreeHint": "這個 App 自己的筆記刻意保持簡單（樹狀結構＋純文字）。CherryTree 是功能完整的獨立筆記軟體（富文字、程式碼高亮、加密）——安裝後會開啟一個獨立程式，不是這個 App 裡的分頁。",
-    "cherryTreeInstall": "安裝 CherryTree",
-    "cherryTreeInstalling": "下載中…",
-    "installCherryTreeConfirmTitle": "安裝 CherryTree",
-    "installCherryTreeConfirm": "這會從 CherryTree 官方 GitHub Releases 下載真正的安裝檔並啟動它，接下來您會直接操作 CherryTree 自己的安裝程式——要繼續嗎？"
+    "cherryTreeHint": "這個 App 自己的筆記刻意保持簡單（樹狀結構＋純文字）。CherryTree 是功能完整的獨立筆記軟體（富文字、程式碼高亮、加密）——安裝後會開啟一個獨立程式，不是這個 App 裡的分頁。"
+  },
+  "install": {
+    "intro": "用 Windows 套件管理員安裝——把這行複製到 PowerShell 或命令提示字元執行：",
+    "copy": "複製",
+    "copied": "已複製",
+    "orDownload": "或到官方網站下載：",
+    "afterwards": "安裝完成後回到這裡按「重新整理」即可，不需要重啟程式。"
   }
 }

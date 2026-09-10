@@ -53,7 +53,7 @@ pub fn parse_response(body: &Value) -> Result<String, ProviderError> {
 }
 
 pub fn send(model: &str, messages: &[ChatMessage]) -> Result<String, ProviderError> {
-    let client = reqwest::blocking::Client::new();
+    let client = crate::http::local_inference();
     let mut request = client.post(API_URL).header("content-type", "application/json");
     if let Ok(api_key) = std::env::var("COLIBRI_API_KEY") {
         request = request.bearer_auth(api_key);

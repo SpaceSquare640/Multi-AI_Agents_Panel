@@ -429,11 +429,6 @@
       "statusChecking": "wird geprüft…",
       "statusRunning": "läuft",
       "statusNotRunning": "läuft nicht",
-      "installOllama": "Ollama installieren",
-      "installingOllama": "Installationsprogramm wird heruntergeladen…",
-      "installOllamaConfirmTitle": "Ollama installieren?",
-      "installOllamaConfirm": "Dies lädt das offizielle Installationsprogramm von ollama.com herunter und startet es — danach durchlaufen Sie Ollamas eigenes Installationsprogramm (einschließlich einer möglichen Windows-Berechtigungsabfrage). Fortfahren?",
-      "installOllamaStarted": "Installationsprogramm gestartet — folgen Sie den Anweisungen und klicken Sie danach auf Aktualisieren.",
       "refresh": "Aktualisieren",
       "storageHintSummary": "Wo werden Ollamas Modelle gespeichert?",
       "storageHintIntro": "Ollama ist ein separates Programm, das diese App weder steuert noch installiert — es wird nur über {{endpoint}} aufgerufen. Diese App verschiebt oder verwaltet die Modelldateien von Ollama nicht selbst.",
@@ -558,10 +553,13 @@
     "saving": "Wird gespeichert…",
     "saved": "Gespeichert.",
     "cherryTreeHeading": "Mehr gewuenscht? CherryTree installieren",
-    "cherryTreeHint": "Die eigenen Notizen dieser App sind bewusst einfach gehalten (Baumstruktur + Klartext). CherryTree ist eine voll ausgestattete eigenstaendige Notiz-App (Rich Text, Code-Hervorhebung, Verschluesselung) — die Installation oeffnet ein separates Programm, keinen Tab in dieser App.",
-    "cherryTreeInstall": "CherryTree installieren",
-    "cherryTreeInstalling": "Wird heruntergeladen…",
-    "installCherryTreeConfirmTitle": "CherryTree installieren",
-    "installCherryTreeConfirm": "Dies laedt das echte CherryTree-Installationsprogramm von dessen offiziellen GitHub-Releases herunter und startet es. Danach interagieren Sie mit CherryTrees eigenem Installationsprogramm — fortfahren?"
+    "cherryTreeHint": "Die eigenen Notizen dieser App sind bewusst einfach gehalten (Baumstruktur + Klartext). CherryTree ist eine voll ausgestattete eigenstaendige Notiz-App (Rich Text, Code-Hervorhebung, Verschluesselung) — die Installation oeffnet ein separates Programm, keinen Tab in dieser App."
+  },
+  "install": {
+    "intro": "Installieren Sie es mit dem Windows-Paketmanager — kopieren Sie dies in PowerShell oder die Eingabeaufforderung:",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "orDownload": "Oder laden Sie es von der offiziellen Website herunter:",
+    "afterwards": "Kommen Sie nach der Installation hierher zurück und klicken Sie auf Aktualisieren. Kein Neustart nötig."
   }
 }

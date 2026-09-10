@@ -429,11 +429,6 @@
       "statusChecking": "checking…",
       "statusRunning": "running",
       "statusNotRunning": "not running",
-      "installOllama": "Install Ollama",
-      "installingOllama": "Downloading installer…",
-      "installOllamaConfirmTitle": "Install Ollama?",
-      "installOllamaConfirm": "This downloads the official installer from ollama.com and launches it — you'll go through Ollama's own installer from there (including any Windows permission prompt). Continue?",
-      "installOllamaStarted": "Installer launched — follow its prompts, then click Refresh once it's done.",
       "refresh": "Refresh",
       "storageHintSummary": "Where are Ollama's models stored?",
       "storageHintIntro": "Ollama is a separate program this app doesn't control or install — it's only called over {{endpoint}}. This app does not move or manage Ollama's model files itself.",
@@ -558,10 +553,13 @@
     "saving": "Saving...",
     "saved": "Saved.",
     "cherryTreeHeading": "Want more? Install CherryTree",
-    "cherryTreeHint": "This app's own notes are deliberately simple (a tree + plain text). CherryTree is a full-featured standalone note-taking app (rich text, code highlighting, encryption) - installing it opens a separate program, not a tab in this app.",
-    "cherryTreeInstall": "Install CherryTree",
-    "cherryTreeInstalling": "Downloading...",
-    "installCherryTreeConfirmTitle": "Install CherryTree",
-    "installCherryTreeConfirm": "This downloads the real CherryTree installer from its official GitHub releases and launches it. You'll interact with CherryTree's own installer from there - continue?"
+    "cherryTreeHint": "This app's own notes are deliberately simple (a tree + plain text). CherryTree is a full-featured standalone note-taking app (rich text, code highlighting, encryption) - installing it opens a separate program, not a tab in this app."
+  },
+  "install": {
+    "intro": "Install it with Windows Package Manager — copy this into PowerShell or Command Prompt:",
+    "copy": "Copy",
+    "copied": "Copied",
+    "orDownload": "Or download it from the official site:",
+    "afterwards": "Once it's installed, come back here and click Refresh. No restart needed."
   }
 }

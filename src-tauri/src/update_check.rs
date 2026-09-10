@@ -66,7 +66,7 @@ struct ReleaseResponse {
 /// unauthenticated reads like this one, but requests without a
 /// `User-Agent` are rejected outright.
 pub fn check_for_update(current_version: &str) -> Result<UpdateCheckResult, String> {
-    let client = reqwest::blocking::Client::new();
+    let client = crate::http::metadata();
     let response = client
         .get(RELEASES_URL)
         .header("User-Agent", "multi-ai-agents-panel-update-check")

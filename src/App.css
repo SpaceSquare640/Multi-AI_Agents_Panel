@@ -260,3 +260,39 @@ select {
 :root[data-theme="dark"] button:active {
   background-color: #10181f;
 }
+
+/* Guidance for installing an external program the user must install
+   themselves. The command has to be readable and selectable, so it is a
+   real <code> block rather than a label on a button. */
+.install-guidance {
+  margin-top: 0.5rem;
+}
+
+.install-guidance-command {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0.35rem 0;
+}
+
+.install-guidance-command code {
+  /* user-select is spelled out because the command is the whole point of
+     this block — it must be selectable even inside containers that
+     disable selection. */
+  user-select: all;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  background: rgba(127, 127, 127, 0.16);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.link-button {
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}

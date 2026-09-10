@@ -429,11 +429,6 @@
       "statusChecking": "vérification…",
       "statusRunning": "en cours d'exécution",
       "statusNotRunning": "arrêté",
-      "installOllama": "Installer Ollama",
-      "installingOllama": "Téléchargement de l'installateur…",
-      "installOllamaConfirmTitle": "Installer Ollama ?",
-      "installOllamaConfirm": "Ceci télécharge l'installateur officiel depuis ollama.com et le lance — vous passerez ensuite par le propre installateur d'Ollama (y compris toute invite de permission Windows). Continuer ?",
-      "installOllamaStarted": "Installateur lancé — suivez ses instructions, puis cliquez sur Actualiser une fois terminé.",
       "refresh": "Actualiser",
       "storageHintSummary": "Où les modèles d'Ollama sont-ils stockés ?",
       "storageHintIntro": "Ollama est un programme distinct que cette application ne contrôle ni n'installe — il est simplement appelé via {{endpoint}}. Cette application ne déplace ni ne gère elle-même les fichiers de modèles d'Ollama.",
@@ -558,10 +553,13 @@
     "saving": "Enregistrement...",
     "saved": "Enregistre.",
     "cherryTreeHeading": "Envie de plus ? Installez CherryTree",
-    "cherryTreeHint": "Les notes de cette application restent volontairement simples (arborescence + texte brut). CherryTree est une application de prise de notes autonome et complete (texte enrichi, coloration syntaxique, chiffrement) - l'installer ouvre un programme separe, pas un onglet de cette application.",
-    "cherryTreeInstall": "Installer CherryTree",
-    "cherryTreeInstalling": "Telechargement...",
-    "installCherryTreeConfirmTitle": "Installer CherryTree",
-    "installCherryTreeConfirm": "Ceci telecharge le vrai programme d'installation de CherryTree depuis ses releases GitHub officielles et le lance. Vous interagirez ensuite avec l'installateur de CherryTree lui-meme - continuer ?"
+    "cherryTreeHint": "Les notes de cette application restent volontairement simples (arborescence + texte brut). CherryTree est une application de prise de notes autonome et complete (texte enrichi, coloration syntaxique, chiffrement) - l'installer ouvre un programme separe, pas un onglet de cette application."
+  },
+  "install": {
+    "intro": "Installez-le avec le gestionnaire de paquets Windows — copiez ceci dans PowerShell ou l'invite de commandes :",
+    "copy": "Copier",
+    "copied": "Copié",
+    "orDownload": "Ou téléchargez-le depuis le site officiel :",
+    "afterwards": "Une fois installé, revenez ici et cliquez sur Actualiser. Aucun redémarrage nécessaire."
   }
 }
