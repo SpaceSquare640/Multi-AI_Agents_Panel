@@ -561,5 +561,32 @@
     "copied": "Copied",
     "orDownload": "Or download it from the official site:",
     "afterwards": "Once it's installed, come back here and click Refresh. No restart needed."
+  },
+  "shell": {
+    "appName": "Multi-AI Agents Panel",
+    "primaryNav": "Primary",
+    "skipToContent": "Skip to main content",
+    "group": {
+      "workspace": "Workspace",
+      "capabilities": "Capabilities",
+      "system": "System"
+    },
+    "nav": {
+      "chat": "Chat",
+      "notes": "Notes",
+      "models": "Models",
+      "skills": "Skills",
+      "ml": "Machine Learning",
+      "usage": "Usage",
+      "settings": "Settings",
+      "help": "Help"
+    },
+    "status": {
+      "localRuntime": "Ollama",
+      "checking": "Checking local runtime",
+      "running": "Local runtime running",
+      "notRunning": "Local runtime not running",
+      "estimatedTotal": "Estimated total"
+    }
   }
 }

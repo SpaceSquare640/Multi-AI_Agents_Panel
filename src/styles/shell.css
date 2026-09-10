@@ -1,0 +1,514 @@
+/* ============================================================================
+   Multi-AI Agents Panel — App Shell (v2)
+   ----------------------------------------------------------------------------
+   Ported from the design source's css/shell.css.
+
+   WHAT IS DELIBERATELY NOT PORTED: css/base.css.
+
+   base.css is the mockup's reset, and it styles ELEMENTS — body, h1-h6, p,
+   ul, a, button, input, select, textarea. The v1 interface renders inside
+   this shell, so importing that file would restyle every v1 screen at once,
+   which is exactly what porting screen by screen exists to avoid.
+
+   shell.css itself is safe to port whole: every one of its selectors is
+   class-scoped, so nothing here can reach a v1 page that does not opt in by
+   using these class names. That was checked, not assumed.
+
+   The handful of base.css rules the shell genuinely needs are reproduced at
+   the end of this file, each rewritten to be class-scoped.
+   ========================================================================== */
+
+/* ============================================================================
+   Multi-AI Agents Panel — App Shell
+   ----------------------------------------------------------------------------
+   The four-column workstation frame every screen lives inside:
+
+     +--------------------------------------------------------------+
+     | titlebar                                                     |
+     +------+-----------+----------------------------+--------------+
+     | rail | sidebar   | workspace                  | inspector    |
+     |      | (context) |                            | (details)    |
+     +------+-----------+----------------------------+--------------+
+     | statusbar                                                    |
+     +--------------------------------------------------------------+
+
+   Rail  — top-level destinations, grouped: workspace / capabilities / system.
+   Sidebar — context for the active rail item (session tree, model list,
+             skill list, note tree). Collapsible.
+   Workspace — the actual screen. Always the flexible column.
+   Inspector — agent settings, guardrail state, tool calls, live spend.
+             Collapsible, and hidden entirely on screens that have nothing to
+             inspect.
+
+   Grid rather than flexbox: the shell has both a row and a column axis with
+   fixed and flexible tracks on each, and collapsing a panel should be a
+   single track-size change rather than a cascade of width rules.
+   ========================================================================== */
+
+/* ==========================================================================
+   Neutralising v1's element-level styling on the shell's own controls.
+
+   The v1 stylesheet styles `button` and `a` globally — eDEX gives every
+   button a border, a glow, uppercase tracking and its own colours. In the
+   mockup those declarations never existed, because base.css reset them
+   first; that reset is deliberately not ported (see the header), so v1's
+   rules land on the rail, titlebar and status bar.
+
+   This targets the shell's own component classes rather than `button`, and
+   sits ABOVE the rules that style them. That ordering is the whole point:
+
+     v1            `button`            (0,0,1)  loses to this
+     this reset    `.rail-item`        (0,1,0)  loses to what follows it
+     component     `.rail-item`        (0,1,0)  same weight, later, wins
+     states        `.rail-item:hover`  (0,2,0)  wins
+
+   An earlier version of this scoped the reset to `.rail button` instead.
+   That is (0,1,1) — heavier than `.rail-item` — so it silently overrode the
+   component's own `color`, and every rail icon inherited v1's text colour
+   including the active one. Beating a global rule by out-specifying it also
+   beats the rules you are trying to protect; going lower and earlier is
+   what actually works.
+   ========================================================================== */
+.rail-item,
+.titlebar-btn,
+.titlebar-search,
+.statusbar-item {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: transparent;
+  background-image: none;
+  border: 0;
+  box-shadow: none;
+  outline: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  text-shadow: none;
+  text-transform: none;
+  letter-spacing: normal;
+  cursor: pointer;
+}
+
+.skip-link {
+  box-shadow: none;
+  text-shadow: none;
+  letter-spacing: normal;
+}
+
+.shell {
+  display: grid;
+  height: 100vh;
+  grid-template-columns:
+    var(--rail-w)
+    var(--sidebar-w)
+    minmax(0, 1fr)
+    var(--inspector-w);
+  grid-template-rows: var(--titlebar-h) minmax(0, 1fr) var(--statusbar-h);
+  grid-template-areas:
+    "titlebar titlebar  titlebar  titlebar"
+    "rail     sidebar   workspace inspector"
+    "statusbar statusbar statusbar statusbar";
+  background: var(--border);   /* shows through the 1px seams between panels */
+  gap: var(--panel-gap);
+  transition: grid-template-columns var(--dur-base) var(--ease-out);
+}
+
+.shell[data-sidebar="collapsed"]   { --sidebar-w: 0px; }
+.shell[data-inspector="collapsed"] { --inspector-w: 0px; }
+
+/* Below 1180px the inspector is the first thing to go: it is supplementary
+   by definition. Below 940px the sidebar collapses too and is reachable as
+   an overlay. Desktop-only app, so these are window-resize breakpoints
+   rather than device breakpoints. */
+@media (max-width: 1180px) {
+  .shell:not([data-inspector="pinned"]) { --inspector-w: 0px; }
+}
+@media (max-width: 940px) {
+  .shell:not([data-sidebar="pinned"]) { --sidebar-w: 0px; }
+}
+
+/* --------------------------------------------------------------------------
+   Titlebar
+   -------------------------------------------------------------------------- */
+.titlebar {
+  grid-area: titlebar;
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: 0 var(--space-5);
+  background: var(--surface);
+  -webkit-app-region: drag;    /* Tauri: the whole bar drags the window     */
+}
+.titlebar button,
+.titlebar input,
+.titlebar .titlebar-search { -webkit-app-region: no-drag; }
+
+.titlebar-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex: none;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-muted);
+  white-space: nowrap;   /* wrapping here would grow the 32px bar and shove
+                            the palette trigger out from under the pointer */
+}
+.titlebar-brand img { width: 16px; height: 16px; border-radius: var(--radius-xs); }
+
+/* Below a width no real desktop window reaches, the product name is the first
+   thing to go: the icon still identifies the app, and the palette trigger is
+   worth more than the wordmark. */
+@media (max-width: 720px) {
+  .titlebar-brand span,
+  .titlebar-brand { font-size: 0; gap: 0; }
+  .titlebar-brand img { font-size: initial; }
+}
+
+/* The palette trigger is a search-shaped affordance rather than an icon:
+   the single most useful control in the app should look like what it is. */
+.titlebar-search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  width: 320px;
+  min-width: 0;
+  flex-shrink: 1;
+  height: 22px;
+  margin-inline: auto;
+  padding: 0 var(--space-4);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-faint);
+  font-size: var(--text-sm);
+}
+.titlebar-search:hover { border-color: var(--border-strong); color: var(--text-muted); }
+.titlebar-search > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.titlebar-search kbd { margin-left: auto; flex: none; }
+
+.titlebar-actions { display: flex; align-items: center; gap: var(--space-2); }
+
+.titlebar-btn {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-xs);
+  color: var(--text-muted);
+  transition: background var(--dur-fast) var(--ease-out),
+              color var(--dur-fast) var(--ease-out);
+}
+.titlebar-btn:hover { background: var(--surface-2); color: var(--text); }
+
+/* --------------------------------------------------------------------------
+   Rail
+   -------------------------------------------------------------------------- */
+.rail {
+  grid-area: rail;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) 0;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.rail-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+/* A hairline divider carries the grouping without a label, which would not
+   fit at 48px. The group name lives in each item's tooltip instead. */
+.rail-group + .rail-group {
+  margin-top: var(--space-5);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--border);
+  width: 24px;
+}
+.rail-spacer { flex: 1; }
+
+.rail-item {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--rail-item-size);
+  height: var(--rail-item-size);
+  border-radius: var(--rail-item-radius);
+  color: var(--rail-item-fg);
+  transition: background var(--dur-fast) var(--ease-out),
+              color var(--dur-fast) var(--ease-out);
+}
+.rail-item:hover { background: var(--rail-item-bg-hover); color: var(--text); }
+.rail-item[aria-current="page"] {
+  background: var(--rail-item-bg-active);
+  color: var(--rail-item-fg-active);
+}
+/* Active state is signalled by an indicator bar as well as colour, so the
+   current destination is still identifiable without colour perception. */
+.rail-item[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  /* -3px, not -8px. The rail is 48px and the item 40px, so there are only
+     4px of gutter on each side; at -8px the 2px bar sits at x -4..-2 and
+     `.rail`'s own overflow:hidden clips it away completely. The bar was
+     invisible in every screen, in both themes, while the rule above it
+     promised the current destination stays identifiable without colour
+     perception. It did not. -3px puts the bar at x 1..3: inside the rail,
+     still in the gutter rather than on top of the pill. */
+  left: -3px;
+  width: var(--rail-indicator-w);
+  height: 18px;
+  background: var(--rail-item-fg-active);
+  border-radius: var(--radius-full);
+}
+
+/* Unread / attention badge on a rail item. */
+.rail-item .dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  outline: 2px solid var(--surface);
+}
+
+/* --------------------------------------------------------------------------
+   Sidebar
+   -------------------------------------------------------------------------- */
+.sidebar {
+  grid-area: sidebar;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  height: 34px;
+  padding: 0 var(--space-5);
+  flex: none;
+}
+.sidebar-header .label { flex: 1; min-width: 0; }
+
+.sidebar-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 var(--space-4) var(--space-5);
+}
+
+.sidebar-footer {
+  flex: none;
+  padding: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+/* --------------------------------------------------------------------------
+   Workspace
+   -------------------------------------------------------------------------- */
+.workspace {
+  grid-area: workspace;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.workspace-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  height: 42px;
+  padding: 0 var(--space-6);
+  flex: none;
+  border-bottom: 1px solid var(--border);
+}
+.workspace-title {
+  min-width: 0;
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.workspace-actions { display: flex; align-items: center; gap: var(--space-3); margin-left: auto; }
+
+.workspace-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* --------------------------------------------------------------------------
+   Inspector
+   -------------------------------------------------------------------------- */
+.inspector {
+  grid-area: inspector;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.inspector-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  height: 34px;
+  padding: 0 var(--space-5);
+  flex: none;
+}
+.inspector-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-5);
+}
+
+.inspector-section + .inspector-section {
+  margin-top: var(--space-7);
+  padding-top: var(--space-7);
+  border-top: 1px solid var(--border);
+}
+.inspector-section > .label { display: block; margin-bottom: var(--space-4); }
+
+/* Key/value rows used throughout the inspector. */
+.kv { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: var(--space-2) var(--space-5); }
+.kv dt { font-size: var(--text-sm); color: var(--text-muted); }
+.kv dd { margin: 0; font-size: var(--text-sm); min-width: 0; }
+
+/* --------------------------------------------------------------------------
+   Statusbar
+   Guardrails state is promoted here from a transient toast to a permanent
+   indicator: a rule that can silently stop being enforced is worse than no
+   rule, so its state is always on screen.
+   -------------------------------------------------------------------------- */
+.statusbar {
+  grid-area: statusbar;
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: 0 var(--space-5);
+  background: var(--surface);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+.statusbar-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: 100%;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-xs);
+  white-space: nowrap;
+}
+button.statusbar-item:hover { background: var(--surface-2); color: var(--text); }
+.statusbar-spacer { flex: 1; }
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-full);
+  flex: none;
+}
+.status-dot[data-state="ok"]      { background: var(--success); }
+.status-dot[data-state="warn"]    { background: var(--warning); }
+.status-dot[data-state="error"]   { background: var(--danger); }
+.status-dot[data-state="idle"]    { background: var(--text-faint); }
+.status-dot[data-state="running"] { background: var(--success); animation: pulse 1.6s var(--ease-inout) infinite; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+
+/* --------------------------------------------------------------------------
+   Panel resize handles
+   Sit in the 1px seam and widen their hit area without widening the seam.
+   -------------------------------------------------------------------------- */
+.resizer {
+  position: relative;
+  z-index: var(--z-sticky);
+  width: var(--panel-gap);
+  cursor: col-resize;
+}
+.resizer::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline: -3px;
+}
+.resizer:hover::after,
+.resizer[data-dragging="true"]::after { background: var(--brand); }
+
+
+/* ==========================================================================
+   The base.css pieces the shell needs, scoped so they cannot reach v1.
+   ========================================================================== */
+
+/* The mockup applies border-box to everything via `*`. Scoped to the shell's
+   own chrome instead: v1 screens were authored against the browser default
+   in places, and flipping it globally would move their padding. */
+.titlebar, .titlebar *,
+.rail, .rail *,
+.statusbar, .statusbar *,
+.shell > .resizer { box-sizing: border-box; }
+
+.icon {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.icon-sm { width: var(--icon-sm); height: var(--icon-sm); }
+.icon-lg { width: var(--icon-lg); height: var(--icon-lg); }
+
+/* Visible only to assistive technology. Not `display: none`, which would
+   remove it from the accessibility tree as well. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Off-screen until focused, so a keyboard user's first Tab can jump the
+   rail and land in the workspace. */
+.skip-link {
+  position: fixed;
+  top: var(--space-3);
+  left: var(--space-3);
+  z-index: 100;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-sm);
+  background: var(--brand);
+  color: var(--text-on-brand);
+  font-size: var(--text-sm);
+  text-decoration: none;
+  transform: translateY(calc(-100% - var(--space-4)));
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.skip-link:focus-visible { transform: translateY(0); }
+

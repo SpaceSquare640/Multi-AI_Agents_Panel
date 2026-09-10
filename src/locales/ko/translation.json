@@ -561,5 +561,32 @@
     "copied": "복사됨",
     "orDownload": "또는 공식 사이트에서 내려받으세요:",
     "afterwards": "설치가 끝나면 여기로 돌아와 '새로 고침'을 클릭하세요. 재시작할 필요는 없습니다."
+  },
+  "shell": {
+    "appName": "Multi-AI Agents Panel",
+    "primaryNav": "기본 탐색",
+    "skipToContent": "본문으로 건너뛰기",
+    "group": {
+      "workspace": "작업 공간",
+      "capabilities": "기능",
+      "system": "시스템"
+    },
+    "nav": {
+      "chat": "채팅",
+      "notes": "노트",
+      "models": "모델",
+      "skills": "스킬",
+      "ml": "머신 러닝",
+      "usage": "사용량",
+      "settings": "설정",
+      "help": "도움말"
+    },
+    "status": {
+      "localRuntime": "Ollama",
+      "checking": "로컬 서비스 확인 중",
+      "running": "로컬 서비스 실행 중",
+      "notRunning": "로컬 서비스 중지됨",
+      "estimatedTotal": "추정 누계"
+    }
   }
 }

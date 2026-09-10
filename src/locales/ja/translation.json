@@ -561,5 +561,32 @@
     "copied": "コピーしました",
     "orDownload": "または公式サイトからダウンロードしてください：",
     "afterwards": "インストールが終わったらここに戻って「更新」をクリックしてください。再起動は不要です。"
+  },
+  "shell": {
+    "appName": "Multi-AI Agents Panel",
+    "primaryNav": "メインナビゲーション",
+    "skipToContent": "メインコンテンツへスキップ",
+    "group": {
+      "workspace": "ワークスペース",
+      "capabilities": "機能",
+      "system": "システム"
+    },
+    "nav": {
+      "chat": "チャット",
+      "notes": "ノート",
+      "models": "モデル",
+      "skills": "スキル",
+      "ml": "機械学習",
+      "usage": "使用量",
+      "settings": "設定",
+      "help": "ヘルプ"
+    },
+    "status": {
+      "localRuntime": "Ollama",
+      "checking": "ローカルサービスを確認中",
+      "running": "ローカルサービス稼働中",
+      "notRunning": "ローカルサービス停止中",
+      "estimatedTotal": "推定累計"
+    }
   }
 }

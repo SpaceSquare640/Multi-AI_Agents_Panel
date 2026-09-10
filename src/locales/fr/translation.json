@@ -561,5 +561,32 @@
     "copied": "Copié",
     "orDownload": "Ou téléchargez-le depuis le site officiel :",
     "afterwards": "Une fois installé, revenez ici et cliquez sur Actualiser. Aucun redémarrage nécessaire."
+  },
+  "shell": {
+    "appName": "Multi-AI Agents Panel",
+    "primaryNav": "Navigation principale",
+    "skipToContent": "Aller au contenu principal",
+    "group": {
+      "workspace": "Espace de travail",
+      "capabilities": "Capacités",
+      "system": "Système"
+    },
+    "nav": {
+      "chat": "Discussion",
+      "notes": "Notes",
+      "models": "Modèles",
+      "skills": "Compétences",
+      "ml": "Apprentissage automatique",
+      "usage": "Utilisation",
+      "settings": "Paramètres",
+      "help": "Aide"
+    },
+    "status": {
+      "localRuntime": "Ollama",
+      "checking": "Vérification du service local",
+      "running": "Service local actif",
+      "notRunning": "Service local inactif",
+      "estimatedTotal": "Total estimé"
+    }
   }
 }

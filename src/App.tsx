@@ -8,20 +8,10 @@ import Onboarding, { hasAcknowledgedGuardrails } from "./Onboarding";
 import Settings from "./Settings";
 import Skills from "./Skills";
 import Usage from "./Usage";
+import AppShell, { type TabId } from "./shell/AppShell";
 import "./App.css";
 
-type Tab = "chat" | "control-center" | "ml" | "skills" | "usage" | "notes" | "manual" | "settings";
-
-const TABS: { id: Tab; label: string }[] = [
-  { id: "chat", label: "Chat" },
-  { id: "control-center", label: "Models" },
-  { id: "ml", label: "Machine Learning" },
-  { id: "skills", label: "Skills" },
-  { id: "usage", label: "Usage" },
-  { id: "notes", label: "Notes" },
-  { id: "manual", label: "Help" },
-  { id: "settings", label: "Settings" },
-];
+type Tab = TabId;
 
 function App() {
   const [tab, setTab] = useState<Tab>("chat");
@@ -32,14 +22,12 @@ function App() {
   const [showOnboarding, setShowOnboarding] = useState(() => !hasAcknowledgedGuardrails());
 
   return (
-    <div className="app-shell">
-      <nav className="app-tabs">
-        {TABS.map((t) => (
-          <button key={t.id} className={tab === t.id ? "active" : ""} onClick={() => setTab(t.id)}>
-            {t.label}
-          </button>
-        ))}
-      </nav>
+    /* The v2 shell replaces v1's outer chrome — the flat tab strip and the
+     * CRT scanline overlay that `.app-shell::before` painted over the whole
+     * viewport. Both belonged to the frame, and the frame is what this step
+     * ports. The screens themselves are untouched: each still renders from
+     * its own stylesheet, inside .workspace. */
+    <AppShell active={tab} onNavigate={setTab}>
       {/* Every page stays mounted the whole time the app is open — only
        *  `hidden` toggles, never a conditional-render swap. Found via
        *  code inspection (not a guess): the old `renderTab()` switch
@@ -91,7 +79,7 @@ function App() {
         />
       </div>
       {showOnboarding && <Onboarding onDismiss={() => setShowOnboarding(false)} />}
-    </div>
+    </AppShell>
   );
 }
 

@@ -561,5 +561,32 @@
     "copied": "已複製",
     "orDownload": "或到官方網站下載：",
     "afterwards": "安裝完成後回到這裡按「重新整理」即可，不需要重啟程式。"
+  },
+  "shell": {
+    "appName": "Multi-AI Agents Panel",
+    "primaryNav": "主要導覽",
+    "skipToContent": "跳至主要內容",
+    "group": {
+      "workspace": "工作區",
+      "capabilities": "能力",
+      "system": "系統"
+    },
+    "nav": {
+      "chat": "對話",
+      "notes": "筆記",
+      "models": "模型",
+      "skills": "技能",
+      "ml": "機器學習",
+      "usage": "用量",
+      "settings": "設定",
+      "help": "說明"
+    },
+    "status": {
+      "localRuntime": "Ollama",
+      "checking": "正在檢查本地服務",
+      "running": "本地服務執行中",
+      "notRunning": "本地服務未執行",
+      "estimatedTotal": "累計估算"
+    }
   }
 }
