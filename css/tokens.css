@@ -511,8 +511,8 @@
   --input-placeholder: var(--text-faint);
 
   /* --- card / panel --- */
-  --card-bg:      var(--surface);
-  --card-border:  var(--border);
+  --card-surface:      var(--surface);
+  --card-stroke:  var(--border);
   --card-radius:  var(--radius-md);
   --card-pad:     var(--space-6);
   --card-shadow:  var(--shadow-1);

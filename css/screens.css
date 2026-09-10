@@ -715,8 +715,8 @@
 .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--space-5); }
 .stat {
   padding: var(--space-6);
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
+  background: var(--card-surface);
+  border: 1px solid var(--card-stroke);
   border-radius: var(--card-radius);
 }
 .stat .k {
