@@ -181,7 +181,14 @@
 .rail-item[aria-current="page"]::before {
   content: "";
   position: absolute;
-  left: calc(var(--space-4) * -1);
+  /* -3px, not -8px. The rail is 48px and the item 40px, so there are only
+     4px of gutter on each side; at -8px the 2px bar sits at x -4..-2 and
+     `.rail`'s own overflow:hidden clips it away completely. The bar was
+     invisible in every screen, in both themes, while the rule above it
+     promised the current destination stays identifiable without colour
+     perception. It did not. -3px puts the bar at x 1..3: inside the rail,
+     still in the gutter rather than on top of the pill. */
+  left: -3px;
   width: var(--rail-indicator-w);
   height: 18px;
   background: var(--rail-item-fg-active);
