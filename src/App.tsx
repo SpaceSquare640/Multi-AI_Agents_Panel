@@ -60,8 +60,8 @@ function App() {
       <div className="app-tab-content" data-screen-pane hidden={tab !== "ml"}>
         <MachineLearning />
       </div>
-      <div className="app-tab-content" data-screen-pane hidden={tab !== "skills"}>
-        <Skills onOpenChat={() => setTab("chat")} />
+      <div className="app-tab-content screen-v2" data-screen-pane hidden={tab !== "skills"}>
+        <Skills />
       </div>
       {/* screen-v2 marks a screen that has been rebuilt against the v2
           design: it supplies its own workspace header and scrolls its body

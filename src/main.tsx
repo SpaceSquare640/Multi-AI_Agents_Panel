@@ -18,10 +18,14 @@ import "./styles/tokens.css";
 // is on screen today and only takes effect on markup written against it.
 // (screens.css cannot come over this way: its `.settings-row` collides with
 // v1's, so it moves a screen at a time, with the rest of that screen.)
-import "./styles/components.css";
-// The class-selector utilities from the design source's base.css (.label,
-// .mono, .prose). shell.css already depends on .label without it existing.
+// The parts of the design source's base.css that can come over: its class
+// utilities (.label, .mono, .prose) plus its element rules, the latter
+// scoped to ported surfaces. Imported BEFORE components.css, mirroring the
+// order the design source loads them in — these are element rules at the
+// same specificity as a component class, so loading them after a component
+// would override it rather than underlie it.
 import "./styles/utilities.css";
+import "./styles/components.css";
 // Layout shared by every ported screen (the pane measure, section headings,
 // the wrapper that lets a screen scroll its body rather than itself).
 import "./styles/screens/_shared.css";

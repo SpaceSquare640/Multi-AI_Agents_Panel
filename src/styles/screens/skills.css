@@ -1,0 +1,53 @@
+/* Skills. From the v2 design source (screens.css, "Skill card"). */
+.skill { padding: var(--space-6); }
+.skill + .skill { margin-top: var(--space-5); }
+.skill-head { display: flex; align-items: flex-start; gap: var(--space-5); }
+.skill-title { flex: 1; min-width: 0; }
+.skill-title h3 { font-size: var(--text-base); }
+.skill-title p { margin-top: var(--space-2); font-size: var(--text-sm); color: var(--text-muted); line-height: var(--leading-body); }
+.scopes { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-5); }
+
+/* Grants. An agent that has the skill and one that does not must be tellable
+   apart at a glance, so granted agents are filled and the rest outlined,
+   rather than both being chips of the same weight. */
+.grants { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-5); }
+.grant {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: 24px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  transition: background-color var(--dur-fast) var(--ease-out),
+              border-color     var(--dur-fast) var(--ease-out),
+              color            var(--dur-fast) var(--ease-out);
+}
+.grant:hover { border-color: var(--text-faint); color: var(--text); }
+.grant[aria-pressed="true"] {
+  background: var(--brand-soft);
+  border-color: transparent;
+  color: var(--brand-text);
+  font-weight: var(--weight-medium);
+}
+.grant[aria-pressed="true"]:hover { color: var(--brand-text); }
+
+
+/* Not in the design source: its mockup always has agents to show, and
+   a real install on first run has none. */
+.skill-no-agents {
+  margin-top: var(--space-5);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+/* Export sits below the grants rather than beside the source badge: it
+   acts on the skill as a whole, and putting it in the header row would
+   read as though it belonged to the badge next to it. */
+.skill-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-5);
+}

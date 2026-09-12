@@ -48,3 +48,63 @@
   line-height: var(--leading-loose);
 }
 .prose > * + * { margin-top: var(--space-6); }
+
+
+/* The few base.css rules a ported screen actually needs, scoped to it.
+   base.css itself is still not imported — it is written in element
+   selectors, so bringing it in whole would restyle every screen that has
+   not been ported. These are the rules v2 components assume are already in
+   place: without them a .btn inherits v1's monospace face and uppercase
+   transform, and every heading keeps a browser default margin the layout
+   does not account for.
+   Same approach the shell took at step 2, and the same trap to avoid — aim
+   at the elements inside the scope, not at the component classes, so a
+   component can still override any of it. */
+.screen-v2,
+.sidebar[data-v2] {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-body);
+  font-weight: var(--weight-regular);
+  color: var(--text);
+  text-align: left;
+  -webkit-font-smoothing: antialiased;
+}
+/* Only the workspace pane paints a background. The sidebar already has its
+   own (`.sidebar` is --surface, one step up from --bg); repeating --bg in
+   a rule that also carries an attribute would out-specify it and quietly
+   flatten the seam between the two regions. */
+.screen-v2 { background: var(--bg); }
+.screen-v2 :where(h1, h2, h3, h4, h5, h6),
+.sidebar[data-v2] :where(h1, h2, h3, h4, h5, h6) {
+  margin: 0;
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--text);
+  text-transform: none;
+}
+.screen-v2 :where(h1),
+.sidebar[data-v2] :where(h1) { font-size: var(--text-xl); }
+.screen-v2 :where(h2),
+.sidebar[data-v2] :where(h2) { font-size: var(--text-lg); }
+.screen-v2 :where(h3),
+.sidebar[data-v2] :where(h3) { font-size: var(--text-md); }
+.screen-v2 :where(p, ul, ol),
+.sidebar[data-v2] :where(p, ul, ol) { margin: 0; padding: 0; }
+.screen-v2 :where(button, input, select, textarea),
+.sidebar[data-v2] :where(button, input, select, textarea) {
+  font: inherit;
+  color: inherit;
+  text-transform: none;
+  letter-spacing: normal;
+  box-shadow: none;
+  /* v1 paints every button --card-bg. A v2 component that declares no
+     background of its own (an outlined chip, a ghost button) would
+     otherwise come out as a filled near-black box instead of an outline,
+     which is exactly the granted/not-granted distinction the Skills chips
+     rely on. Neutral here; components paint. */
+  background: transparent;
+}
+.screen-v2 :where(button),
+.sidebar[data-v2] :where(button) { margin: 0; cursor: pointer; }

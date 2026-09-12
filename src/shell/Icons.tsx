@@ -32,6 +32,13 @@ const PATHS: Record<string, string> = {
   local: '<rect x="3" y="4" width="14" height="9" rx="1.5"/><path d="M6 16.5h8"/>',
   /* Brought over by the Manual when it was ported. */
   search: '<circle cx="8.75" cy="8.75" r="5.25"/><path d="M12.6 12.6 17 17"/>',
+  /* Brought over by Skills. Copied from the design source's own sprite
+     rather than redrawn, so the app and the mockups cannot drift. */
+  plus: '<path d="M10 4v12M4 10h12"/>',
+  check: '<path d="m4 10.5 4 4 8-9"/>',
+  copy: '<rect x="7" y="7" width="10" height="10" rx="2"/><path d="M13 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/>',
+  info: '<circle cx="10" cy="10" r="7"/><path d="M10 9.5v4M10 6.5h.01"/>',
+  alert: '<path d="M10 3.5 2.8 16h14.4z"/><path d="M10 8v3.5M10 14h.01"/>',
 };
 
 export type IconName = keyof typeof PATHS;
