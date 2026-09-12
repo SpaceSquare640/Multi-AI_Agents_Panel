@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Icon } from "./shell/Icons";
-import { ShellSidebar, useIsActiveScreen } from "./shell/SidebarSlot";
+import { ShellInspector, ShellSidebar, useIsActiveScreen } from "./shell/SidebarSlot";
 import { invoke } from "@tauri-apps/api/core";
 import { ask, open as openFolderPicker } from "@tauri-apps/plugin-dialog";
 import type {
@@ -23,6 +23,7 @@ import type {
 import "./styles/screens/agents.css";
 import "./styles/screens/chat.css";
 import "./styles/screens/chat-stream.css";
+import "./styles/screens/inspector.css";
 import "./Chat.css";
 
 /// `send_chat_message_with_tools` (agent_manager::function_calling) is
@@ -1210,210 +1211,297 @@ export default function Chat() {
         {activeSessionId && activeTab && (
           <>
             {activeTab.agent && (
-              <div className="chat-header">
-                <div>
-                  {t("chat.chattingWith")} <strong>{activeTab.agent.name}</strong> ({activeTab.agent.providerName}/
-                  {activeTab.agent.model})
+              <ShellInspector v2>
+                <div className="inspector-header">
+                  <span className="label">{t("chat.sessionDetails")}</span>
                 </div>
-                <div className="chat-file-access">
-                  <span>{t("chat.files")}</span>
-                  {activeTab.fileGrants.length === 0 && (
-                    <span className="chat-empty">{t("chat.noFoldersGranted")}</span>
-                  )}
-                  {activeTab.fileGrants.map((g) => (
-                    <span key={g.id} className="chat-file-chip">
-                      {g.folderPath}
-                      <button
-                        onClick={() => handleRevokeGrant(activeSessionId, g.id)}
-                        title={t("chat.revokeAccess")}
-                        aria-label={t("chat.revokeAccessToFolder", { folderPath: g.folderPath })}
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                  <button className="chat-link-button" onClick={() => handleGrantFolder(activeSessionId)}>
-                    {t("chat.grantFolder")}
-                  </button>
-                </div>
-                <div className="chat-file-access">
-                  <span>{t("chat.skills")}</span>
-                  {activeTab.skillGrants.length === 0 && (
-                    <span className="chat-empty">{t("chat.noneGranted")}</span>
-                  )}
-                  {activeTab.skillGrants.map((g) => (
-                    <span key={g.id} className="chat-file-chip">
-                      {g.skillName}
-                      <button
-                        onClick={() => handleRevokeSkill(activeSessionId, g.id)}
-                        title={t("chat.revokeAccess")}
-                        aria-label={t("chat.revokeAccessToSkill", { skillName: g.skillName })}
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                  <select value={skillToGrant} onChange={(e) => setSkillToGrant(e.target.value)}>
-                    <option value="">{t("chat.grantASkill")}</option>
-                    {availableSkills
-                      .filter((s) => !activeTab.skillGrants.some((g) => g.skillName === s.name))
-                      .map((s) => (
-                        <option key={s.name} value={s.name}>
-                          {s.name} {s.source === "custom" ? t("chat.custom") : ""}
-                        </option>
-                      ))}
-                  </select>
-                  <button className="chat-link-button" disabled={!skillToGrant} onClick={() => handleGrantSkill(activeSessionId)}>
-                    {t("chat.grant")}
-                  </button>
-                  <button className="chat-link-button" disabled={importingSkill} onClick={() => handleImportSkill()}>
-                    {importingSkill ? t("chat.importingSkill") : t("chat.importCustomSkill")}
-                  </button>
-                </div>
-                <p className="chat-skill-import-warning">{t("chat.skillImportWarning")}</p>
-                {functionCallingEligible(activeTab) && (
-                  <label className="chat-function-calling-toggle">
-                    <input
-                      type="checkbox"
-                      checked={activeTab.useFunctionCalling}
-                      onChange={(e) => patchTab(activeSessionId, { useFunctionCalling: e.target.checked })}
-                    />
-                    {t("chat.letAgentCallSkills")}
-                  </label>
-                )}
-                {activeTab.skillGrants.length > 0 && (
-                  <div className="chat-run-skill">
-                    <select value={runSkillName} onChange={(e) => setRunSkillName(e.target.value)}>
-                      <option value="">{t("chat.runASkill")}</option>
-                      {activeTab.skillGrants.map((g) => (
-                        <option key={g.id} value={g.skillName}>
-                          {g.skillName}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      type="text"
-                      placeholder={t("chat.jsonPayloadPlaceholder")}
-                      value={runSkillPayload}
-                      onChange={(e) => setRunSkillPayload(e.target.value)}
-                    />
-                    <button
-                      className="chat-link-button"
-                      disabled={!runSkillName || runningSkill}
-                      onClick={() => handleRunSkill(activeSessionId)}
-                    >
-                      {runningSkill ? t("chat.running") : t("chat.run")}
-                    </button>
-                  </div>
-                )}
-                <div className="chat-file-access">
-                  <span>{t("chat.memories")}</span>
-                  {activeTab.memories.length === 0 && <span className="chat-empty">{t("chat.noMemoriesYet")}</span>}
-                  {activeTab.memories.map((m) => (
-                    <span key={m.id} className="chat-file-chip">
-                      {m.content}
-                      <button
-                        onClick={() => handleDeleteMemory(activeSessionId, m.id)}
-                        title={t("chat.forgetThis")}
-                        aria-label={t("chat.forgetMemory", { content: m.content })}
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-                <div className="chat-file-access">
-                  <input
-                    type="text"
-                    placeholder={t("chat.rememberSomethingPlaceholder")}
-                    value={newMemoryDraft}
-                    onChange={(e) => setNewMemoryDraft(e.target.value)}
-                  />
-                  <button
-                    className="chat-link-button"
-                    disabled={!newMemoryDraft.trim()}
-                    onClick={() => {
-                      void handleAddMemory(activeSessionId, newMemoryDraft);
-                      setNewMemoryDraft("");
-                    }}
-                  >
-                    {t("chat.remember")}
-                  </button>
-                </div>
-                <div className="chat-file-access">
-                  <span>{t("chat.mcpServers")}</span>
-                  {activeTab.mcpGrants.length === 0 && <span className="chat-empty">{t("chat.noneGranted")}</span>}
-                  {activeTab.mcpGrants.map((g) => {
-                    const server = availableMcpServers.find((s) => s.id === g.mcpServerId);
-                    return (
-                      <span key={g.id} className="chat-file-chip">
-                        {server?.name ?? g.mcpServerId}
-                        <button
-                          onClick={() => handleRevokeMcp(activeSessionId, g.id)}
-                          title={t("chat.revokeAccess")}
-                          aria-label={t("chat.revokeAccessToMcpServer", { serverName: server?.name ?? g.mcpServerId })}
-                        >
-                          ×
-                        </button>
+                <div className="inspector-body">
+                  {/* No "Agent" header above this block: the panel is titled
+                      Session and this is self-evidently the agent. The design
+                      makes the same point — a header with nothing to
+                      distinguish it from the row below is a line of noise. */}
+                  <section className="inspector-section">
+                    <div className="inspector-identity">
+                      <span className="avatar avatar-lg" data-agent="1" aria-hidden="true">
+                        {initials(activeTab.agent.name)}
                       </span>
-                    );
-                  })}
-                  <select value={mcpServerToGrant} onChange={(e) => setMcpServerToGrant(e.target.value)}>
-                    <option value="">{t("chat.grantAnMcpServer")}</option>
-                    {availableMcpServers
-                      .filter((s) => !activeTab.mcpGrants.some((g) => g.mcpServerId === s.id))
-                      .map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name}
-                        </option>
+                      <div className="inspector-identity-text">
+                        <div className="inspector-identity-name">{activeTab.agent.name}</div>
+                        {activeTab.agent.roleTemplate && (
+                          <div className="inspector-identity-sub">{activeTab.agent.roleTemplate}</div>
+                        )}
+                      </div>
+                    </div>
+                    <dl className="kv">
+                      <dt>{t("chat.provider")}</dt>
+                      <dd>
+                        <span className="badge" data-kind={activeTab.agent.providerKind === "local" ? "local" : "cloud"}>
+                          {activeTab.agent.providerName}
+                        </span>
+                      </dd>
+                      <dt>{t("chat.model")}</dt>
+                      <dd className="mono">{activeTab.agent.model}</dd>
+                    </dl>
+                  </section>
+
+                  <section className="inspector-section">
+                    <span className="label label-lead">{t("chat.files")}</span>
+                    <div className="roster">
+                      {activeTab.fileGrants.length === 0 && (
+                        <p className="field-hint">{t("chat.noFoldersGranted")}</p>
+                      )}
+                      {activeTab.fileGrants.map((g) => (
+                        <div className="roster-item" key={g.id}>
+                          <Icon name="folder" size="sm" />
+                          <span className="roster-name mono">{g.folderPath}</span>
+                          <button
+                            className="tree-action"
+                            type="button"
+                            aria-label={t("chat.revokeAccessToFolder", { folderPath: g.folderPath })}
+                            onClick={() => handleRevokeGrant(activeSessionId, g.id)}
+                          >
+                            ×
+                          </button>
+                        </div>
                       ))}
-                  </select>
-                  <button className="chat-link-button" disabled={!mcpServerToGrant} onClick={() => handleGrantMcp(activeSessionId)}>
-                    {t("chat.grant")}
-                  </button>
-                </div>
-                {activeTab.mcpGrants.length > 0 && (
-                  <div className="chat-run-skill">
-                    <select value={runMcpServerId} onChange={(e) => handleSelectMcpServerForRun(e.target.value)}>
-                      <option value="">{t("chat.runAnMcpTool")}</option>
+                    </div>
+                    <button
+                      className="btn btn-secondary btn-sm inspector-action"
+                      type="button"
+                      onClick={() => handleGrantFolder(activeSessionId)}
+                    >
+                      {t("chat.grantFolder")}
+                    </button>
+                  </section>
+
+                  <section className="inspector-section">
+                    <span className="label">{t("chat.skills")}</span>
+                    <div className="roster">
+                      {activeTab.skillGrants.length === 0 && <p className="field-hint">{t("chat.noneGranted")}</p>}
+                      {activeTab.skillGrants.map((g) => (
+                        <div className="roster-item" key={g.id}>
+                          <Icon name="skills" size="sm" />
+                          <span className="roster-name">{g.skillName}</span>
+                          <button
+                            className="tree-action"
+                            type="button"
+                            aria-label={t("chat.revokeAccessToSkill", { skillName: g.skillName })}
+                            onClick={() => handleRevokeSkill(activeSessionId, g.id)}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="inspector-form">
+                      <select className="select" value={skillToGrant} onChange={(e) => setSkillToGrant(e.target.value)}>
+                        <option value="">{t("chat.grantASkill")}</option>
+                        {availableSkills
+                          .filter((s) => !activeTab.skillGrants.some((g) => g.skillName === s.name))
+                          .map((s) => (
+                            <option key={s.name} value={s.name}>
+                              {s.name} {s.source === "custom" ? t("chat.custom") : ""}
+                            </option>
+                          ))}
+                      </select>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        type="button"
+                        disabled={!skillToGrant}
+                        onClick={() => handleGrantSkill(activeSessionId)}
+                      >
+                        {t("chat.grant")}
+                      </button>
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        type="button"
+                        disabled={importingSkill}
+                        onClick={() => handleImportSkill()}
+                      >
+                        {t("chat.importSkill")}
+                      </button>
+                    </div>
+                    <p className="field-hint">{t("chat.skillImportWarning")}</p>
+                    {functionCallingEligible(activeTab) && (
+                      <label className="inspector-toggle">
+                        <input
+                          type="checkbox"
+                          checked={activeTab.useFunctionCalling}
+                          onChange={(e) => patchTab(activeSessionId, { useFunctionCalling: e.target.checked })}
+                        />
+                        {t("chat.letAgentCallSkills")}
+                      </label>
+                    )}
+                    {activeTab.skillGrants.length > 0 && (
+                      <div className="inspector-form">
+                        <select className="select" value={runSkillName} onChange={(e) => setRunSkillName(e.target.value)}>
+                          <option value="">{t("chat.runASkill")}</option>
+                          {activeTab.skillGrants.map((g) => (
+                            <option key={g.id} value={g.skillName}>
+                              {g.skillName}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          className="input input-mono"
+                          type="text"
+                          placeholder={t("chat.jsonPayloadPlaceholder")}
+                          value={runSkillPayload}
+                          onChange={(e) => setRunSkillPayload(e.target.value)}
+                        />
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          type="button"
+                          disabled={!runSkillName || runningSkill}
+                          onClick={() => handleRunSkill(activeSessionId)}
+                        >
+                          {runningSkill ? t("chat.running") : t("chat.run")}
+                        </button>
+                      </div>
+                    )}
+                  </section>
+
+                  <section className="inspector-section">
+                    <span className="label">{t("chat.memories")}</span>
+                    <div className="roster">
+                      {activeTab.memories.length === 0 && <p className="field-hint">{t("chat.noMemoriesYet")}</p>}
+                      {activeTab.memories.map((m) => (
+                        <div className="roster-item" key={m.id}>
+                          <span className="roster-name">{m.content}</span>
+                          <button
+                            className="tree-action"
+                            type="button"
+                            aria-label={t("chat.forgetMemory", { content: m.content })}
+                            onClick={() => handleDeleteMemory(activeSessionId, m.id)}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="inspector-form">
+                      <input
+                        className="input"
+                        type="text"
+                        placeholder={t("chat.rememberSomethingPlaceholder")}
+                        value={newMemoryDraft}
+                        onChange={(e) => setNewMemoryDraft(e.target.value)}
+                      />
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        type="button"
+                        disabled={!newMemoryDraft.trim()}
+                        onClick={() => {
+                          void handleAddMemory(activeSessionId, newMemoryDraft);
+                          setNewMemoryDraft("");
+                        }}
+                      >
+                        {t("chat.remember")}
+                      </button>
+                    </div>
+                  </section>
+
+                  <section className="inspector-section">
+                    <span className="label">{t("chat.mcpServers")}</span>
+                    <div className="roster">
+                      {activeTab.mcpGrants.length === 0 && <p className="field-hint">{t("chat.noneGranted")}</p>}
                       {activeTab.mcpGrants.map((g) => {
                         const server = availableMcpServers.find((s) => s.id === g.mcpServerId);
                         return (
-                          <option key={g.id} value={g.mcpServerId}>
-                            {server?.name ?? g.mcpServerId}
-                          </option>
+                          <div className="roster-item" key={g.id}>
+                            <span className="roster-name">{server?.name ?? g.mcpServerId}</span>
+                            <button
+                              className="tree-action"
+                              type="button"
+                              aria-label={t("chat.revokeAccessToMcpServer", {
+                                serverName: server?.name ?? g.mcpServerId,
+                              })}
+                              onClick={() => handleRevokeMcp(activeSessionId, g.id)}
+                            >
+                              ×
+                            </button>
+                          </div>
                         );
                       })}
-                    </select>
-                    <select
-                      value={runMcpToolName}
-                      onChange={(e) => setRunMcpToolName(e.target.value)}
-                      disabled={!runMcpServerId || loadingMcpTools}
-                    >
-                      <option value="">{loadingMcpTools ? t("chat.loadingTools") : t("chat.selectTool")}</option>
-                      {mcpToolsForRun.map((tool) => (
-                        <option key={tool.name} value={tool.name}>
-                          {tool.name}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      type="text"
-                      placeholder={t("chat.jsonPayloadPlaceholder")}
-                      value={runMcpToolPayload}
-                      onChange={(e) => setRunMcpToolPayload(e.target.value)}
-                    />
-                    <button
-                      className="chat-link-button"
-                      disabled={!runMcpServerId || !runMcpToolName || runningMcpTool}
-                      onClick={() => handleRunMcpTool(activeSessionId)}
-                    >
-                      {runningMcpTool ? t("chat.running") : t("chat.run")}
-                    </button>
-                  </div>
-                )}
-                {renderSemanticSearchSection(activeSessionId, activeTab)}
-              </div>
+                    </div>
+                    <div className="inspector-form">
+                      <select
+                        className="select"
+                        value={mcpServerToGrant}
+                        onChange={(e) => setMcpServerToGrant(e.target.value)}
+                      >
+                        <option value="">{t("chat.grantAnMcpServer")}</option>
+                        {availableMcpServers
+                          .filter((s) => !activeTab.mcpGrants.some((g) => g.mcpServerId === s.id))
+                          .map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name}
+                            </option>
+                          ))}
+                      </select>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        type="button"
+                        disabled={!mcpServerToGrant}
+                        onClick={() => handleGrantMcp(activeSessionId)}
+                      >
+                        {t("chat.grant")}
+                      </button>
+                    </div>
+                    {activeTab.mcpGrants.length > 0 && (
+                      <div className="inspector-form">
+                        <select
+                          className="select"
+                          value={runMcpServerId}
+                          onChange={(e) => handleSelectMcpServerForRun(e.target.value)}
+                        >
+                          <option value="">{t("chat.runAnMcpTool")}</option>
+                          {activeTab.mcpGrants.map((g) => {
+                            const server = availableMcpServers.find((s) => s.id === g.mcpServerId);
+                            return (
+                              <option key={g.id} value={g.mcpServerId}>
+                                {server?.name ?? g.mcpServerId}
+                              </option>
+                            );
+                          })}
+                        </select>
+                        <select
+                          className="select"
+                          value={runMcpToolName}
+                          onChange={(e) => setRunMcpToolName(e.target.value)}
+                          disabled={!runMcpServerId || loadingMcpTools}
+                        >
+                          <option value="">{loadingMcpTools ? t("chat.loadingTools") : t("chat.selectTool")}</option>
+                          {mcpToolsForRun.map((tool) => (
+                            <option key={tool.name} value={tool.name}>
+                              {tool.name}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          className="input input-mono"
+                          type="text"
+                          placeholder={t("chat.jsonPayloadPlaceholder")}
+                          value={runMcpToolPayload}
+                          onChange={(e) => setRunMcpToolPayload(e.target.value)}
+                        />
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          type="button"
+                          disabled={!runMcpServerId || !runMcpToolName || runningMcpTool}
+                          onClick={() => handleRunMcpTool(activeSessionId)}
+                        >
+                          {runningMcpTool ? t("chat.running") : t("chat.run")}
+                        </button>
+                      </div>
+                    )}
+                  </section>
+
+                  <section className="inspector-section">
+                    {renderSemanticSearchSection(activeSessionId, activeTab)}
+                  </section>
+                </div>
+              </ShellInspector>
             )}
             {activeTab.kind === "group" && (
               <div className="chat-header">

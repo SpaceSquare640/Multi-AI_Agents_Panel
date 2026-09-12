@@ -412,7 +412,10 @@
     "runningCount_other": "{{count}} laufend",
     "you": "Du",
     "assistant": "Assistent",
-    "enterKey": "Enter"
+    "enterKey": "Enter",
+    "sessionDetails": "Sitzung",
+    "provider": "Anbieter",
+    "model": "Modell"
   },
   "acc": {
     "title": "KI-Kontrollzentrum",
@@ -657,6 +660,8 @@
       "estimatedTotal": "Geschätzte Summe"
     },
     "toggleSidebar": "Seitenleiste ein-/ausblenden",
-    "contextSidebar": "Kontext"
+    "contextSidebar": "Kontext",
+    "toggleInspector": "Details umschalten",
+    "inspector": "Details"
   }
 }

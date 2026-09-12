@@ -412,7 +412,10 @@
     "runningCount_other": "{{count}} running",
     "you": "You",
     "assistant": "Assistant",
-    "enterKey": "Enter"
+    "enterKey": "Enter",
+    "sessionDetails": "Session",
+    "provider": "Provider",
+    "model": "Model"
   },
   "acc": {
     "title": "AI Control Center",
@@ -657,6 +660,8 @@
       "estimatedTotal": "Estimated total"
     },
     "toggleSidebar": "Toggle sidebar",
-    "contextSidebar": "Context"
+    "contextSidebar": "Context",
+    "toggleInspector": "Toggle details",
+    "inspector": "Details"
   }
 }

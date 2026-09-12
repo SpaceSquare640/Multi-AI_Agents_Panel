@@ -1,0 +1,53 @@
+/* The Chat inspector. Roster rows and the identity block come from the v2
+   design source (screens.css); the rest is written against the same tokens,
+   because the design's inspector is read-mostly and this one also carries
+   the grant forms that had nowhere else to go. */
+
+.avatar-lg { width: 28px; height: 28px; font-size: var(--text-xs); border-radius: var(--radius-md); }
+.roster { display: flex; flex-direction: column; gap: var(--space-1); }
+.roster-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-xs);
+}
+.roster-item:hover { background: var(--surface-2); }
+.roster-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-sm); }
+
+/* Identity block. The design writes this one inline in its mockup; stated
+   here so the port does not carry the inline styles it is removing. */
+.inspector-identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+.inspector-identity-text { min-width: 0; }
+.inspector-identity-name { font-weight: var(--weight-semibold); }
+.inspector-identity-sub { font-size: var(--text-xs); color: var(--text-faint); }
+
+/* Grant forms. Not in the design — its inspector only revokes, because its
+   granting happens in a dialog this app does not have. */
+.inspector-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+.inspector-form .select,
+.inspector-form .input { flex: 1; min-width: 120px; }
+.inspector-action { margin-top: var(--space-4); }
+.inspector-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+/* Roster rows own their revoke button, so it is visible at rest rather
+   than on hover: a granted folder you cannot see how to revoke is the
+   wrong default for a permission list. */
+.roster-item .tree-action { opacity: 1; }

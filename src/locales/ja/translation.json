@@ -407,7 +407,10 @@
     "runningCount_other": "{{count}} 件実行中",
     "you": "あなた",
     "assistant": "アシスタント",
-    "enterKey": "Enter"
+    "enterKey": "Enter",
+    "sessionDetails": "セッション",
+    "provider": "プロバイダー",
+    "model": "モデル"
   },
   "acc": {
     "title": "AI コントロールセンター",
@@ -648,6 +651,8 @@
       "estimatedTotal": "推定累計"
     },
     "toggleSidebar": "サイドバーの表示切り替え",
-    "contextSidebar": "コンテキスト"
+    "contextSidebar": "コンテキスト",
+    "toggleInspector": "詳細の表示切り替え",
+    "inspector": "詳細"
   }
 }

@@ -407,7 +407,10 @@
     "runningCount_other": "{{count}} 个进行中",
     "you": "你",
     "assistant": "助理",
-    "enterKey": "Enter"
+    "enterKey": "Enter",
+    "sessionDetails": "会话",
+    "provider": "Provider",
+    "model": "模型"
   },
   "acc": {
     "title": "AI 控制中心",
@@ -648,6 +651,8 @@
       "estimatedTotal": "累计估算"
     },
     "toggleSidebar": "切换侧栏",
-    "contextSidebar": "内容侧栏"
+    "contextSidebar": "内容侧栏",
+    "toggleInspector": "切换详细信息",
+    "inspector": "详细信息"
   }
 }

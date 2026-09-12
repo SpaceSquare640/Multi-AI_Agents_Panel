@@ -1,11 +1,39 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
-/** The DOM node the shell's context sidebar renders into, or null when the
- *  shell has not mounted one. */
+/** The DOM nodes the shell's two side regions render into, or null when
+ *  the shell has not mounted them. */
 const SidebarHost = createContext<HTMLElement | null>(null);
+const InspectorHost = createContext<HTMLElement | null>(null);
 
 export const SidebarHostProvider = SidebarHost.Provider;
+export const InspectorHostProvider = InspectorHost.Provider;
+
+/** Shared by both regions: mark the host while a ported screen fills it,
+ *  and portal the children into it.
+ *
+ *  The marker exists because of the portal. The content is a child of the
+ *  screen in the React tree but a child of `.sidebar` or `.inspector` in
+ *  the DOM, and CSS only sees the DOM — so the v2 base rules, which are
+ *  scoped to `.screen-v2`, do not reach it. Without the marker a ported
+ *  screen's own side panel renders in v1's monospace and uppercase while
+ *  its workspace renders correctly.
+ *
+ *  A flag rather than something inferred: a screen can be half-ported and
+ *  portal v1 markup here, which has to keep its v1 styling. The flag goes
+ *  away with the last `screen-v2` class. */
+function useRegion(host: HTMLElement | null, v2: boolean, children: ReactNode) {
+  useEffect(() => {
+    if (!host || !v2) return;
+    host.dataset.v2 = "true";
+    return () => {
+      delete host.dataset.v2;
+    };
+  }, [host, v2]);
+
+  if (!host) return null;
+  return createPortal(children, host);
+}
 
 /** Renders its children into the shell's sidebar region.
  *
@@ -22,30 +50,14 @@ export const SidebarHostProvider = SidebarHost.Provider;
  *  Renders nothing when there is no host, so a screen can use this
  *  unconditionally without knowing whether it is inside the shell. */
 export function ShellSidebar({ children, v2 = false }: { children: ReactNode; v2?: boolean }) {
-  const host = useContext(SidebarHost);
+  return useRegion(useContext(SidebarHost), v2, children);
+}
 
-  /* Marks the host while a ported screen is the one filling it.
-   *
-   *  The portal is why this is needed at all: the content is a child of
-   *  the screen in the React tree but a child of `.sidebar` in the DOM,
-   *  and CSS only sees the DOM. The v2 base rules are scoped to
-   *  `.screen-v2`, which the sidebar is not inside — so without a marker
-   *  here, a ported screen's own sidebar renders in v1's monospace and
-   *  uppercase while its workspace renders correctly.
-   *
-   *  A flag rather than something inferred: Chat portals v1 markup into
-   *  this same host, and it has to keep its v1 styling until Chat itself
-   *  is ported. The flag goes away with the last `screen-v2` class. */
-  useEffect(() => {
-    if (!host || !v2) return;
-    host.dataset.v2 = "true";
-    return () => {
-      delete host.dataset.v2;
-    };
-  }, [host, v2]);
-
-  if (!host) return null;
-  return createPortal(children, host);
+/** Renders its children into the shell's inspector — the region the v2
+ *  layout reserves for "what is this workspace about", opposite the
+ *  sidebar's "which one are you looking at". */
+export function ShellInspector({ children, v2 = false }: { children: ReactNode; v2?: boolean }) {
+  return useRegion(useContext(InspectorHost), v2, children);
 }
 
 /** True while this screen is the visible one.

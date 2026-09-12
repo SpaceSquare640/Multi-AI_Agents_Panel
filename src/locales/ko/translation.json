@@ -407,7 +407,10 @@
     "runningCount_other": "{{count}}개 실행 중",
     "you": "나",
     "assistant": "어시스턴트",
-    "enterKey": "Enter"
+    "enterKey": "Enter",
+    "sessionDetails": "세션",
+    "provider": "제공자",
+    "model": "모델"
   },
   "acc": {
     "title": "AI 컨트롤 센터",
@@ -648,6 +651,8 @@
       "estimatedTotal": "추정 누계"
     },
     "toggleSidebar": "사이드바 전환",
-    "contextSidebar": "컨텍스트"
+    "contextSidebar": "컨텍스트",
+    "toggleInspector": "세부 정보 전환",
+    "inspector": "세부 정보"
   }
 }

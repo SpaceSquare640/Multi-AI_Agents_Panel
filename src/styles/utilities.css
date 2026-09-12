@@ -61,7 +61,8 @@
    at the elements inside the scope, not at the component classes, so a
    component can still override any of it. */
 .screen-v2,
-.sidebar[data-v2] {
+.sidebar[data-v2],
+.inspector[data-v2] {
   font-family: var(--font-sans);
   font-size: var(--text-base);
   line-height: var(--leading-body);
@@ -76,7 +77,8 @@
    flatten the seam between the two regions. */
 .screen-v2 { background: var(--bg); }
 .screen-v2 :where(h1, h2, h3, h4, h5, h6),
-.sidebar[data-v2] :where(h1, h2, h3, h4, h5, h6) {
+.sidebar[data-v2],
+.inspector[data-v2] :where(h1, h2, h3, h4, h5, h6) {
   margin: 0;
   font-weight: var(--weight-semibold);
   line-height: var(--leading-tight);
@@ -85,15 +87,20 @@
   text-transform: none;
 }
 .screen-v2 :where(h1),
-.sidebar[data-v2] :where(h1) { font-size: var(--text-xl); }
+.sidebar[data-v2],
+.inspector[data-v2] :where(h1) { font-size: var(--text-xl); }
 .screen-v2 :where(h2),
-.sidebar[data-v2] :where(h2) { font-size: var(--text-lg); }
+.sidebar[data-v2],
+.inspector[data-v2] :where(h2) { font-size: var(--text-lg); }
 .screen-v2 :where(h3),
-.sidebar[data-v2] :where(h3) { font-size: var(--text-md); }
+.sidebar[data-v2],
+.inspector[data-v2] :where(h3) { font-size: var(--text-md); }
 .screen-v2 :where(p, ul, ol),
-.sidebar[data-v2] :where(p, ul, ol) { margin: 0; padding: 0; }
+.sidebar[data-v2],
+.inspector[data-v2] :where(p, ul, ol) { margin: 0; padding: 0; }
 .screen-v2 :where(button, input, select, textarea),
-.sidebar[data-v2] :where(button, input, select, textarea) {
+.sidebar[data-v2],
+.inspector[data-v2] :where(button, input, select, textarea) {
   font: inherit;
   color: inherit;
   text-transform: none;
@@ -107,22 +114,26 @@
   background: transparent;
 }
 .screen-v2 :where(button),
-.sidebar[data-v2] :where(button) { margin: 0; cursor: pointer; }
+.sidebar[data-v2],
+.inspector[data-v2] :where(button) { margin: 0; cursor: pointer; }
 
 /* Links inside a ported surface. base.css styles `a` as an element rule and
    is not imported, so without this a link falls through to v1's layered
    `a` colour — eDEX cyan, which measures 1.7:1 on the light theme's card
    and is unreadable. */
 .screen-v2 :where(a),
-.sidebar[data-v2] :where(a) { color: var(--brand-text); text-decoration: none; }
+.sidebar[data-v2],
+.inspector[data-v2] :where(a) { color: var(--brand-text); text-decoration: none; }
 .screen-v2 :where(a):hover,
-.sidebar[data-v2] :where(a):hover { text-decoration: underline; }
+.sidebar[data-v2],
+.inspector[data-v2] :where(a):hover { text-decoration: underline; }
 
 /* Monospace elements and the key cap, from base.css. Scoped like the rest
    of its element rules — v1 renders `code` in its own terminal styling and
    has no `kbd` at all. */
 .screen-v2 :where(code, kbd, pre, samp),
-.sidebar[data-v2] :where(code, kbd, pre, samp),
+.sidebar[data-v2],
+.inspector[data-v2] :where(code, kbd, pre, samp),
 .onboard :where(code, kbd, pre, samp) {
   font-family: var(--font-mono);
   font-size: 0.92em;

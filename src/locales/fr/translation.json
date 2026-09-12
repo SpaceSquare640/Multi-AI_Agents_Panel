@@ -412,7 +412,10 @@
     "runningCount_other": "{{count}} en cours",
     "you": "Vous",
     "assistant": "Assistant",
-    "enterKey": "Entrée"
+    "enterKey": "Entrée",
+    "sessionDetails": "Session",
+    "provider": "Fournisseur",
+    "model": "Modèle"
   },
   "acc": {
     "title": "Centre de contrôle IA",
@@ -657,6 +660,8 @@
       "estimatedTotal": "Total estimé"
     },
     "toggleSidebar": "Afficher/masquer le panneau latéral",
-    "contextSidebar": "Contexte"
+    "contextSidebar": "Contexte",
+    "toggleInspector": "Afficher les détails",
+    "inspector": "Détails"
   }
 }

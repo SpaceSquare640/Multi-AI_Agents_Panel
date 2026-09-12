@@ -3,7 +3,7 @@ import { Fragment, useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Icon, IconSprite, type IconName } from "./Icons";
 import StatusBar from "./StatusBar";
-import { SidebarHostProvider } from "./SidebarSlot";
+import { InspectorHostProvider, SidebarHostProvider } from "./SidebarSlot";
 import "../styles/shell.css";
 
 /** The destinations in the icon rail, in their three groups.
@@ -84,7 +84,18 @@ export default function AppShell({
 }) {
   const { t } = useTranslation();
 
+  /* Open/closed, plus whether the user said so themselves.
+   *
+   *  The stylesheet narrows both side regions away below a breakpoint
+   *  "unless pinned" — but nothing ever set `pinned`, in this app or in
+   *  the design source it came from, so the escape hatch was dead and a
+   *  window under 1180px lost the inspector with no way to get it back.
+   *  Pressing the toggle is the user saying they want the region, which
+   *  is exactly what pinning means, so an explicit open pins it and the
+   *  breakpoint stops applying. Left alone, the region still yields at
+   *  narrow widths the way the design intends. */
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarPinned, setSidebarPinned] = useState(false);
 
   /** The sidebar host node, published to screens through context.
    *
@@ -118,11 +129,29 @@ export default function AppShell({
      An empty 268px panel with a toggle that reveals nothing is worse than
      no panel; the design source's own frame collapses a region it was
      given no content for, for the same reason. */
-  const sidebar = hasSidebarContent && sidebarOpen ? "expanded" : "collapsed";
+  const sidebar = !hasSidebarContent || !sidebarOpen ? "collapsed" : sidebarPinned ? "pinned" : "expanded";
 
-  /** No screen supplies inspector content yet. It arrives with the screens
-   *  that have something to inspect. */
-  const inspector = "collapsed" as const;
+  const [inspectorOpen, setInspectorOpen] = useState(true);
+  const [inspectorPinned, setInspectorPinned] = useState(false);
+  const [inspectorHost, setInspectorHost] = useState<HTMLElement | null>(null);
+  const [hasInspectorContent, setHasInspectorContent] = useState(false);
+  const inspectorObserverRef = useRef<MutationObserver | null>(null);
+
+  const attachInspector = useCallback((node: HTMLElement | null) => {
+    inspectorObserverRef.current?.disconnect();
+    setInspectorHost(node);
+    if (!node) {
+      setHasInspectorContent(false);
+      return;
+    }
+    const read = () => setHasInspectorContent(node.childElementCount > 0);
+    read();
+    const mo = new MutationObserver(read);
+    mo.observe(node, { childList: true });
+    inspectorObserverRef.current = mo;
+  }, []);
+
+  const inspector = !hasInspectorContent || !inspectorOpen ? "collapsed" : inspectorPinned ? "pinned" : "expanded";
 
   return (
     <div className="shell" data-screen={active} data-sidebar={sidebar} data-inspector={inspector}>
@@ -134,18 +163,42 @@ export default function AppShell({
       <header className="titlebar">
         <span className="titlebar-brand">{t("shell.appName")}</span>
         <span style={{ flex: 1 }} />
-        {hasSidebarContent && (
+        {(hasSidebarContent || hasInspectorContent) && (
           <div className="titlebar-actions">
-            <button
-              className="titlebar-btn"
-              type="button"
-              aria-pressed={sidebarOpen}
-              aria-label={t("shell.toggleSidebar")}
-              title={t("shell.toggleSidebar")}
-              onClick={() => setSidebarOpen((v) => !v)}
-            >
-              <Icon name="panel-left" size="sm" />
-            </button>
+            {hasSidebarContent && (
+              <button
+                className="titlebar-btn"
+                type="button"
+                aria-pressed={sidebarOpen}
+                aria-label={t("shell.toggleSidebar")}
+                title={t("shell.toggleSidebar")}
+                onClick={() =>
+                setSidebarOpen((open) => {
+                  setSidebarPinned(!open);
+                  return !open;
+                })
+              }
+              >
+                <Icon name="panel-left" size="sm" />
+              </button>
+            )}
+            {hasInspectorContent && (
+              <button
+                className="titlebar-btn"
+                type="button"
+                aria-pressed={inspectorOpen}
+                aria-label={t("shell.toggleInspector")}
+                title={t("shell.toggleInspector")}
+                onClick={() =>
+                  setInspectorOpen((open) => {
+                    setInspectorPinned(!open);
+                    return !open;
+                  })
+                }
+              >
+                <Icon name="panel-right" size="sm" />
+              </button>
+            )}
           </div>
         )}
       </header>
@@ -189,8 +242,14 @@ export default function AppShell({
       <aside className="sidebar" ref={attachSidebar} aria-label={t("shell.contextSidebar")} />
 
       <main className="workspace" id="workspace" tabIndex={-1}>
-        <SidebarHostProvider value={sidebarHost}>{children}</SidebarHostProvider>
+        <SidebarHostProvider value={sidebarHost}>
+          <InspectorHostProvider value={inspectorHost}>{children}</InspectorHostProvider>
+        </SidebarHostProvider>
       </main>
+
+      {/* Always rendered, for the same reason the sidebar is: screens
+          portal into this node, so it has to exist before they can. */}
+      <aside className="inspector" ref={attachInspector} aria-label={t("shell.inspector")} />
 
       <StatusBar />
     </div>
