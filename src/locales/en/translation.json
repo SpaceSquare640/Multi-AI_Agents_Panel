@@ -587,6 +587,8 @@
       "running": "Local runtime running",
       "notRunning": "Local runtime not running",
       "estimatedTotal": "Estimated total"
-    }
+    },
+    "toggleSidebar": "Toggle sidebar",
+    "contextSidebar": "Context"
   }
 }

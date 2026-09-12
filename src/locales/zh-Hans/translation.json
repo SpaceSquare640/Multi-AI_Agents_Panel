@@ -587,6 +587,8 @@
       "running": "本地服务运行中",
       "notRunning": "本地服务未运行",
       "estimatedTotal": "累计估算"
-    }
+    },
+    "toggleSidebar": "切换侧栏",
+    "contextSidebar": "内容侧栏"
   }
 }

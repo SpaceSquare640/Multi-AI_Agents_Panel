@@ -587,6 +587,8 @@
       "running": "로컬 서비스 실행 중",
       "notRunning": "로컬 서비스 중지됨",
       "estimatedTotal": "추정 누계"
-    }
+    },
+    "toggleSidebar": "사이드바 전환",
+    "contextSidebar": "컨텍스트"
   }
 }

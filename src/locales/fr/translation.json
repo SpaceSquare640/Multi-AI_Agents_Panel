@@ -587,6 +587,8 @@
       "running": "Service local actif",
       "notRunning": "Service local inactif",
       "estimatedTotal": "Total estimé"
-    }
+    },
+    "toggleSidebar": "Afficher/masquer le panneau latéral",
+    "contextSidebar": "Contexte"
   }
 }

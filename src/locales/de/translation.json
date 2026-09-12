@@ -587,6 +587,8 @@
       "running": "Lokaler Dienst läuft",
       "notRunning": "Lokaler Dienst läuft nicht",
       "estimatedTotal": "Geschätzte Summe"
-    }
+    },
+    "toggleSidebar": "Seitenleiste ein-/ausblenden",
+    "contextSidebar": "Kontext"
   }
 }

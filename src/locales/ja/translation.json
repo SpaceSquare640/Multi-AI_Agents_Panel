@@ -587,6 +587,8 @@
       "running": "ローカルサービス稼働中",
       "notRunning": "ローカルサービス停止中",
       "estimatedTotal": "推定累計"
-    }
+    },
+    "toggleSidebar": "サイドバーの表示切り替え",
+    "contextSidebar": "コンテキスト"
   }
 }

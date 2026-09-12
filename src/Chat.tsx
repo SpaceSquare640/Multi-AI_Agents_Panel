@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { ShellSidebar, useIsActiveScreen } from "./shell/SidebarSlot";
 import { invoke } from "@tauri-apps/api/core";
 import { ask, open as openFolderPicker, save as saveFilePicker } from "@tauri-apps/plugin-dialog";
 import type {
@@ -138,6 +139,8 @@ export default function Chat() {
   const [tabs, setTabs] = useState<Record<string, TabState>>({});
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const pageRef = useRef<HTMLDivElement>(null);
+  const isActiveScreen = useIsActiveScreen(pageRef);
 
   // Skills: the installed catalog (global) + per-tab grants (in TabState)
   // + a small "run one now" form scoped to whichever tab is active.
@@ -1248,7 +1251,18 @@ export default function Chat() {
   }
 
   return (
-    <div className="chat-page">
+    <div className="chat-page" ref={pageRef}>
+      {/* The session tree moves to the shell's context sidebar, which is
+          where the v2 layout puts "context for the active rail item". The
+          markup below is unchanged and is still a child of this component
+          in the React tree — only its DOM position moves — so every
+          handler and every piece of state it closes over keeps working.
+
+          Gated on being the visible screen because all eight screens stay
+          mounted at once; without that, every screen with a sidebar would
+          portal into the same host simultaneously. */}
+      {isActiveScreen && (
+      <ShellSidebar>
       <aside className="chat-sidebar">
         <h2>{t("chat.independentSessions")}</h2>
         <ul className="chat-session-list">
@@ -1545,6 +1559,8 @@ export default function Chat() {
           </form>
         )}
       </aside>
+      </ShellSidebar>
+      )}
 
       <main className="chat-main">
         {error &&

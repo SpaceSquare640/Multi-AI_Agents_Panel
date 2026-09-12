@@ -11,8 +11,14 @@
    gap on the shared cyan-dim background between them stands in for a
    seam/divider without adding an extra border that would double up
    against .chat-main's own left border below. */
+/* Interim during the v2 migration: this panel no longer sits inside
+   .chat-page's flex row — it is portalled into the shell's 268px sidebar
+   track, which is `overflow: hidden`. A fixed 300px here gets its right
+   32px clipped, taking the row-end delete buttons with it. Width belongs
+   to the shell track now; this rule goes away with the rest of the v1
+   stylesheet when Chat itself is replaced. */
 .chat-sidebar {
-  width: 300px;
+  width: 100%;
   flex-shrink: 0;
   padding: 1rem;
   overflow-y: auto;

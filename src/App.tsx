@@ -51,28 +51,28 @@ function App() {
        *  visibility toggle, no remount, no re-fetch, no chance of a
        *  freshly-mounted page's IPC call getting stuck behind a
        *  previous page's still-in-flight one. */}
-      <div className="app-tab-content" hidden={tab !== "chat"}>
+      <div className="app-tab-content" data-screen-pane hidden={tab !== "chat"}>
         <Chat />
       </div>
-      <div className="app-tab-content" hidden={tab !== "control-center"}>
+      <div className="app-tab-content" data-screen-pane hidden={tab !== "control-center"}>
         <AIControlCenter onOpenUsage={() => setTab("usage")} onOpenManual={() => setTab("manual")} />
       </div>
-      <div className="app-tab-content" hidden={tab !== "ml"}>
+      <div className="app-tab-content" data-screen-pane hidden={tab !== "ml"}>
         <MachineLearning />
       </div>
-      <div className="app-tab-content" hidden={tab !== "skills"}>
+      <div className="app-tab-content" data-screen-pane hidden={tab !== "skills"}>
         <Skills onOpenChat={() => setTab("chat")} />
       </div>
-      <div className="app-tab-content" hidden={tab !== "usage"}>
+      <div className="app-tab-content" data-screen-pane hidden={tab !== "usage"}>
         <Usage />
       </div>
-      <div className="app-tab-content" hidden={tab !== "notes"}>
+      <div className="app-tab-content" data-screen-pane hidden={tab !== "notes"}>
         <Notes />
       </div>
-      <div className="app-tab-content" hidden={tab !== "manual"}>
+      <div className="app-tab-content" data-screen-pane hidden={tab !== "manual"}>
         <Manual />
       </div>
-      <div className="app-tab-content" hidden={tab !== "settings"}>
+      <div className="app-tab-content" data-screen-pane hidden={tab !== "settings"}>
         <Settings
           onShowGuardrailsSummary={() => setShowOnboarding(true)}
           onOpenManual={() => setTab("manual")}

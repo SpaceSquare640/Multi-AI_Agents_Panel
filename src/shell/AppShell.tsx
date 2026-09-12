@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
-import { Fragment, useState } from "react";
+import { Fragment, useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Icon, IconSprite, type IconName } from "./Icons";
 import StatusBar from "./StatusBar";
+import { SidebarHostProvider } from "./SidebarSlot";
 import "../styles/shell.css";
 
 /** The destinations in the icon rail, in their three groups.
@@ -76,14 +77,45 @@ export default function AppShell({
 }) {
   const { t } = useTranslation();
 
-  /** The sidebar and inspector regions exist in the grid, but no screen
-   *  supplies content for them until it is ported — so both start
-   *  collapsed and their toggles are not rendered yet. A visible toggle
-   *  for a permanently empty 268px panel is a control that does nothing,
-   *  and the design source does the same thing: its frame collapses a
-   *  region it was given no content for. */
-  const [sidebar] = useState<"expanded" | "collapsed">("collapsed");
-  const [inspector] = useState<"expanded" | "collapsed">("collapsed");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  /** The sidebar host node, published to screens through context.
+   *
+   *  A callback ref rather than useRef: a ref object's `.current` is set
+   *  without re-rendering, so the first render would hand screens a null
+   *  host and never tell them it had changed. State makes the host arrive
+   *  as a render. */
+  const [sidebarHost, setSidebarHost] = useState<HTMLElement | null>(null);
+
+  /** Whether any screen currently has content in the sidebar. Read from
+   *  the host itself rather than declared by screens, so a screen that
+   *  portals nothing collapses the region without having to say so. */
+  const [hasSidebarContent, setHasSidebarContent] = useState(false);
+  const observerRef = useRef<MutationObserver | null>(null);
+
+  const attachSidebar = useCallback((node: HTMLElement | null) => {
+    observerRef.current?.disconnect();
+    setSidebarHost(node);
+    if (!node) {
+      setHasSidebarContent(false);
+      return;
+    }
+    const read = () => setHasSidebarContent(node.childElementCount > 0);
+    read();
+    const mo = new MutationObserver(read);
+    mo.observe(node, { childList: true });
+    observerRef.current = mo;
+  }, []);
+
+  /* The region only takes up space when a screen has actually filled it.
+     An empty 268px panel with a toggle that reveals nothing is worse than
+     no panel; the design source's own frame collapses a region it was
+     given no content for, for the same reason. */
+  const sidebar = hasSidebarContent && sidebarOpen ? "expanded" : "collapsed";
+
+  /** No screen supplies inspector content yet. It arrives with the screens
+   *  that have something to inspect. */
+  const inspector = "collapsed" as const;
 
   return (
     <div className="shell" data-screen={active} data-sidebar={sidebar} data-inspector={inspector}>
@@ -94,6 +126,21 @@ export default function AppShell({
 
       <header className="titlebar">
         <span className="titlebar-brand">{t("shell.appName")}</span>
+        <span style={{ flex: 1 }} />
+        {hasSidebarContent && (
+          <div className="titlebar-actions">
+            <button
+              className="titlebar-btn"
+              type="button"
+              aria-pressed={sidebarOpen}
+              aria-label={t("shell.toggleSidebar")}
+              title={t("shell.toggleSidebar")}
+              onClick={() => setSidebarOpen((v) => !v)}
+            >
+              <Icon name="panel-left" size="sm" />
+            </button>
+          </div>
+        )}
       </header>
 
       <nav className="rail" aria-label={t("shell.primaryNav")}>
@@ -129,8 +176,13 @@ export default function AppShell({
         ))}
       </nav>
 
+      {/* Always rendered, never conditionally: screens portal into this
+          node, so it has to exist before they can decide whether to. The
+          grid collapses its track to 0 when it is empty. */}
+      <aside className="sidebar" ref={attachSidebar} aria-label={t("shell.contextSidebar")} />
+
       <main className="workspace" id="workspace" tabIndex={-1}>
-        {children}
+        <SidebarHostProvider value={sidebarHost}>{children}</SidebarHostProvider>
       </main>
 
       <StatusBar />
