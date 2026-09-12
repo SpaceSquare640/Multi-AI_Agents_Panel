@@ -404,7 +404,10 @@
     "sessions": "세션",
     "unseenReply": "새 답변",
     "sessionCount_other": "세션 {{count}}개",
-    "runningCount_other": "{{count}}개 실행 중"
+    "runningCount_other": "{{count}}개 실행 중",
+    "you": "나",
+    "assistant": "어시스턴트",
+    "enterKey": "Enter"
   },
   "acc": {
     "title": "AI 컨트롤 센터",

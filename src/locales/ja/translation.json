@@ -404,7 +404,10 @@
     "sessions": "セッション",
     "unseenReply": "新しい返信",
     "sessionCount_other": "セッション {{count}} 件",
-    "runningCount_other": "{{count}} 件実行中"
+    "runningCount_other": "{{count}} 件実行中",
+    "you": "あなた",
+    "assistant": "アシスタント",
+    "enterKey": "Enter"
   },
   "acc": {
     "title": "AI コントロールセンター",

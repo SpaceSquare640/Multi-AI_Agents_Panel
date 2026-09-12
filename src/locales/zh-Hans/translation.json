@@ -404,7 +404,10 @@
     "sessions": "会话",
     "unseenReply": "有新回复",
     "sessionCount_other": "{{count}} 个会话",
-    "runningCount_other": "{{count}} 个进行中"
+    "runningCount_other": "{{count}} 个进行中",
+    "you": "你",
+    "assistant": "助理",
+    "enterKey": "Enter"
   },
   "acc": {
     "title": "AI 控制中心",

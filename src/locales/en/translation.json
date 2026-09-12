@@ -409,7 +409,10 @@
     "sessionCount_one": "{{count}} session",
     "sessionCount_other": "{{count}} sessions",
     "runningCount_one": "{{count}} running",
-    "runningCount_other": "{{count}} running"
+    "runningCount_other": "{{count}} running",
+    "you": "You",
+    "assistant": "Assistant",
+    "enterKey": "Enter"
   },
   "acc": {
     "title": "AI Control Center",

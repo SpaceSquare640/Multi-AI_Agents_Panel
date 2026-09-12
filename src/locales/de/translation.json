@@ -409,7 +409,10 @@
     "sessionCount_one": "{{count}} Sitzung",
     "sessionCount_other": "{{count}} Sitzungen",
     "runningCount_one": "{{count}} laufend",
-    "runningCount_other": "{{count}} laufend"
+    "runningCount_other": "{{count}} laufend",
+    "you": "Du",
+    "assistant": "Assistent",
+    "enterKey": "Enter"
   },
   "acc": {
     "title": "KI-Kontrollzentrum",

@@ -404,7 +404,10 @@
     "sessions": "工作階段",
     "unseenReply": "有新回覆",
     "sessionCount_other": "{{count}} 個工作階段",
-    "runningCount_other": "{{count}} 個進行中"
+    "runningCount_other": "{{count}} 個進行中",
+    "you": "你",
+    "assistant": "助理",
+    "enterKey": "Enter"
   },
   "acc": {
     "title": "AI 控制中心",

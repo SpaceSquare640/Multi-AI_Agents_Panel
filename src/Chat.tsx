@@ -22,6 +22,7 @@ import type {
 } from "./types";
 import "./styles/screens/agents.css";
 import "./styles/screens/chat.css";
+import "./styles/screens/chat-stream.css";
 import "./Chat.css";
 
 /// `send_chat_message_with_tools` (agent_manager::function_calling) is
@@ -117,6 +118,38 @@ function emptyTab(): TabState {
 export function parseErrorCode(message: string): { code: string | null; rest: string } {
   const match = /^(E\d{4})\s+(.*)$/s.exec(message);
   return match ? { code: match[1], rest: match[2] } : { code: null, rest: message };
+}
+
+/** Initials for a speaker's monogram. The design's avatar is a monogram
+ *  rather than a picture, and the initials are always present: the colour
+ *  is a shortcut for recognising a speaker, never the only way to tell
+ *  who is talking. */
+export function initials(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return "?";
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+}
+
+/** Which of the design's six agent hues a message's speaker gets.
+ *
+ *  Assigned by position in the group's member list, so everyone in one
+ *  meeting is a different colour and each keeps the same colour for as
+ *  long as the meeting does. A solo session has one agent and always
+ *  takes the first hue. The user's own messages are their own slot, not
+ *  one of the six.
+ *
+ *  Position rather than a hash of the id: a hash spreads evenly across
+ *  runs but says nothing within one, and two of six colliding in the same
+ *  meeting is exactly the case the colour exists to prevent. */
+export function avatarSlot(
+  message: { role: string; agentId: string | null },
+  tab: { kind: string; members: { id: string }[] },
+): string {
+  if (message.role === "user") return "user";
+  if (tab.kind !== "group" || !message.agentId) return "1";
+  const index = tab.members.findIndex((m) => m.id === message.agentId);
+  return String((index < 0 ? 0 : index % 6) + 1);
 }
 
 export default function Chat() {
@@ -1471,45 +1504,114 @@ export default function Chat() {
                 {renderSemanticSearchSection(activeSessionId, activeTab)}
               </div>
             )}
-            <div className="chat-thread">
-              {activeTab.messages.length === 0 && (
-                <p className="chat-empty">{t("chat.noMessagesYet")}</p>
-              )}
-              {activeTab.messages.map((m) => {
-                const speakerName =
+            <div className="stream">
+              {activeTab.messages.length === 0 && <p className="field-hint">{t("chat.noMessagesYet")}</p>}
+              {activeTab.messages.map((m, i) => {
+                const speaker =
                   activeTab.kind === "group" && m.agentId
-                    ? activeTab.members.find((mem) => mem.id === m.agentId)?.name ?? m.role
-                    : m.role;
+                    ? (activeTab.members.find((mem) => mem.id === m.agentId)?.name ?? m.role)
+                    : m.role === "user"
+                      ? t("chat.you")
+                      : (activeTab.agent?.name ?? m.role);
+                const prev = activeTab.messages[i - 1];
+                /* Consecutive turns from one speaker drop their header and
+                   avatar, which is what the design's data-same does. Keyed
+                   on agentId as well as role so two agents answering in a
+                   row in a group chat are not collapsed into one. */
+                const same = prev?.role === m.role && prev?.agentId === m.agentId;
                 return (
-                  <div key={m.id} className={`chat-bubble chat-bubble-${m.role}`}>
-                    <div className="chat-bubble-role">{speakerName}</div>
-                    <div className="chat-bubble-content">{m.content}</div>
-                  </div>
+                  <article className="msg" data-from={m.role === "user" ? "user" : "agent"} data-same={same} key={m.id}>
+                    <span className="avatar" data-agent={avatarSlot(m, activeTab)} aria-hidden="true">
+                      {initials(speaker)}
+                    </span>
+                    <div className="msg-head">
+                      <span className="msg-who">{speaker}</span>
+                      {m.role !== "user" && activeTab.agent?.model && (
+                        <span className="msg-meta">{activeTab.agent.model}</span>
+                      )}
+                    </div>
+                    <div className="msg-body">{m.content}</div>
+                  </article>
                 );
               })}
               {activeTab.sending && (
-                <div className="chat-bubble chat-bubble-assistant chat-bubble-pending">
-                  <div className="chat-bubble-role">assistant</div>
-                  <div className="chat-bubble-content">…</div>
-                </div>
+                <article className="msg" data-from="agent">
+                  <span className="avatar" data-agent="1" aria-hidden="true">
+                    {initials(activeTab.agent?.name ?? "AI")}
+                  </span>
+                  <div className="msg-head">
+                    <span className="msg-who">{activeTab.agent?.name ?? t("chat.assistant")}</span>
+                  </div>
+                  <div className="msg-body">
+                    <span className="thinking">
+                      {t("chat.sending")}
+                      <span className="dots" aria-hidden="true">
+                        <i />
+                        <i />
+                        <i />
+                      </span>
+                    </span>
+                  </div>
+                </article>
               )}
               <div ref={bottomRef} />
             </div>
-            <form className="chat-input-row" onSubmit={(e) => handleSend(e, activeSessionId)}>
-              <input
-                type="text"
-                placeholder={
-                  activeTab.kind === "group"
+
+            <div className="composer">
+              <form
+                className="composer-box"
+                onSubmit={(e) => handleSend(e, activeSessionId)}
+              >
+                <label className="sr-only" htmlFor={`composer-${activeSessionId}`}>
+                  {activeTab.kind === "group"
                     ? t("chat.messagePlaceholderGroup")
-                    : t("chat.messagePlaceholderIndependent")
-                }
-                value={activeTab.draft}
-                onChange={(e) => patchTab(activeSessionId, { draft: e.target.value })}
-              />
-              <button type="submit" disabled={!activeTab.draft.trim()}>
-                {activeTab.sending ? t("chat.sending") : t("chat.send")}
-              </button>
-            </form>
+                    : t("chat.messagePlaceholderIndependent")}
+                </label>
+                {/* A textarea, not a single-line input: a prompt is often
+                    several lines, and the design sizes it for that. Enter
+                    sends and Shift+Enter breaks the line, which is the
+                    convention the composer hint states. */}
+                <textarea
+                  id={`composer-${activeSessionId}`}
+                  className="composer-input"
+                  rows={3}
+                  placeholder={
+                    activeTab.kind === "group"
+                      ? t("chat.messagePlaceholderGroup")
+                      : t("chat.messagePlaceholderIndependent")
+                  }
+                  value={activeTab.draft}
+                  onChange={(e) => patchTab(activeSessionId, { draft: e.target.value })}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      if (activeTab.draft.trim() && !activeTab.sending) {
+                        void handleSend(e, activeSessionId);
+                      }
+                    }
+                  }}
+                />
+                <div className="composer-bar">
+                  <span className="spacer" />
+                  {activeTab.agent && (
+                    <span className="composer-model">
+                      <Icon name={activeTab.agent.providerKind === "local" ? "local" : "cloud"} size="sm" />
+                      {activeTab.agent.model}
+                    </span>
+                  )}
+                  <span className="composer-hint">
+                    <kbd>{t("chat.enterKey")}</kbd>
+                  </span>
+                  {/* The design pairs Send with a Stop in the same slot.
+                      There is no command to cancel a request in flight, so
+                      drawing Stop would offer a control that does nothing;
+                      the button reports that it is sending instead. */}
+                  <button className="btn btn-primary btn-sm composer-send" type="submit" disabled={!activeTab.draft.trim() || activeTab.sending}>
+                    {activeTab.sending ? t("chat.sending") : t("chat.send")}
+                  </button>
+                </div>
+              </form>
+            </div>
           </>
         )}
       </main>
