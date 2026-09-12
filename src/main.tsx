@@ -12,6 +12,13 @@ import ReactDOM from "react-dom/client";
 // it. See src/styles/tokens.css for the one place the two vocabularies
 // would have collided, and what was done about it.
 import "./styles/tokens.css";
+// The v2 component layer. Ported whole, unlike base.css and screens.css:
+// every one of its 181 rules is a class selector, and none of its 86 class
+// names appears anywhere in the v1 stylesheets — so it changes nothing that
+// is on screen today and only takes effect on markup written against it.
+// (screens.css cannot come over this way: its `.settings-row` collides with
+// v1's, so it moves a screen at a time, with the rest of that screen.)
+import "./styles/components.css";
 import App from "./App";
 import { applyStoredTheme } from "./Settings";
 import "./i18n";

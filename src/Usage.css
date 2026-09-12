@@ -1,3 +1,11 @@
+/* Wrapped in the "v1" cascade layer for the duration of the v2 migration.
+   Unlayered styles beat layered ones no matter how specific the layered one
+   is, so this is what lets a v2 component class win against rules like
+   ':root:not([data-theme="light"]) button' (0,2,1) that would otherwise
+   override every .btn on the page. All ten v1 stylesheets share the one
+   layer and keep their existing import order inside it, so v1's own cascade
+   is exactly what it was. The wrapper disappears with the file. */
+@layer v1 {
 .usage-screen {
   max-width: 860px;
   margin: 0 auto;
@@ -159,4 +167,5 @@
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--edex-cyan);
+}
 }
