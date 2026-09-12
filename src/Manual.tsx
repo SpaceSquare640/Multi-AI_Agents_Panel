@@ -1,6 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import "./Manual.css";
+import { Icon } from "./shell/Icons";
+import { ShellSidebar, useIsActiveScreen } from "./shell/SidebarSlot";
+import "./styles/screens/help.css";
 
 export interface Article {
   id: string;
@@ -15,9 +17,7 @@ export interface Article {
  *  rule (what counts as a hit) is testable independent of React state.
  *  Operates on already-resolved (translated) `Article[]` — per explicit
  *  user decision, search matches whatever language is currently
- *  displayed, not the original English source. Since English is the
- *  only real locale today, that distinction has no visible effect yet,
- *  but the search logic is already correct for when it does. */
+ *  displayed, not the original English source. */
 export function filterArticles(articles: Article[], query: string): Article[] {
   const q = query.trim().toLowerCase();
   if (!q) return articles;
@@ -43,51 +43,100 @@ export default function Manual() {
   const articles = t("manual.articles", { returnObjects: true }) as Article[];
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState(articles[0].id);
+  /* Anchored on the header rather than a wrapper of its own: the hook only
+     needs somewhere inside this screen's pane to look upward from, and the
+     v2 screen has no wrapper element — its header and body are direct
+     children of the pane so the shell's own layout applies to them. */
+  const headerRef = useRef<HTMLDivElement>(null);
+  const isActiveScreen = useIsActiveScreen(headerRef);
 
   const filtered = useMemo(() => filterArticles(articles, query), [articles, query]);
 
   const selected = articles.find((a) => a.id === selectedId) ?? filtered[0] ?? articles[0];
 
   return (
-    <div className="manual-screen">
-      <aside className="manual-toc">
-        <input
-          className="manual-search"
-          type="text"
-          placeholder={t("manual.searchPlaceholder")}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-        {CATEGORY_ORDER.map((category) => {
-          const inCategory = filtered.filter((a) => a.category === category);
-          if (inCategory.length === 0) return null;
-          return (
-            <div key={category}>
-              <div className="manual-toc-section">{t(`manual.categoryLabels.${category}`)}</div>
-              {inCategory.map((a) => (
-                <button
-                  key={a.id}
-                  className={a.id === selected.id ? "manual-toc-item active" : "manual-toc-item"}
-                  onClick={() => setSelectedId(a.id)}
-                >
-                  {a.title}
-                </button>
-              ))}
-            </div>
-          );
-        })}
-        {filtered.length === 0 && <p className="acc-empty">{t("manual.noMatch", { query })}</p>}
-      </aside>
+    <>
+      {/* The contents list is what the v2 layout calls context for the
+          active rail item, so it lives in the shell's sidebar rather than
+          in a column of this screen's own. Same portal Chat uses, and
+          gated the same way — every screen stays mounted, so only the
+          visible one may fill the shared region. */}
+      {isActiveScreen && (
+        <ShellSidebar v2>
+          <div className="sidebar-header">
+            <span className="label">{t("manual.title")}</span>
+          </div>
 
-      <div className="manual-content">
-        <h1>{selected.title}</h1>
-        <div className="manual-meta">
-          {t(`manual.categoryLabels.${selected.category}`)} · {t("manual.minRead", { minutes: selected.minutes })}
-        </div>
-        {selected.paragraphs.map((p, i) => (
-          <p key={i}>{p}</p>
-        ))}
+          <div className="sidebar-body">
+            <div className="input-group" style={{ margin: "var(--space-3) var(--space-2) var(--space-5)" }}>
+              <Icon name="search" size="sm" />
+              <input
+                className="input"
+                type="search"
+                placeholder={t("manual.searchPlaceholder")}
+                aria-label={t("manual.searchPlaceholder")}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </div>
+
+            {CATEGORY_ORDER.map((category) => {
+              const inCategory = filtered.filter((a) => a.category === category);
+              if (inCategory.length === 0) return null;
+              return (
+                <div key={category}>
+                  <div className="label" style={{ padding: "var(--space-6) var(--row-px) var(--space-3)" }}>
+                    {t(`manual.categoryLabels.${category}`)}
+                  </div>
+                  {inCategory.map((a) => (
+                    <button
+                      key={a.id}
+                      className="row"
+                      type="button"
+                      /* aria-current rather than a class: it is what the
+                         .row style keys off, and it says "this is the one
+                         you are reading" to a screen reader too, which a
+                         class cannot. */
+                      aria-current={a.id === selected.id ? "true" : undefined}
+                      onClick={() => setSelectedId(a.id)}
+                    >
+                      <span className="name">{a.title}</span>
+                    </button>
+                  ))}
+                </div>
+              );
+            })}
+
+            {filtered.length === 0 && (
+              <p className="label" style={{ padding: "var(--space-6) var(--row-px)", textTransform: "none" }}>
+                {t("manual.noMatch", { query })}
+              </p>
+            )}
+          </div>
+
+          <div className="sidebar-footer">
+            <div className="row">
+              <span className="name">{t("manual.articleCount", { count: articles.length })}</span>
+            </div>
+          </div>
+        </ShellSidebar>
+      )}
+
+      <div className="workspace-header" ref={headerRef}>
+        <span className="workspace-title">{selected.title}</span>
       </div>
-    </div>
+
+      <div className="workspace-body">
+        <article className="article">
+          <h1>{selected.title}</h1>
+          <div className="article-meta">
+            {t(`manual.categoryLabels.${selected.category}`)} · {t("manual.minRead", { minutes: selected.minutes })}
+          </div>
+          {selected.paragraphs.map((p, i) => (
+            <p key={i}>{p}</p>
+          ))}
+        </article>
+      </div>
+    </>
   );
 }

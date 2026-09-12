@@ -267,7 +267,10 @@
           "Realitaetscheck: Das Modell spielt nur so gut, wie Ihre Aufnahme es gelehrt hat -- eine zweiminuetige Demo wird nicht gut spielen, und das ist zu erwarten, kein Fehler."
         ]
       }
-    ]
+    ],
+    "articleCount_one": "{{count}} Artikel · offline",
+    "articleCount_other": "{{count}} Artikel · offline",
+    "title": "Handbuch"
   },
   "chat": {
     "independentSessions": "Unabhängige Sitzungen",

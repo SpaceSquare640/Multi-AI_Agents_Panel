@@ -30,6 +30,8 @@ const PATHS: Record<string, string> = {
   "panel-left": '<rect x="3" y="4" width="14" height="12" rx="2"/><path d="M8 4v12"/>',
   "panel-right": '<rect x="3" y="4" width="14" height="12" rx="2"/><path d="M12 4v12"/>',
   local: '<rect x="3" y="4" width="14" height="9" rx="1.5"/><path d="M6 16.5h8"/>',
+  /* Brought over by the Manual when it was ported. */
+  search: '<circle cx="8.75" cy="8.75" r="5.25"/><path d="M12.6 12.6 17 17"/>',
 };
 
 export type IconName = keyof typeof PATHS;

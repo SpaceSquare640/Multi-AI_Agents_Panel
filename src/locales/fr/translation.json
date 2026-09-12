@@ -267,7 +267,10 @@
           "Verification realiste : le modele ne joue qu'aussi bien que ce que votre enregistrement lui a appris -- une demo de deux minutes ne donnera pas un bon resultat, et c'est normal, pas un bug."
         ]
       }
-    ]
+    ],
+    "articleCount_one": "{{count}} article · hors ligne",
+    "articleCount_other": "{{count}} articles · hors ligne",
+    "title": "Manuel"
   },
   "chat": {
     "independentSessions": "Sessions indépendantes",

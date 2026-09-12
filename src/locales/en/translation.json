@@ -267,7 +267,10 @@
           "Reality check: the model only plays as well as your recording taught it -- a two-minute demo won't play well, and that's expected, not broken."
         ]
       }
-    ]
+    ],
+    "articleCount_one": "{{count}} article · offline",
+    "articleCount_other": "{{count}} articles · offline",
+    "title": "Manual"
   },
   "chat": {
     "independentSessions": "Independent Sessions",

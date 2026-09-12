@@ -73,7 +73,7 @@ function App() {
       <div className="app-tab-content" data-screen-pane hidden={tab !== "notes"}>
         <Notes />
       </div>
-      <div className="app-tab-content" data-screen-pane hidden={tab !== "manual"}>
+      <div className="app-tab-content screen-v2" data-screen-pane hidden={tab !== "manual"}>
         <Manual />
       </div>
       <div className="app-tab-content" data-screen-pane hidden={tab !== "settings"}>

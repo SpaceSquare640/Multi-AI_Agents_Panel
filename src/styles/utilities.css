@@ -1,0 +1,50 @@
+/* The class-selector utilities from the v2 design source's base.css.
+   base.css as a whole is still not imported — most of it is element
+   selectors that would restyle every screen not yet ported — but these
+   five are plain classes with no v1 equivalent, so they carry no such
+   risk.
+
+   `.label` in particular was missing: shell.css already ships
+   `.sidebar-header .label` and `.inspector-section > .label`, both of
+   which only adjust layout and assume the typography is defined
+   somewhere. It was not, so every sidebar section heading has been
+   rendering at body size in sentence case since step 2 rather than as
+   the uppercase micro-label it is meant to be.
+
+   `.icon`, `.icon-sm`, `.icon-lg` and `.sr-only` are not repeated here:
+   shell.css already copied those when it needed them. */
+
+/* Uppercase micro-label used for section headers in the sidebar and
+   inspector. Tracking is widened because uppercase at 10-11px is
+   otherwise hard to parse. */
+.label {
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* A second tier, for the one or two sections on a panel that carry
+   consequence. Used sparingly — if everything is promoted, nothing is. */
+.label-lead {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+/* Numeric and identifier data: tabular figures so columns never jitter
+   as values update. */
+.mono,
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Prose containers clamp to a readable measure regardless of how wide
+   the workspace gets. */
+.prose {
+  max-width: var(--measure);
+  line-height: var(--leading-loose);
+}
+.prose > * + * { margin-top: var(--space-6); }

@@ -1,0 +1,42 @@
+/* Manual. From the v2 design source (screens.css, "HELP").
+
+   The h2/dl/ul rules come over even though the manual's articles are
+   currently paragraphs only: the article content lives in the
+   translation files, so the day someone writes a heading into one it
+   should already be styled rather than falling back to a browser
+   default. Nothing here costs anything until such an element exists.
+
+   `.toc` is not ported. It styles an in-article contents list, and these
+   articles are short enough not to have one; it comes over with the
+   first article that needs it. */
+
+.article { max-width: var(--measure); padding: var(--space-8) var(--space-9); }
+.article h1 { font-size: var(--text-2xl); }
+.article > .lede {
+  margin-top: var(--space-5);
+  color: var(--text-muted);
+  font-size: var(--text-md);
+  line-height: var(--leading-loose);
+}
+.article h2 {
+  margin: var(--space-10) 0 var(--space-5);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border);
+  font-size: var(--text-lg);
+}
+.article p { margin-top: var(--space-6); line-height: var(--leading-loose); }
+.article ul { margin-top: var(--space-6); padding-left: var(--space-7); }
+.article li { margin-top: var(--space-4); line-height: var(--leading-loose); list-style: disc; }
+.article dl { margin-top: var(--space-6); }
+.article dt { margin-top: var(--space-6); font-weight: var(--weight-semibold); }
+.article dd { margin: var(--space-2) 0 0; color: var(--text-muted); line-height: var(--leading-loose); }
+
+/* Category and reading time under the title. Not in the design source —
+   the mockup's articles carry a lede sentence instead, which this app's
+   article data does not have. Sized as the meta line it is rather than
+   borrowing .lede, which is a full-size opening sentence. */
+.article-meta {
+  margin-top: var(--space-4);
+  color: var(--text-faint);
+  font-size: var(--text-xs);
+}

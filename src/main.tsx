@@ -19,6 +19,9 @@ import "./styles/tokens.css";
 // (screens.css cannot come over this way: its `.settings-row` collides with
 // v1's, so it moves a screen at a time, with the rest of that screen.)
 import "./styles/components.css";
+// The class-selector utilities from the design source's base.css (.label,
+// .mono, .prose). shell.css already depends on .label without it existing.
+import "./styles/utilities.css";
 // Layout shared by every ported screen (the pane measure, section headings,
 // the wrapper that lets a screen scroll its body rather than itself).
 import "./styles/screens/_shared.css";
