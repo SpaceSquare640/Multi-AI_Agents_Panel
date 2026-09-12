@@ -32,7 +32,8 @@
       "guardrailsHint": "Les règles non négociables que chaque Agent suit toujours — affichées une fois au premier lancement.",
       "viewSummaryAgain": "Revoir le résumé",
       "llamaGuardTitle": "Contrôle de second passage Llama Guard 3 (avancé)",
-      "llamaGuardHint": "Désactivé par défaut — le contrôle par mots-clés ci-dessus s'exécute toujours, quoi qu'il arrive. Pour ajouter un véritable classificateur local en plus, installez Ollama, récupérez un modèle Llama Guard 3 (ex. `ollama pull llama-guard3:1b`), puis définissez la variable d'environnement LLAMA_GUARD_MODEL avec le nom de ce modèle (ex. `llama-guard3:1b`) avant de démarrer cette application, et redémarrez. Si le modèle devient injoignable ensuite, ce contrôle échoue de façon permissive (ignoré, non bloquant) plutôt que de bloquer chaque message."
+      "llamaGuardHint": "Désactivé par défaut — le contrôle par mots-clés ci-dessus s'exécute toujours, quoi qu'il arrive. Pour ajouter un véritable classificateur local en plus, installez Ollama, récupérez un modèle Llama Guard 3 (ex. `ollama pull llama-guard3:1b`), puis définissez la variable d'environnement LLAMA_GUARD_MODEL avec le nom de ce modèle (ex. `llama-guard3:1b`) avant de démarrer cette application, et redémarrez. Si le modèle devient injoignable ensuite, ce contrôle échoue de façon permissive (ignoré, non bloquant) plutôt que de bloquer chaque message.",
+      "noSwitches": "Cette section n'offre aucun interrupteur. Une règle que l'on peut désactiver depuis un écran de paramètres n'est pas une règle — les guardrails font partie de l'application, ce n'est pas une préférence."
     },
     "about": {
       "heading": "À propos",
@@ -44,8 +45,10 @@
       "upToDate": "Vous utilisez la dernière version.",
       "updateAvailable": "Une nouvelle version ({{version}}) est disponible.",
       "viewRelease": "Voir la version →",
-      "checkFailed": "Impossible de vérifier les mises à jour : {{error}}"
-    }
+      "checkFailed": "Impossible de vérifier les mises à jour : {{error}}",
+      "check": "Vérifier"
+    },
+    "title": "Paramètres"
   },
   "skills": {
     "title": "Compétences",

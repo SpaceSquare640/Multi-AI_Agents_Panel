@@ -76,7 +76,7 @@ function App() {
       <div className="app-tab-content screen-v2" data-screen-pane hidden={tab !== "manual"}>
         <Manual />
       </div>
-      <div className="app-tab-content" data-screen-pane hidden={tab !== "settings"}>
+      <div className="app-tab-content screen-v2" data-screen-pane hidden={tab !== "settings"}>
         <Settings
           onShowGuardrailsSummary={() => setShowOnboarding(true)}
           onOpenManual={() => setTab("manual")}

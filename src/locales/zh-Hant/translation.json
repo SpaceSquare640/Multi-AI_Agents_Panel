@@ -32,7 +32,8 @@
       "guardrailsHint": "每個 Agent 一律遵守、不可協商的規則——首次啟動時會顯示一次摘要。",
       "viewSummaryAgain": "再次查看摘要",
       "llamaGuardTitle": "Llama Guard 3 二次審查（進階）",
-      "llamaGuardHint": "預設關閉——上方以關鍵字為基礎的審查一律會執行。若要加上真正的本地分類器，請安裝 Ollama，拉取一個 Llama Guard 3 模型（例如 `ollama pull llama-guard3:1b`），然後在啟動本應用程式前將 LLAMA_GUARD_MODEL 環境變數設為該模型名稱（例如 `llama-guard3:1b`）並重新啟動。若之後無法連線到該模型，此檢查會直接放行（略過，而非阻擋），不會封鎖每一則訊息。"
+      "llamaGuardHint": "預設關閉——上方以關鍵字為基礎的審查一律會執行。若要加上真正的本地分類器，請安裝 Ollama，拉取一個 Llama Guard 3 模型（例如 `ollama pull llama-guard3:1b`），然後在啟動本應用程式前將 LLAMA_GUARD_MODEL 環境變數設為該模型名稱（例如 `llama-guard3:1b`）並重新啟動。若之後無法連線到該模型，此檢查會直接放行（略過，而非阻擋），不會封鎖每一則訊息。",
+      "noSwitches": "本區刻意不提供任何開關。一條可以在設定頁被關掉的規則就不算規則 —— Guardrails 是 App 的一部分，不是偏好設定。"
     },
     "about": {
       "heading": "關於",
@@ -44,8 +45,10 @@
       "upToDate": "您已使用最新版本。",
       "updateAvailable": "有新版本（{{version}}）可用。",
       "viewRelease": "查看發行版本 →",
-      "checkFailed": "無法檢查更新：{{error}}"
-    }
+      "checkFailed": "無法檢查更新：{{error}}",
+      "check": "檢查"
+    },
+    "title": "設定"
   },
   "skills": {
     "title": "技能",

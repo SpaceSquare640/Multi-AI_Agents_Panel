@@ -32,7 +32,8 @@
       "guardrailsHint": "Die nicht verhandelbaren Regeln, denen jeder Agent stets folgt — beim ersten Start einmal als Zusammenfassung angezeigt.",
       "viewSummaryAgain": "Zusammenfassung erneut ansehen",
       "llamaGuardTitle": "Llama Guard 3 Zweitprüfung (erweitert)",
-      "llamaGuardHint": "Standardmäßig deaktiviert — die obige stichwortbasierte Prüfung läuft immer, unabhängig davon. Um zusätzlich einen echten lokalen Klassifikator einzusetzen, installieren Sie Ollama, laden Sie ein Llama-Guard-3-Modell herunter (z. B. `ollama pull llama-guard3:1b`), setzen Sie dann vor dem Start dieser App die Umgebungsvariable LLAMA_GUARD_MODEL auf den Namen dieses Modells (z. B. `llama-guard3:1b`) und starten Sie neu. Ist das Modell danach nicht erreichbar, schlägt diese Prüfung offen fehl (übersprungen, nicht blockierend), statt jede Nachricht zu blockieren."
+      "llamaGuardHint": "Standardmäßig deaktiviert — die obige stichwortbasierte Prüfung läuft immer, unabhängig davon. Um zusätzlich einen echten lokalen Klassifikator einzusetzen, installieren Sie Ollama, laden Sie ein Llama-Guard-3-Modell herunter (z. B. `ollama pull llama-guard3:1b`), setzen Sie dann vor dem Start dieser App die Umgebungsvariable LLAMA_GUARD_MODEL auf den Namen dieses Modells (z. B. `llama-guard3:1b`) und starten Sie neu. Ist das Modell danach nicht erreichbar, schlägt diese Prüfung offen fehl (übersprungen, nicht blockierend), statt jede Nachricht zu blockieren.",
+      "noSwitches": "Dieser Abschnitt bietet bewusst keine Schalter. Eine Regel, die sich in den Einstellungen abschalten lässt, ist keine Regel — die Guardrails sind Teil der App, keine Präferenz."
     },
     "about": {
       "heading": "Über",
@@ -44,8 +45,10 @@
       "upToDate": "Sie verwenden die neueste Version.",
       "updateAvailable": "Eine neue Version ({{version}}) ist verfügbar.",
       "viewRelease": "Release ansehen →",
-      "checkFailed": "Update-Prüfung fehlgeschlagen: {{error}}"
-    }
+      "checkFailed": "Update-Prüfung fehlgeschlagen: {{error}}",
+      "check": "Prüfen"
+    },
+    "title": "Einstellungen"
   },
   "skills": {
     "title": "Fähigkeiten",

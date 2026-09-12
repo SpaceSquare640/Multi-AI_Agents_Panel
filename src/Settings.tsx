@@ -5,7 +5,6 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import i18n, { LANGUAGE_STORAGE_KEY } from "./i18n";
-import "./Settings.css";
 
 type UpdateCheckResult = {
   currentVersion: string;
@@ -64,6 +63,16 @@ const LANGUAGES = [
   { code: "ko", label: "한국어" },
 ];
 
+/** Settings, rebuilt against the v2 design.
+ *
+ *  Four of the design's rows are not here, because the app has nothing
+ *  behind them: text size and reduce-motion (no such preference exists),
+ *  the whole Data section (data folder location, on-disk sizes, backups
+ *  and erase-everything — none of it has a command), and the guardrails
+ *  "blocked this month" count (blocks are not tallied anywhere). The
+ *  design's own Guardrails note — that the section deliberately offers
+ *  no switches, because a rule that could be turned off from a settings
+ *  screen is not a rule — is kept, since that part is true here too. */
 export default function Settings({
   onShowGuardrailsSummary,
   onOpenManual,
@@ -145,146 +154,200 @@ export default function Settings({
     }
   }
 
+  const instructionsStatus = instructionsSaved
+    ? t("settings.customInstructions.saved")
+    : customInstructions !== savedCustomInstructions
+      ? t("settings.customInstructions.unsaved")
+      : null;
+
   return (
-    <div className="settings-screen">
-      <section className="acc-section">
-        <h2>{t("settings.appearance.heading")}</h2>
-        <div className="settings-row">
-          <div>
-            <div className="settings-row-label">{t("settings.appearance.theme")}</div>
-            <div className="acc-hint">{t("settings.appearance.themeHint")}</div>
-          </div>
-          <div className="theme-toggle">
-            {(["system", "dark", "light"] as const).map((choice) => (
-              <button
-                key={choice}
-                className={theme === choice ? "theme-opt active" : "theme-opt"}
-                onClick={() => chooseTheme(choice)}
-              >
-                {choice === "system"
-                  ? t("settings.appearance.themeSystem")
-                  : choice === "dark"
-                    ? t("settings.appearance.themeDark")
-                    : t("settings.appearance.themeLight")}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
+    <>
+      <div className="workspace-header">
+        <span className="workspace-title">{t("settings.title")}</span>
+      </div>
 
-      <section className="acc-section">
-        <h2>{t("settings.customInstructions.heading")}</h2>
-        <p className="acc-hint">{t("settings.customInstructions.hint")}</p>
-        <textarea
-          className="settings-instructions-textarea"
-          value={customInstructions}
-          onChange={(e) => {
-            setCustomInstructions(e.target.value);
-            setInstructionsSaved(false);
-          }}
-          placeholder={t("settings.customInstructions.placeholder")}
-          rows={6}
-        />
-        {instructionsError && <div className="acc-error">{instructionsError}</div>}
-        <div className="settings-row">
-          <div className="acc-hint">
-            {instructionsSaved
-              ? t("settings.customInstructions.saved")
-              : customInstructions !== savedCustomInstructions
-                ? t("settings.customInstructions.unsaved")
-                : null}
-          </div>
-          <button
-            onClick={() => void saveCustomInstructions()}
-            disabled={savingInstructions || customInstructions === savedCustomInstructions}
-          >
-            {savingInstructions ? t("settings.customInstructions.saving") : t("settings.customInstructions.save")}
-          </button>
-        </div>
-      </section>
-
-      <section className="acc-section">
-        <h2>{t("settings.language.heading")}</h2>
-        <div className="settings-row">
-          <div>
-            <div className="settings-row-label">{t("settings.language.interfaceLanguage")}</div>
-            <div className="acc-hint">
-              {t("settings.language.hintBeforeLink")}{" "}
-              <a href="https://github.com/SpaceSquare640/Multi-AI_Agents_Panel" target="_blank" rel="noreferrer">
-                {t("settings.language.contributingLink")}
-              </a>{" "}
-              {t("settings.language.hintAfterLink")}
+      <div className="workspace-body">
+        <div className="pane">
+          <section>
+            <div className="section-head">
+              <h2>{t("settings.appearance.heading")}</h2>
             </div>
-          </div>
-        </div>
-        <ul className="acc-model-list">
-          {LANGUAGES.map((lang) => (
-            <li key={lang.code}>
-              <span>{lang.label}</span>
-              <button
-                className={i18n.resolvedLanguage === lang.code ? "lang-tag active" : "lang-tag"}
-                onClick={() => chooseLanguage(lang.code)}
-              >
-                {i18n.resolvedLanguage === lang.code
-                  ? t("settings.language.statusSelected")
-                  : lang.code}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="acc-section">
-        <h2>{t("settings.safety.heading")}</h2>
-        <div className="settings-row">
-          <div>
-            <div className="settings-row-label">{t("settings.safety.guardrails")}</div>
-            <div className="acc-hint">{t("settings.safety.guardrailsHint")}</div>
-          </div>
-          <button onClick={() => onShowGuardrailsSummary?.()}>{t("settings.safety.viewSummaryAgain")}</button>
-        </div>
-        <div className="settings-row">
-          <div>
-            <div className="settings-row-label">{t("settings.safety.llamaGuardTitle")}</div>
-            <div className="acc-hint">{t("settings.safety.llamaGuardHint")}</div>
-          </div>
-        </div>
-      </section>
-
-      <section className="acc-section">
-        <h2>{t("settings.about.heading")}</h2>
-        <div className="settings-row">
-          <span className="settings-row-label">{t("settings.about.version")}</span>
-          <span className="acc-mono">{version ?? "—"}</span>
-        </div>
-        <div className="settings-row">
-          <span className="settings-row-label">{t("settings.about.userManual")}</span>
-          <button onClick={() => onOpenManual?.()}>{t("settings.about.open")}</button>
-        </div>
-        <div className="settings-row">
-          <div>
-            <div className="settings-row-label">{t("settings.about.checkForUpdates")}</div>
-            {updateCheckError && <div className="acc-hint">{t("settings.about.checkFailed", { error: updateCheckError })}</div>}
-            {updateCheck && !updateCheckError && (
-              <div className="acc-hint">
-                {updateCheck.updateAvailable
-                  ? t("settings.about.updateAvailable", { version: updateCheck.latestVersion })
-                  : t("settings.about.upToDate")}
+            <div className="card settings-group">
+              <div className="settings-row">
+                <div className="settings-label">
+                  <div className="t">{t("settings.appearance.theme")}</div>
+                  <div className="d">{t("settings.appearance.themeHint")}</div>
+                </div>
+                <div className="settings-control">
+                  <div className="segmented" role="group" aria-label={t("settings.appearance.theme")}>
+                    {(["system", "light", "dark"] as const).map((choice) => (
+                      <button
+                        key={choice}
+                        type="button"
+                        aria-pressed={theme === choice}
+                        onClick={() => chooseTheme(choice)}
+                      >
+                        {choice === "system"
+                          ? t("settings.appearance.themeSystem")
+                          : choice === "dark"
+                            ? t("settings.appearance.themeDark")
+                            : t("settings.appearance.themeLight")}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
-          <div className="theme-toggle">
-            <button onClick={checkForUpdate} disabled={checkingUpdate}>
-              {checkingUpdate ? t("settings.about.checking") : t("settings.about.checkForUpdates")}
-            </button>
-            {updateCheck?.updateAvailable && (
-              <button onClick={() => openUrl(updateCheck.releaseUrl).catch(() => {})}>
-                {t("settings.about.viewRelease")}
-              </button>
-            )}
-          </div>
+            </div>
+          </section>
+
+          <section>
+            <div className="section-head">
+              <h2>{t("settings.language.heading")}</h2>
+            </div>
+            <div className="card settings-group">
+              <div className="settings-row">
+                <div className="settings-label">
+                  <div className="t">{t("settings.language.interfaceLanguage")}</div>
+                  <div className="d">
+                    {t("settings.language.hintBeforeLink")}{" "}
+                    <a href="https://github.com/SpaceSquare640/Multi-AI_Agents_Panel" target="_blank" rel="noreferrer">
+                      {t("settings.language.contributingLink")}
+                    </a>{" "}
+                    {t("settings.language.hintAfterLink")}
+                  </div>
+                </div>
+                <div className="settings-control">
+                  {/* A select rather than the old list of seven rows: the
+                      design uses one, and seven languages is past the point
+                      where a row each earns its vertical space. */}
+                  <select
+                    className="select"
+                    aria-label={t("settings.language.interfaceLanguage")}
+                    value={i18n.resolvedLanguage}
+                    onChange={(e) => chooseLanguage(e.target.value)}
+                  >
+                    {LANGUAGES.map((lang) => (
+                      <option key={lang.code} value={lang.code}>
+                        {lang.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <div className="section-head">
+              <h2>{t("settings.customInstructions.heading")}</h2>
+            </div>
+            <div className="card card-pad">
+              <p className="pane-intro">{t("settings.customInstructions.hint")}</p>
+              <textarea
+                className="textarea settings-instructions"
+                value={customInstructions}
+                onChange={(e) => {
+                  setCustomInstructions(e.target.value);
+                  setInstructionsSaved(false);
+                }}
+                placeholder={t("settings.customInstructions.placeholder")}
+                rows={6}
+              />
+              {instructionsError && (
+                <div className="callout" data-kind="danger">
+                  <div className="callout-body">{instructionsError}</div>
+                </div>
+              )}
+              <div className="settings-actions">
+                <span className="settings-status">{instructionsStatus}</span>
+                <button
+                  className="btn btn-primary btn-sm"
+                  type="button"
+                  onClick={() => void saveCustomInstructions()}
+                  disabled={savingInstructions || customInstructions === savedCustomInstructions}
+                >
+                  {savingInstructions ? t("settings.customInstructions.saving") : t("settings.customInstructions.save")}
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <div className="section-head">
+              <h2>{t("settings.safety.heading")}</h2>
+            </div>
+            <p className="pane-intro">{t("settings.safety.noSwitches")}</p>
+            <div className="card settings-group">
+              <div className="settings-row">
+                <div className="settings-label">
+                  <div className="t">{t("settings.safety.guardrails")}</div>
+                  <div className="d">{t("settings.safety.guardrailsHint")}</div>
+                </div>
+                <div className="settings-control">
+                  <button className="btn btn-secondary btn-sm" type="button" onClick={() => onShowGuardrailsSummary?.()}>
+                    {t("settings.safety.viewSummaryAgain")}
+                  </button>
+                </div>
+              </div>
+              <div className="settings-row">
+                <div className="settings-label">
+                  <div className="t">{t("settings.safety.llamaGuardTitle")}</div>
+                  <div className="d">{t("settings.safety.llamaGuardHint")}</div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <div className="section-head">
+              <h2>{t("settings.about.heading")}</h2>
+            </div>
+            <div className="card settings-group">
+              <div className="settings-row">
+                <div className="settings-label">
+                  <div className="t">{t("settings.about.version")}</div>
+                </div>
+                <div className="settings-control">
+                  <span className="mono">{version ?? "—"}</span>
+                </div>
+              </div>
+              <div className="settings-row">
+                <div className="settings-label">
+                  <div className="t">{t("settings.about.userManual")}</div>
+                </div>
+                <div className="settings-control">
+                  <button className="btn btn-secondary btn-sm" type="button" onClick={() => onOpenManual?.()}>
+                    {t("settings.about.open")}
+                  </button>
+                </div>
+              </div>
+              <div className="settings-row">
+                <div className="settings-label">
+                  <div className="t">{t("settings.about.checkForUpdates")}</div>
+                  {updateCheckError && <div className="d">{t("settings.about.checkFailed", { error: updateCheckError })}</div>}
+                  {updateCheck && !updateCheckError && (
+                    <div className="d">
+                      {updateCheck.updateAvailable
+                        ? t("settings.about.updateAvailable", { version: updateCheck.latestVersion })
+                        : t("settings.about.upToDate")}
+                    </div>
+                  )}
+                </div>
+                <div className="settings-control settings-control-pair">
+                  <button className="btn btn-secondary btn-sm" type="button" onClick={checkForUpdate} disabled={checkingUpdate}>
+                    {checkingUpdate ? t("settings.about.checking") : t("settings.about.check")}
+                  </button>
+                  {updateCheck?.updateAvailable && (
+                    <button className="btn btn-ghost btn-sm" type="button" onClick={() => openUrl(updateCheck.releaseUrl).catch(() => {})}>
+                      {t("settings.about.viewRelease")}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
-      </section>
-    </div>
+      </div>
+    </>
   );
 }

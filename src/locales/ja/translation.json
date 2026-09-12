@@ -32,7 +32,8 @@
       "guardrailsHint": "すべての Agent が常に従う、交渉不可能なルール——初回起動時に一度概要が表示されます。",
       "viewSummaryAgain": "概要をもう一度見る",
       "llamaGuardTitle": "Llama Guard 3 セカンドパス審査（上級者向け）",
-      "llamaGuardHint": "デフォルトでオフです——上記のキーワードベースの審査は常に実行されます。その上にローカルの実分類器を追加するには、Ollama をインストールし、Llama Guard 3 モデルを取得（例：`ollama pull llama-guard3:1b`）した上で、このアプリを起動する前に環境変数 LLAMA_GUARD_MODEL をそのモデル名（例：`llama-guard3:1b`）に設定して再起動してください。その後モデルに接続できなくなった場合、このチェックはフェイルオープン（ブロックせずスキップ）となり、すべてのメッセージをブロックすることはありません。"
+      "llamaGuardHint": "デフォルトでオフです——上記のキーワードベースの審査は常に実行されます。その上にローカルの実分類器を追加するには、Ollama をインストールし、Llama Guard 3 モデルを取得（例：`ollama pull llama-guard3:1b`）した上で、このアプリを起動する前に環境変数 LLAMA_GUARD_MODEL をそのモデル名（例：`llama-guard3:1b`）に設定して再起動してください。その後モデルに接続できなくなった場合、このチェックはフェイルオープン（ブロックせずスキップ）となり、すべてのメッセージをブロックすることはありません。",
+      "noSwitches": "この項目にスイッチはありません。設定画面から無効にできる規則は規則ではないからです —— Guardrails は App の一部であり、好みの設定ではありません。"
     },
     "about": {
       "heading": "アプリについて",
@@ -44,8 +45,10 @@
       "upToDate": "最新版を使用しています。",
       "updateAvailable": "新しいバージョン（{{version}}）が利用可能です。",
       "viewRelease": "リリースを見る →",
-      "checkFailed": "更新を確認できませんでした：{{error}}"
-    }
+      "checkFailed": "更新を確認できませんでした：{{error}}",
+      "check": "確認"
+    },
+    "title": "設定"
   },
   "skills": {
     "title": "スキル",

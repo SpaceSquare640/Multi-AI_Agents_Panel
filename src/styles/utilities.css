@@ -108,3 +108,12 @@
 }
 .screen-v2 :where(button),
 .sidebar[data-v2] :where(button) { margin: 0; cursor: pointer; }
+
+/* Links inside a ported surface. base.css styles `a` as an element rule and
+   is not imported, so without this a link falls through to v1's layered
+   `a` colour — eDEX cyan, which measures 1.7:1 on the light theme's card
+   and is unreadable. */
+.screen-v2 :where(a),
+.sidebar[data-v2] :where(a) { color: var(--brand-text); text-decoration: none; }
+.screen-v2 :where(a):hover,
+.sidebar[data-v2] :where(a):hover { text-decoration: underline; }

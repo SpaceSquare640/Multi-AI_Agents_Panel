@@ -51,27 +51,49 @@
 
 /* Settings rows — a label with its control on the right. From the v2 design
    source (screens.css, "SETTINGS").
-   Scoped to .screen-v2 rather than lifted as-is: `.settings-row` is the one
-   class name the v2 and v1 stylesheets share, and v1's Settings screen is
-   still using its own. The cascade layer does not help here — both are class
-   rules and v2 is unlayered, so an unscoped copy would win everywhere and
-   restyle a screen that has not been ported yet. The scope comes off when
-   Settings.css does. */
-.screen-v2 .settings-row {
+
+   No longer scoped to .screen-v2. `.settings-row` was the one class name the
+   two stylesheets shared, and the scope existed so an unscoped copy would not
+   restyle v1's Settings screen — which no longer exists: Settings is ported
+   and nothing imports Settings.css any more, so v1's version of these rules
+   is not in the bundle at all. */
+.settings-group { padding: 0; }
+.settings-group + .settings-group { margin-top: var(--space-7); }
+.settings-row {
   display: flex;
   align-items: center;
   gap: var(--space-7);
   padding: var(--space-6);
 }
-.screen-v2 .settings-row + .settings-row { border-top: 1px solid var(--border); }
-.screen-v2 .settings-label { flex: 1; min-width: 0; }
-.screen-v2 .settings-label .t { font-size: var(--text-base); }
-.screen-v2 .settings-label .d {
+.settings-row + .settings-row { border-top: 1px solid var(--border); }
+.settings-label { flex: 1; min-width: 0; }
+.settings-label .t { font-size: var(--text-base); }
+.settings-label .d {
   margin-top: var(--space-2);
   font-size: var(--text-xs);
   color: var(--text-muted);
   line-height: var(--leading-snug);
 }
-.screen-v2 .settings-control { flex: none; min-width: 0; }
-.screen-v2 .settings-control .select,
-.screen-v2 .settings-control .input { width: 200px; }
+.settings-control { flex: none; min-width: 0; }
+.settings-control .select,
+.settings-control .input { width: 200px; }
+
+/* Not in the design source. Its update row carries one control; this app's
+   grows a second (view the release) once a check finds one. */
+.settings-control-pair { display: flex; align-items: center; gap: var(--space-3); }
+
+/* The instructions card is prose + a field + a save action rather than a row
+   of labelled controls, so it needs its own footer. */
+.settings-instructions {
+  width: 100%;
+  margin-top: var(--space-5);
+  resize: vertical;
+}
+.settings-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-5);
+  margin-top: var(--space-5);
+}
+.settings-status { font-size: var(--text-xs); color: var(--text-muted); }

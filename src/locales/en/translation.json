@@ -32,7 +32,8 @@
       "guardrailsHint": "The non-negotiable rules every Agent always follows — shown once at first launch.",
       "viewSummaryAgain": "View summary again",
       "llamaGuardTitle": "Llama Guard 3 second-pass screening (advanced)",
-      "llamaGuardHint": "Off by default — the keyword-based screen above always runs regardless. To add a real local classifier on top of it, install Ollama, pull a Llama Guard 3 model (e.g. `ollama pull llama-guard3:1b`), then set the LLAMA_GUARD_MODEL environment variable to that model's name before starting this app (e.g. `llama-guard3:1b`) and restart. If the model becomes unreachable after that, this check fails open (skipped, not blocking) rather than blocking every message."
+      "llamaGuardHint": "Off by default — the keyword-based screen above always runs regardless. To add a real local classifier on top of it, install Ollama, pull a Llama Guard 3 model (e.g. `ollama pull llama-guard3:1b`), then set the LLAMA_GUARD_MODEL environment variable to that model's name before starting this app (e.g. `llama-guard3:1b`) and restart. If the model becomes unreachable after that, this check fails open (skipped, not blocking) rather than blocking every message.",
+      "noSwitches": "This section offers no switches. A rule that can be turned off from a settings screen is not a rule — the guardrails are part of the app, not a preference."
     },
     "about": {
       "heading": "About",
@@ -44,8 +45,10 @@
       "upToDate": "You're on the latest release.",
       "updateAvailable": "A new version ({{version}}) is available.",
       "viewRelease": "View Release →",
-      "checkFailed": "Couldn't check for updates: {{error}}"
-    }
+      "checkFailed": "Couldn't check for updates: {{error}}",
+      "check": "Check"
+    },
+    "title": "Settings"
   },
   "skills": {
     "title": "Skills",
