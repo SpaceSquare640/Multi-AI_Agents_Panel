@@ -81,7 +81,7 @@
     "unset": "unset",
     "softBudgetHint": "calls — a local reminder only, doesn't block anything",
     "budgetWarning": "⚠ You've reached your soft budget of {{cap}} calls ({{total}} so far). This is only a reminder — cloud Agents keep working.",
-    "costHint": "Estimated cost isn't shown yet — this app doesn't record token counts or per-model pricing today, so there's nothing real to compute it from. See the per-key breakdown below (also on the AI Control Center page) for raw success/failure counts.",
+    "costHint": "Estimated cost is partial: it is only computed for OpenRouter keys with recorded token counts and known model pricing. Anthropic, OpenAI and local providers contribute nothing to it, so treat the figure as a known-cost subtotal rather than a bill. Call counts below are complete.",
     "noneRecorded": "No usage recorded yet.",
     "callsByProvider": "Calls by provider",
     "systemStatus": "System status",
@@ -89,7 +89,10 @@
     "agentsCloud": "Cloud agents",
     "sessionsIndependent": "Sessions",
     "sessionsGroup": "Group chats",
-    "providersActive": "Providers used"
+    "providersActive": "Providers used",
+    "budget": "Budget",
+    "warningThreshold": "Warning threshold",
+    "budgetNotSet": "no limit set"
   },
   "onboarding": {
     "title": "Before your first Agent",

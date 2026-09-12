@@ -1,0 +1,118 @@
+/* Shared layout for the screens that are a settings surface rather than a
+   conversation. Lifted verbatim from the v2 design source (screens.css,
+   "CAPABILITY SCREENS"); it is imported once rather than per screen
+   because every ported screen uses it. */
+
+.pane {
+  max-width: 780px;
+  padding: var(--space-8);
+}
+.pane-wide { max-width: 1040px; }
+.pane > * + * { margin-top: var(--space-8); }
+
+.pane-intro {
+  max-width: var(--measure);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-loose);
+}
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+.section-head h2 { font-size: var(--text-md); }
+.section-head .count {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+
+/* The wrapper App puts around a ported screen. v1's .app-tab-content scrolls
+   its whole self; a v2 screen scrolls only its .workspace-body, so that its
+   header stays put. Unlayered, so this wins over the v1 rule without having
+   to out-specify it. */
+.screen-v2 {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Any author `display` beats the `hidden` attribute's user-agent
+   `display: none`, so declaring one above silently un-hides every screen —
+   all eight panes render stacked. v1's wrapper never set `display`, which
+   is why this only appears the moment a screen is ported. `hidden` is the
+   whole tab-switching mechanism here (it is what replaced the remount that
+   caused the switching lag), so it has to keep winning. */
+.screen-v2[hidden] { display: none; }
+
+/* Settings rows — a label with its control on the right. From the v2 design
+   source (screens.css, "SETTINGS").
+   Scoped to .screen-v2 rather than lifted as-is: `.settings-row` is the one
+   class name the v2 and v1 stylesheets share, and v1's Settings screen is
+   still using its own. The cascade layer does not help here — both are class
+   rules and v2 is unlayered, so an unscoped copy would win everywhere and
+   restyle a screen that has not been ported yet. The scope comes off when
+   Settings.css does. */
+.screen-v2 .settings-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-7);
+  padding: var(--space-6);
+}
+.screen-v2 .settings-row + .settings-row { border-top: 1px solid var(--border); }
+.screen-v2 .settings-label { flex: 1; min-width: 0; }
+.screen-v2 .settings-label .t { font-size: var(--text-base); }
+.screen-v2 .settings-label .d {
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  line-height: var(--leading-snug);
+}
+.screen-v2 .settings-control { flex: none; min-width: 0; }
+.screen-v2 .settings-control .select,
+.screen-v2 .settings-control .input { width: 200px; }
+
+/* The few base.css rules a ported screen actually needs, scoped to it.
+   base.css itself is still not imported — it is written in element
+   selectors, so bringing it in whole would restyle every screen that has
+   not been ported. These are the rules v2 components assume are already in
+   place: without them a .btn inherits v1's monospace face and uppercase
+   transform, and every heading keeps a browser default margin the layout
+   does not account for.
+   Same approach the shell took at step 2, and the same trap to avoid — aim
+   at the elements inside the scope, not at the component classes, so a
+   component can still override any of it. */
+.screen-v2 {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-body);
+  font-weight: var(--weight-regular);
+  color: var(--text);
+  background: var(--bg);
+  text-align: left;
+  -webkit-font-smoothing: antialiased;
+}
+.screen-v2 :where(h1, h2, h3, h4, h5, h6) {
+  margin: 0;
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--text);
+  text-transform: none;
+}
+.screen-v2 :where(h1) { font-size: var(--text-xl); }
+.screen-v2 :where(h2) { font-size: var(--text-lg); }
+.screen-v2 :where(h3) { font-size: var(--text-md); }
+.screen-v2 :where(p, ul, ol) { margin: 0; padding: 0; }
+.screen-v2 :where(button, input, select, textarea) {
+  font: inherit;
+  color: inherit;
+  text-transform: none;
+  letter-spacing: normal;
+  box-shadow: none;
+}
+.screen-v2 :where(button) { margin: 0; cursor: pointer; }

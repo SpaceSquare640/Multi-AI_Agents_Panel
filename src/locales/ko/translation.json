@@ -81,7 +81,7 @@
     "unset": "설정 안 됨",
     "softBudgetHint": "회 호출——로컬 알림용일 뿐 아무것도 차단하지 않습니다",
     "budgetWarning": "⚠ 소프트 예산 한도인 {{cap}}회 호출에 도달했습니다(현재 {{total}}회). 이는 단순 알림일 뿐입니다——클라우드 Agent는 계속 작동합니다.",
-    "costHint": "예상 비용은 아직 표시되지 않습니다——이 앱은 현재 토큰 수나 모델별 가격을 기록하지 않으므로 계산할 실제 데이터가 없습니다. 원시 성공/실패 횟수는 아래 키별 내역(AI 컨트롤 센터 페이지에도 있음)을 참고하세요.",
+    "costHint": "추정 비용은 부분적입니다. 토큰 수와 가격이 확인된 OpenRouter 키만 계산되며 Anthropic, OpenAI, 로컬 Provider는 포함되지 않습니다. 청구서가 아니라 '확인된 비용의 소계'로 보십시오. 아래 호출 횟수는 완전한 값입니다.",
     "noneRecorded": "아직 기록된 사용량이 없습니다.",
     "callsByProvider": "제공자별 호출 수",
     "systemStatus": "시스템 상태",
@@ -89,7 +89,10 @@
     "agentsCloud": "클라우드 Agent",
     "sessionsIndependent": "세션",
     "sessionsGroup": "그룹 채팅",
-    "providersActive": "사용된 제공자"
+    "providersActive": "사용된 제공자",
+    "budget": "예산",
+    "warningThreshold": "경고 임계값",
+    "budgetNotSet": "제한 없음"
   },
   "onboarding": {
     "title": "첫 Agent를 만들기 전에",

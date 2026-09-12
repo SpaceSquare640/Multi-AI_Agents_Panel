@@ -81,7 +81,7 @@
     "unset": "non défini",
     "softBudgetHint": "appels — un simple rappel local, ne bloque rien",
     "budgetWarning": "⚠ Vous avez atteint votre budget indicatif de {{cap}} appels ({{total}} jusqu'ici). Ceci n'est qu'un rappel — les Agents cloud continuent de fonctionner.",
-    "costHint": "Le coût estimé n'est pas encore affiché — cette application n'enregistre pas aujourd'hui le nombre de tokens ni la tarification par modèle, il n'y a donc rien de réel à partir de quoi le calculer. Voir la répartition par clé ci-dessous (également sur la page Centre de contrôle IA) pour les décomptes bruts de succès/échec.",
+    "costHint": "Le coût estimé est partiel : il n'est calculé que pour les clés OpenRouter dont les jetons sont enregistrés et la tarification connue. Anthropic, OpenAI et les fournisseurs locaux n'y contribuent pas — à lire comme un sous-total des coûts connus, pas comme une facture. Le nombre d'appels ci-dessous, lui, est complet.",
     "noneRecorded": "Aucune utilisation enregistrée pour le moment.",
     "callsByProvider": "Appels par fournisseur",
     "systemStatus": "État du système",
@@ -89,7 +89,10 @@
     "agentsCloud": "Agents cloud",
     "sessionsIndependent": "Sessions",
     "sessionsGroup": "Discussions de groupe",
-    "providersActive": "Fournisseurs utilisés"
+    "providersActive": "Fournisseurs utilisés",
+    "budget": "Budget",
+    "warningThreshold": "Seuil d'alerte",
+    "budgetNotSet": "aucune limite"
   },
   "onboarding": {
     "title": "Avant votre premier Agent",

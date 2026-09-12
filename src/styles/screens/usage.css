@@ -1,0 +1,46 @@
+/* Usage. Lifted from the v2 design source (screens.css, "USAGE") with the
+   parts this app has no data for left behind — see Usage.tsx. */
+.stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--space-5); }
+.stat {
+  padding: var(--space-6);
+  background: var(--card-surface);
+  border: 1px solid var(--card-stroke);
+  border-radius: var(--card-radius);
+}
+.stat .k {
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.stat .v {
+  margin-top: var(--space-3);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-2xl);
+  letter-spacing: var(--tracking-tight);
+}
+.stat .d { margin-top: var(--space-2); font-size: var(--text-xs); color: var(--text-muted); }
+
+/* A budget is the one number here that has a threshold, so it gets a meter
+   and an explicit statement of what happens at the limit. Colour alone would
+   not say whether crossing it warns or stops. */
+.budget { padding: var(--space-6); }
+.budget-head { display: flex; align-items: baseline; gap: var(--space-5); margin-bottom: var(--space-5); }
+.budget-head h3 { flex: 1; font-size: var(--text-base); }
+.budget-head .v { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--text-md); }
+.budget-marks { display: flex; justify-content: space-between; margin-top: var(--space-3); font-size: var(--text-2xs); color: var(--text-faint); }
+
+/* Horizontal bars, not a pie. Comparing eight agents by angle is guesswork;
+   comparing them by length is reading. */
+.bars { display: flex; flex-direction: column; gap: var(--space-5); }
+.bar-row { display: grid; grid-template-columns: 150px minmax(0, 1fr) 76px; gap: var(--space-5); align-items: center; }
+.bar-row .who { font-size: var(--text-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-row .val { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--text-sm); text-align: right; }
+.bar-track { height: 8px; background: var(--surface-3); border-radius: var(--radius-full); overflow: hidden; }
+.bar-fill { height: 100%; border-radius: inherit; background: var(--brand); }
+.bar-fill[data-where="local"] { background: var(--provider-local); }
+.bar-fill[data-where="cloud"] { background: var(--provider-cloud); }
+
+
+.stat-row-pair { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }

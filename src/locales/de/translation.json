@@ -81,7 +81,7 @@
     "unset": "nicht festgelegt",
     "softBudgetHint": "Aufrufe — nur eine lokale Erinnerung, blockiert nichts",
     "budgetWarning": "⚠ Sie haben Ihr weiches Budget von {{cap}} Aufrufen erreicht ({{total}} bisher). Dies ist nur eine Erinnerung — Cloud-Agenten arbeiten weiter.",
-    "costHint": "Geschätzte Kosten werden noch nicht angezeigt — diese App erfasst derzeit weder Token-Anzahlen noch modellspezifische Preise, es gibt also nichts Reales, woraus sich diese berechnen ließen. Siehe die Aufschlüsselung nach Schlüssel unten (auch auf der Seite KI-Kontrollzentrum) für rohe Erfolgs-/Fehlerzahlen.",
+    "costHint": "Die Kostenschätzung ist unvollständig: Sie wird nur für OpenRouter-Schlüssel mit erfassten Token-Zahlen und bekannten Modellpreisen berechnet. Anthropic, OpenAI und lokale Provider fließen nicht ein — also ein Zwischenstand bekannter Kosten, keine Rechnung. Die Aufrufzahlen darunter sind vollständig.",
     "noneRecorded": "Noch keine Nutzung erfasst.",
     "callsByProvider": "Aufrufe nach Anbieter",
     "systemStatus": "Systemstatus",
@@ -89,7 +89,10 @@
     "agentsCloud": "Cloud-Agenten",
     "sessionsIndependent": "Sitzungen",
     "sessionsGroup": "Gruppenchats",
-    "providersActive": "Verwendete Anbieter"
+    "providersActive": "Verwendete Anbieter",
+    "budget": "Budget",
+    "warningThreshold": "Warnschwelle",
+    "budgetNotSet": "keine Grenze"
   },
   "onboarding": {
     "title": "Vor Ihrem ersten Agenten",

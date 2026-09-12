@@ -81,7 +81,7 @@
     "unset": "未設定",
     "softBudgetHint": "回の呼び出し——ローカルの目安表示のみで、何かをブロックすることはありません",
     "budgetWarning": "⚠ ソフト予算の上限 {{cap}} 回に達しました（現在 {{total}} 回）。これは目安の表示のみです——クラウド Agent は引き続き動作します。",
-    "costHint": "推定コストはまだ表示されていません——このアプリは現在、トークン数やモデルごとの価格を記録していないため、算出する実データがありません。下記（AI コントロールセンターのページにも表示）のキー別の生の成功／失敗数をご確認ください。",
+    "costHint": "推定コストは部分的です。トークン数と価格が判明している OpenRouter のキーのみが対象で、Anthropic・OpenAI・ローカルの各 Provider は含まれません。請求額ではなく「判明している分の小計」としてご覧ください。下の呼び出し回数は完全な値です。",
     "noneRecorded": "まだ使用記録がありません。",
     "callsByProvider": "プロバイダー別呼び出し数",
     "systemStatus": "システムステータス",
@@ -89,7 +89,10 @@
     "agentsCloud": "クラウド Agent",
     "sessionsIndependent": "セッション",
     "sessionsGroup": "グループチャット",
-    "providersActive": "使用中のプロバイダー"
+    "providersActive": "使用中のプロバイダー",
+    "budget": "予算",
+    "warningThreshold": "警告しきい値",
+    "budgetNotSet": "上限なし"
   },
   "onboarding": {
     "title": "最初の Agent を作成する前に",

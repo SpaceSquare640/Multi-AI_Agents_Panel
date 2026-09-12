@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import type { Agent, Session, UsageSummary } from "./types";
-import "./Usage.css";
+import "./styles/screens/usage.css";
 
 const SOFT_CAP_STORAGE_KEY = "multi-ai-agents-panel:usage-soft-cap";
 
@@ -35,7 +35,21 @@ export function isOverSoftCap(totalCalls: number, rawCapInput: string): boolean 
  *  Architecture.md gives Usage Tracker ("避免失控燒 API 額度"). Only
  *  cloud calls ever reach `usage_log` (local Ollama has no Key Vault
  *  entry to log against — see `dispatch_one`), so `totalCalls` here is
- *  already cloud-only, which is the number that actually costs money. */
+ *  already cloud-only, which is the number that actually costs money.
+ *
+ *  First screen rebuilt against the v2 design. Two places where it
+ *  deliberately departs from the mockup, both for the same reason — the
+ *  mockup's figures are illustrative and this app does not have them:
+ *
+ *  - The mockup's budget is an amount of money with a meter and a hard
+ *    cap switch. The budget this app actually has is a count of calls,
+ *    and there is no hard cap to switch on. The meter and the statement
+ *    of what happens at the limit come over; the currency and the switch
+ *    do not.
+ *  - "Spent this month" / "Today" / the token split need per-period and
+ *    per-token records that `usage_log` does not keep. The four figures
+ *    that exist are shown instead, rather than four boxes where two are
+ *    invented. */
 export default function Usage() {
   const { t } = useTranslation();
   const [usage, setUsage] = useState<UsageSummary[]>([]);
@@ -88,6 +102,10 @@ export default function Usage() {
 
   const softCap = softCapInput.trim() === "" ? null : Number(softCapInput);
   const overSoftCap = isOverSoftCap(totalCalls, softCapInput);
+  /* Clamped so the fill never runs past its track once the cap is passed;
+     the number beside it still reads past 100%, which is the honest thing
+     for the figure to do even when the bar cannot. */
+  const budgetPct = softCap && softCap > 0 ? Math.min(100, (totalCalls / softCap) * 100) : 0;
 
   const byProvider = new Map<string, { success: number; failure: number }>();
   for (const u of usage) {
@@ -106,105 +124,171 @@ export default function Usage() {
   const distinctProviders = byProvider.size;
 
   return (
-    <div className="usage-screen">
-      <div className="usage-head">
-        <h1>{t("usage.title")}</h1>
-        <button onClick={() => void refresh()} disabled={loading}>
-          {loading ? t("usage.refreshing") : t("usage.refresh")}
-        </button>
-      </div>
-
-      {error && <div className="acc-error">{error}</div>}
-
-      <div className="usage-kpi-row">
-        <div className="usage-kpi-card">
-          <div className="usage-kpi-label">{t("usage.totalCalls")}</div>
-          <div className="usage-kpi-value">{totalCalls.toLocaleString()}</div>
-        </div>
-        <div className="usage-kpi-card">
-          <div className="usage-kpi-label">{t("usage.failedCalls")}</div>
-          <div className="usage-kpi-value">{totalFailure.toLocaleString()}</div>
-        </div>
-        <div className="usage-kpi-card">
-          <div className="usage-kpi-label">{t("usage.failureRate")}</div>
-          <div className="usage-kpi-value">{failureRate.toFixed(1)}%</div>
-        </div>
-        <div className="usage-kpi-card">
-          <div className="usage-kpi-label">{t("usage.estimatedCost")}</div>
-          <div className="usage-kpi-value">
-            {totalEstimatedCostUsd === null ? "—" : `$${totalEstimatedCostUsd.toFixed(4)}`}
-          </div>
-          <div className="usage-kpi-hint">{t("usage.estimatedCostHint")}</div>
+    <>
+      <div className="workspace-header">
+        <span className="workspace-title">{t("usage.title")}</span>
+        <div className="workspace-actions">
+          <button className="btn btn-ghost btn-sm" type="button" onClick={() => void refresh()} disabled={loading}>
+            {loading ? t("usage.refreshing") : t("usage.refresh")}
+          </button>
         </div>
       </div>
 
-      <div className="usage-status-panel">
-        <div className="usage-panel-title">{t("usage.systemStatus")}</div>
-        <div className="usage-status-grid">
-          <div className="usage-status-cell">
-            <div className="usage-status-cell-label">{t("usage.agentsLocal")}</div>
-            <div className="usage-status-cell-value">{localAgents}</div>
-          </div>
-          <div className="usage-status-cell">
-            <div className="usage-status-cell-label">{t("usage.agentsCloud")}</div>
-            <div className="usage-status-cell-value">{cloudAgents}</div>
-          </div>
-          <div className="usage-status-cell">
-            <div className="usage-status-cell-label">{t("usage.sessionsIndependent")}</div>
-            <div className="usage-status-cell-value">{independentSessions}</div>
-          </div>
-          <div className="usage-status-cell">
-            <div className="usage-status-cell-label">{t("usage.sessionsGroup")}</div>
-            <div className="usage-status-cell-value">{groupChats}</div>
-          </div>
-          <div className="usage-status-cell">
-            <div className="usage-status-cell-label">{t("usage.providersActive")}</div>
-            <div className="usage-status-cell-value">{distinctProviders}</div>
-          </div>
-        </div>
-      </div>
+      <div className="workspace-body">
+        <div className="pane pane-wide">
+          {error && (
+            <div className="callout" data-kind="danger">
+              <div className="callout-body">{error}</div>
+            </div>
+          )}
 
-      <div className="usage-budget-row">
-        <label htmlFor="usage-soft-cap">{t("usage.softBudget")}</label>
-        <input
-          id="usage-soft-cap"
-          type="number"
-          min={1}
-          placeholder={t("usage.unset")}
-          value={softCapInput}
-          onChange={(e) => updateSoftCap(e.target.value)}
-        />
-        <span className="acc-hint">{t("usage.softBudgetHint")}</span>
-      </div>
+          <p className="pane-intro">{t("usage.costHint")}</p>
 
-      {overSoftCap && (
-        <div className="usage-budget-warning">
-          {t("usage.budgetWarning", { cap: softCap!.toLocaleString(), total: totalCalls.toLocaleString() })}
-        </div>
-      )}
+          <div className="stat-row">
+            <div className="stat">
+              <div className="k">{t("usage.totalCalls")}</div>
+              <div className="v">{totalCalls.toLocaleString()}</div>
+            </div>
+            <div className="stat">
+              <div className="k">{t("usage.failedCalls")}</div>
+              <div className="v">{totalFailure.toLocaleString()}</div>
+            </div>
+            <div className="stat">
+              <div className="k">{t("usage.failureRate")}</div>
+              <div className="v">{failureRate.toFixed(1)}%</div>
+            </div>
+            <div className="stat">
+              <div className="k">{t("usage.estimatedCost")}</div>
+              <div className="v">{totalEstimatedCostUsd === null ? "—" : `$${totalEstimatedCostUsd.toFixed(4)}`}</div>
+              <div className="d">{t("usage.estimatedCostHint")}</div>
+            </div>
+          </div>
 
-      <p className="acc-hint">{t("usage.costHint")}</p>
+          <section>
+            <div className="section-head">
+              <h2>{t("usage.budget")}</h2>
+            </div>
 
-      {!loading && usage.length === 0 && <p className="acc-empty">{t("usage.noneRecorded")}</p>}
-
-      {providerRows.length > 0 && (
-        <div className="usage-provider-panel">
-          <div className="usage-panel-title">{t("usage.callsByProvider")}</div>
-          {providerRows.map(([provider, v]) => {
-            const total = v.success + v.failure;
-            const pct = (total / maxProviderTotal) * 100;
-            return (
-              <div className="usage-bar-row" key={provider}>
-                <span className="usage-bar-label">{provider}</span>
-                <div className="usage-bar-track">
-                  <div className="usage-bar-fill" style={{ width: `${pct}%` }} />
-                </div>
-                <span className="usage-bar-value">{total.toLocaleString()}</span>
+            <div className="card budget">
+              <div className="budget-head">
+                <h3>{t("usage.warningThreshold")}</h3>
+                <span className="v">
+                  {totalCalls.toLocaleString()} / {softCap === null ? t("usage.budgetNotSet") : softCap.toLocaleString()}
+                </span>
               </div>
-            );
-          })}
+
+              {/* Rendered only when a cap exists: a meter with nothing to
+                  measure against would be a bar permanently at zero, which
+                  reads as "none used" rather than "no limit set". */}
+              {softCap !== null && (
+                <>
+                  <div
+                    className="meter"
+                    data-state={overSoftCap ? "over" : budgetPct >= 80 ? "warning" : undefined}
+                    role="progressbar"
+                    aria-valuenow={Math.round(budgetPct)}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label={t("usage.softBudget")}
+                  >
+                    <div className="meter-fill" style={{ width: `${budgetPct}%` }} />
+                  </div>
+                  <div className="budget-marks">
+                    <span>0</span>
+                    <span>{softCap.toLocaleString()}</span>
+                  </div>
+                </>
+              )}
+
+              {overSoftCap && (
+                <div className="callout" data-kind="warning" style={{ marginTop: "var(--space-6)" }}>
+                  <div className="callout-body">
+                    {t("usage.budgetWarning", { cap: softCap!.toLocaleString(), total: totalCalls.toLocaleString() })}
+                  </div>
+                </div>
+              )}
+
+              <div className="settings-row" style={{ paddingInline: 0, marginTop: "var(--space-5)", borderTop: "1px solid var(--border)" }}>
+                <div className="settings-label">
+                  <div className="t">
+                    <label htmlFor="usage-soft-cap">{t("usage.softBudget")}</label>
+                  </div>
+                  <div className="d">{t("usage.softBudgetHint")}</div>
+                </div>
+                <div className="settings-control">
+                  <input
+                    id="usage-soft-cap"
+                    className="input"
+                    type="number"
+                    min={1}
+                    placeholder={t("usage.unset")}
+                    value={softCapInput}
+                    onChange={(e) => updateSoftCap(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {!loading && usage.length === 0 && <p className="pane-intro">{t("usage.noneRecorded")}</p>}
+
+          {providerRows.length > 0 && (
+            <section>
+              <div className="section-head">
+                <h2>{t("usage.callsByProvider")}</h2>
+                <span className="count">{totalCalls.toLocaleString()}</span>
+              </div>
+              <div className="card card-pad">
+                <div className="bars">
+                  {providerRows.map(([provider, v]) => {
+                    const total = v.success + v.failure;
+                    return (
+                      <div className="bar-row" key={provider}>
+                        <span className="who">{provider}</span>
+                        <div className="bar-track">
+                          {/* Always "cloud": only calls made against a Key
+                              Vault entry reach usage_log, and local models
+                              have none — so nothing local can appear here. */}
+                          <div className="bar-fill" data-where="cloud" style={{ width: `${(total / maxProviderTotal) * 100}%` }} />
+                        </div>
+                        <span className="val">{total.toLocaleString()}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+          )}
+
+          <section>
+            <div className="section-head">
+              <h2>{t("usage.systemStatus")}</h2>
+            </div>
+            <div className="stat-row">
+              <div className="stat">
+                <div className="k">{t("usage.agentsLocal")}</div>
+                <div className="v">{localAgents}</div>
+              </div>
+              <div className="stat">
+                <div className="k">{t("usage.agentsCloud")}</div>
+                <div className="v">{cloudAgents}</div>
+              </div>
+              <div className="stat">
+                <div className="k">{t("usage.sessionsIndependent")}</div>
+                <div className="v">{independentSessions}</div>
+              </div>
+              <div className="stat">
+                <div className="k">{t("usage.sessionsGroup")}</div>
+                <div className="v">{groupChats}</div>
+              </div>
+              <div className="stat">
+                <div className="k">{t("usage.providersActive")}</div>
+                <div className="v">{distinctProviders}</div>
+              </div>
+            </div>
+          </section>
         </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 }

@@ -63,7 +63,11 @@ function App() {
       <div className="app-tab-content" data-screen-pane hidden={tab !== "skills"}>
         <Skills onOpenChat={() => setTab("chat")} />
       </div>
-      <div className="app-tab-content" data-screen-pane hidden={tab !== "usage"}>
+      {/* screen-v2 marks a screen that has been rebuilt against the v2
+          design: it supplies its own workspace header and scrolls its body
+          rather than its whole self. The class goes away once every screen
+          is ported and the v1 wrapper behaviour is no longer the default. */}
+      <div className="app-tab-content screen-v2" data-screen-pane hidden={tab !== "usage"}>
         <Usage />
       </div>
       <div className="app-tab-content" data-screen-pane hidden={tab !== "notes"}>

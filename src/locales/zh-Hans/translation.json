@@ -81,7 +81,7 @@
     "unset": "未设置",
     "softBudgetHint": "次调用——仅作为本地提醒，不会阻止任何操作",
     "budgetWarning": "⚠ 已达到软性预算上限 {{cap}} 次调用（目前已 {{total}} 次）。这仅是提醒——云端 Agent 仍会继续工作。",
-    "costHint": "目前尚未显示预估费用——本应用目前不记录令牌数量或各模型定价，因此没有实际数据可供计算。请参阅下方（也在 AI 控制中心页面）按密钥划分的原始成功/失败次数。",
+    "costHint": "估计花费并不完整：只有具备 token 记录与已知定价的 OpenRouter 密钥才会计入，Anthropic、OpenAI 与本地 Provider 一律不计。请视为「已知成本的小计」而非完整账单。下方的调用次数则是完整的。",
     "noneRecorded": "尚未记录任何使用量。",
     "callsByProvider": "各提供商调用次数",
     "systemStatus": "系统状态",
@@ -89,7 +89,10 @@
     "agentsCloud": "云端 Agent",
     "sessionsIndependent": "会话",
     "sessionsGroup": "群组对话",
-    "providersActive": "已使用的提供商"
+    "providersActive": "已使用的提供商",
+    "budget": "预算",
+    "warningThreshold": "警告阈值",
+    "budgetNotSet": "未设上限"
   },
   "onboarding": {
     "title": "在创建第一个 Agent 之前",
