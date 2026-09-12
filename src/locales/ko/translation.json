@@ -567,7 +567,17 @@
     "saving": "저장 중…",
     "saved": "저장됨.",
     "cherryTreeHeading": "더 강력한 기능이 필요하신가요? CherryTree 설치",
-    "cherryTreeHint": "이 앱 자체의 노트는 의도적으로 간단합니다(트리 구조 + 일반 텍스트). CherryTree는 서식 있는 텍스트, 코드 하이라이트, 암호화를 지원하는 완전한 기능의 독립 노트 앱입니다 -- 설치하면 이 앱의 탭이 아니라 별도의 프로그램이 열립니다."
+    "cherryTreeHint": "이 앱 자체의 노트는 의도적으로 간단합니다(트리 구조 + 일반 텍스트). CherryTree는 서식 있는 텍스트, 코드 하이라이트, 암호화를 지원하는 완전한 기능의 독립 노트 앱입니다 -- 설치하면 이 앱의 탭이 아니라 별도의 프로그램이 열립니다.",
+    "loading": "불러오는 중…",
+    "unsaved": "저장되지 않음",
+    "deleteThis": "이 노트 삭제",
+    "noteTitle": "노트 제목",
+    "noteBody": "노트 본문",
+    "edited": "{{when}}에 편집됨",
+    "expand": "{{title}} 펼치기",
+    "collapse": "{{title}} 접기",
+    "addChildTo": "{{title}} 아래에 노트 추가",
+    "wordCount_other": "{{count}}단어"
   },
   "install": {
     "intro": "Windows 패키지 관리자로 설치하세요 — 다음 줄을 PowerShell 또는 명령 프롬프트에 붙여넣습니다:",

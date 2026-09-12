@@ -569,7 +569,18 @@
     "saving": "Enregistrement...",
     "saved": "Enregistre.",
     "cherryTreeHeading": "Envie de plus ? Installez CherryTree",
-    "cherryTreeHint": "Les notes de cette application restent volontairement simples (arborescence + texte brut). CherryTree est une application de prise de notes autonome et complete (texte enrichi, coloration syntaxique, chiffrement) - l'installer ouvre un programme separe, pas un onglet de cette application."
+    "cherryTreeHint": "Les notes de cette application restent volontairement simples (arborescence + texte brut). CherryTree est une application de prise de notes autonome et complete (texte enrichi, coloration syntaxique, chiffrement) - l'installer ouvre un programme separe, pas un onglet de cette application.",
+    "loading": "Chargement…",
+    "unsaved": "Modifications non enregistrées",
+    "deleteThis": "Supprimer cette note",
+    "noteTitle": "Titre de la note",
+    "noteBody": "Corps de la note",
+    "edited": "Modifiée {{when}}",
+    "expand": "Déplier {{title}}",
+    "collapse": "Replier {{title}}",
+    "addChildTo": "Ajouter une note sous {{title}}",
+    "wordCount_one": "{{count}} mot",
+    "wordCount_other": "{{count}} mots"
   },
   "install": {
     "intro": "Installez-le avec le gestionnaire de paquets Windows — copiez ceci dans PowerShell ou l'invite de commandes :",

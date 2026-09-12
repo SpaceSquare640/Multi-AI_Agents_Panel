@@ -1,0 +1,125 @@
+/* Notes. From the v2 design source (screens.css, "NOTES"). */
+.tree { display: flex; flex-direction: column; }
+.tree-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  height: var(--row-h);
+  padding-right: var(--row-px);
+  border-radius: var(--row-radius);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.tree-item:hover { background: var(--row-bg-hover); color: var(--text); }
+.tree-item[aria-current="true"] { background: var(--row-bg-active); color: var(--text); }
+/* Indentation is a token multiple rather than a hand-picked pixel value, so
+   depth stays proportional if the density dial ever changes. */
+/* The design source writes one rule per depth, for depths 0-2, because its
+   mockup tree is three levels deep. Real notes nest to whatever depth the
+   user makes, so the indent is derived from a --depth custom property the
+   tree sets per row. Same step and same starting offset — this is the same
+   rule generalised, not a different one. Setting a token inline is what the
+   token layer is for; it is not the kind of inline style the port is trying
+   to avoid (a one-off hard-coded px value). */
+.tree-item { padding-left: calc(var(--space-4) + var(--space-7) * var(--depth, 0)); }
+.tree-item .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.tree-item .icon { flex: none; color: var(--text-faint); }
+.tree-item[aria-current="true"] .icon { color: var(--text-muted); }
+
+.twisty {
+  display: grid;
+  place-items: center;
+  width: 16px; height: 16px;
+  flex: none;
+  border-radius: var(--radius-xs);
+  color: var(--text-faint);
+}
+.twisty:hover { background: var(--surface-3); color: var(--text); }
+.twisty svg { transition: transform var(--dur-fast) var(--ease-out); }
+.twisty[aria-expanded="false"] svg { transform: rotate(-90deg); }
+/* A leaf keeps the slot so its label lines up with its siblings' labels
+   instead of shifting left by 16px. */
+.twisty-spacer { width: 16px; flex: none; }
+
+.note-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.note-title {
+  width: 100%;
+  padding: var(--space-7) var(--space-9) var(--space-5);
+  background: none;
+  border: 0;
+  outline: none;
+  color: var(--text);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-tight);
+}
+.note-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: 0 var(--space-9) var(--space-6);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+.note-body {
+  flex: 1;
+  min-height: 0;
+  padding: 0 var(--space-9) var(--space-9);
+  overflow-y: auto;
+}
+.note-body .prose { font-size: var(--text-base); }
+.note-body h3 { margin-top: var(--space-8); }
+.note-body ul { padding-left: var(--space-7); }
+.note-body li { margin-top: var(--space-3); list-style: disc; }
+
+
+/* ==========================================================================
+
+/* The row that wraps a twisty, the item and its add-child action. The
+   design source's tree has no per-row actions — creating a child note is
+   this app's own affordance — so the row and the action are additions,
+   not ports. */
+.tree-row { display: flex; align-items: center; }
+.tree-row .tree-item { flex: 1; min-width: 0; }
+.tree-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: var(--radius-xs);
+  color: var(--text-faint);
+  opacity: 0;
+}
+/* Revealed on hover or focus, not permanently: one add button per row,
+   always visible, competes with the note titles they sit beside. Focus
+   matters as much as hover — hover-only would put it out of reach of a
+   keyboard. */
+.tree-row:hover .tree-action,
+.tree-action:focus-visible { opacity: 1; }
+.tree-action:hover { background: var(--surface-3); color: var(--text); }
+
+.tree-empty {
+  padding: var(--space-5) var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+/* The editor fills the workspace rather than sitting at a prose measure:
+   it is a field being typed into, not a document being read. */
+.note-body-input {
+  width: 100%;
+  min-height: 320px;
+  resize: vertical;
+  font-family: var(--font-mono);
+}
+.note-meta-spacer { flex: 1; }

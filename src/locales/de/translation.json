@@ -569,7 +569,18 @@
     "saving": "Wird gespeichert…",
     "saved": "Gespeichert.",
     "cherryTreeHeading": "Mehr gewuenscht? CherryTree installieren",
-    "cherryTreeHint": "Die eigenen Notizen dieser App sind bewusst einfach gehalten (Baumstruktur + Klartext). CherryTree ist eine voll ausgestattete eigenstaendige Notiz-App (Rich Text, Code-Hervorhebung, Verschluesselung) — die Installation oeffnet ein separates Programm, keinen Tab in dieser App."
+    "cherryTreeHint": "Die eigenen Notizen dieser App sind bewusst einfach gehalten (Baumstruktur + Klartext). CherryTree ist eine voll ausgestattete eigenstaendige Notiz-App (Rich Text, Code-Hervorhebung, Verschluesselung) — die Installation oeffnet ein separates Programm, keinen Tab in dieser App.",
+    "loading": "Wird geladen…",
+    "unsaved": "Nicht gespeichert",
+    "deleteThis": "Diese Notiz löschen",
+    "noteTitle": "Notiztitel",
+    "noteBody": "Notizinhalt",
+    "edited": "Bearbeitet {{when}}",
+    "expand": "{{title}} ausklappen",
+    "collapse": "{{title}} einklappen",
+    "addChildTo": "Notiz unter {{title}} anlegen",
+    "wordCount_one": "{{count}} Wort",
+    "wordCount_other": "{{count}} Wörter"
   },
   "install": {
     "intro": "Installieren Sie es mit dem Windows-Paketmanager — kopieren Sie dies in PowerShell oder die Eingabeaufforderung:",

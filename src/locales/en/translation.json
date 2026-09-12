@@ -569,7 +569,18 @@
     "saving": "Saving...",
     "saved": "Saved.",
     "cherryTreeHeading": "Want more? Install CherryTree",
-    "cherryTreeHint": "This app's own notes are deliberately simple (a tree + plain text). CherryTree is a full-featured standalone note-taking app (rich text, code highlighting, encryption) - installing it opens a separate program, not a tab in this app."
+    "cherryTreeHint": "This app's own notes are deliberately simple (a tree + plain text). CherryTree is a full-featured standalone note-taking app (rich text, code highlighting, encryption) - installing it opens a separate program, not a tab in this app.",
+    "loading": "Loading…",
+    "unsaved": "Unsaved changes",
+    "deleteThis": "Delete this note",
+    "noteTitle": "Note title",
+    "noteBody": "Note body",
+    "edited": "Edited {{when}}",
+    "expand": "Expand {{title}}",
+    "collapse": "Collapse {{title}}",
+    "addChildTo": "Add a note under {{title}}",
+    "wordCount_one": "{{count}} word",
+    "wordCount_other": "{{count}} words"
   },
   "install": {
     "intro": "Install it with Windows Package Manager — copy this into PowerShell or Command Prompt:",

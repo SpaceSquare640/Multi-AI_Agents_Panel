@@ -39,6 +39,10 @@ const PATHS: Record<string, string> = {
   copy: '<rect x="7" y="7" width="10" height="10" rx="2"/><path d="M13 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/>',
   info: '<circle cx="10" cy="10" r="7"/><path d="M10 9.5v4M10 6.5h.01"/>',
   alert: '<path d="M10 3.5 2.8 16h14.4z"/><path d="M10 8v3.5M10 14h.01"/>',
+  /* Brought over by Notes. */
+  chevron: '<path d="m5.5 8 4.5 4.5L14.5 8"/>',
+  folder: '<path d="M3 6a1 1 0 0 1 1-1h3.6l1.6 2H16a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/>',
+  trash: '<path d="M4 6h12M8 6V4.5A.5.5 0 0 1 8.5 4h3a.5.5 0 0 1 .5.5V6M6 6l.7 10a1 1 0 0 0 1 1h4.6a1 1 0 0 0 1-1L14 6"/>',
 };
 
 export type IconName = keyof typeof PATHS;

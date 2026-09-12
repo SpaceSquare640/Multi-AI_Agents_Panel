@@ -567,7 +567,17 @@
     "saving": "保存中…",
     "saved": "已保存。",
     "cherryTreeHeading": "想要更强大的功能？安装 CherryTree",
-    "cherryTreeHint": "这个 App 自己的笔记刻意保持简单（树状结构＋纯文本）。CherryTree 是功能完整的独立笔记软件（富文本、代码高亮、加密）——安装后会打开一个独立程序，不是这个 App 里的分页。"
+    "cherryTreeHint": "这个 App 自己的笔记刻意保持简单（树状结构＋纯文本）。CherryTree 是功能完整的独立笔记软件（富文本、代码高亮、加密）——安装后会打开一个独立程序，不是这个 App 里的分页。",
+    "loading": "加载中…",
+    "unsaved": "尚未保存",
+    "deleteThis": "删除这则笔记",
+    "noteTitle": "笔记标题",
+    "noteBody": "笔记内容",
+    "edited": "编辑于 {{when}}",
+    "expand": "展开 {{title}}",
+    "collapse": "收起 {{title}}",
+    "addChildTo": "在 {{title}} 下方新增笔记",
+    "wordCount_other": "{{count}} 字"
   },
   "install": {
     "intro": "用 Windows 包管理器安装——把这行复制到 PowerShell 或命令提示符执行：",
