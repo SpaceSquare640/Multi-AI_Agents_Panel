@@ -64,7 +64,7 @@
     "usedByCount_other": "Used by {{count}} Agents",
     "importCustomSkill": "Import custom Skill…",
     "importingSkill": "Importing…",
-    "importWarning": "⚠ Importing a Skill runs its Python code with the same trust level as a built-in Skill. It's bound by whatever permissions its skill.json declares — an undeclared filesystem/network capability is genuinely blocked, not just a warning — but only import Skills from sources you trust.",
+    "importWarning": "Importing a Skill runs its Python code with the same trust level as a built-in Skill. It's bound by whatever permissions its skill.json declares — an undeclared filesystem/network capability is genuinely blocked, not just a warning — but only import Skills from sources you trust.",
     "export": "Export…",
     "exporting": "Exporting…",
     "exportedTo": "Exported to {{path}}",
@@ -90,7 +90,7 @@
     "softBudget": "Soft call budget",
     "unset": "unset",
     "softBudgetHint": "calls — a local reminder only, doesn't block anything",
-    "budgetWarning": "⚠ You've reached your soft budget of {{cap}} calls ({{total}} so far). This is only a reminder — cloud Agents keep working.",
+    "budgetWarning": "You've reached your soft budget of {{cap}} calls ({{total}} so far). This is only a reminder — cloud Agents keep working.",
     "costHint": "Estimated cost is partial: it is only computed for OpenRouter keys with recorded token counts and known model pricing. Anthropic, OpenAI and local providers contribute nothing to it, so treat the figure as a known-cost subtotal rather than a bill. Call counts below are complete.",
     "noneRecorded": "No usage recorded yet.",
     "callsByProvider": "Calls by provider",
@@ -493,7 +493,7 @@
     },
     "gameAgent": {
       "heading": "Game-Playing Agent (experimental)",
-      "warning": "⚠ Starting this makes the app take real screenshots and simulate real mouse/keyboard input on this computer, on a loop, until you click Stop. It only ever starts when you click \"Start\" below — nothing triggers it automatically. Requires a vision-capable model already pulled in Ollama (e.g. llava).",
+      "warning": "Starting this makes the app take real screenshots and simulate real mouse/keyboard input on this computer, on a loop, until you click Stop. It only ever starts when you click \"Start\" below — nothing triggers it automatically. Requires a vision-capable model already pulled in Ollama (e.g. llava).",
       "modelPlaceholder": "Ollama vision model (e.g. llava)",
       "statusLabel": "Status:",
       "statusRunning": "running",
@@ -503,7 +503,7 @@
       "start": "Start"
     },
     "recording": {
-      "heading": "Deep RL: Record Demonstration (experimental)",
+      "heading": "Record demonstration",
       "hint": "Track B (see the Game-Playing Agent design doc) — only the \"record\" pipeline stage exists so far. This captures screenshots + your mouse/keyboard input to a folder for later training; it does not itself automate anything. Requires Python with game_agent_rl/requirements.txt installed.",
       "sessionNamePlaceholder": "Session name",
       "outputDirectoryPlaceholder": "Output directory",
@@ -531,20 +531,20 @@
       "sessionDirHeading": "Session folder",
       "sessionDirHint": "Point this at a session folder created by Record (or the example generator) — every step below reads from and writes to it.",
       "sessionDirPlaceholder": "Session folder",
-      "labelHeading": "1. Label",
+      "labelHeading": "Label",
       "labelHint": "Turns recorded frames + raw input events into labeled training examples.",
       "labelRun": "Run label",
       "running": "Running…",
-      "bcHeading": "2. Train (behavior cloning)",
+      "bcHeading": "Train (behavior cloning)",
       "bcHint": "Trains a model to imitate the labeled session, writing a checkpoint file.",
       "bcRun": "Run train-bc",
       "checkpointOutPlaceholder": "Checkpoint output path (e.g. policy.pt)",
       "epochsPlaceholder": "Epochs",
-      "rlHeading": "3. Improve (optional, reward-weighted fine-tuning)",
+      "rlHeading": "Improve (optional, reward-weighted fine-tuning)",
       "rlHint": "Fine-tunes an existing checkpoint using a rewards.jsonl file placed next to labels.jsonl in the session folder.",
       "rlRun": "Run train-rl",
       "checkpointInPlaceholder": "Checkpoint input path (e.g. policy.pt)",
-      "playHeading": "4. Play",
+      "playHeading": "Play",
       "playHint": "Loads a trained checkpoint and runs a live loop: screenshot -> model -> real mouse/keyboard action, until you stop it.",
       "playRun": "Start playing"
     }
@@ -559,7 +559,14 @@
     "hitCount_other": "{{count}} hits"
   },
   "gameAgentPage": {
-    "title": "Game Agent"
+    "title": "Game Agent",
+    "localOnly": "Local only",
+    "trackA": "Track A · live vision model",
+    "trackB": "Track B · deep RL",
+    "pipeline": "Pipeline",
+    "promptLabel": "Instruction sent with every frame",
+    "takeoverTitle": "This takes over the screen and the input devices",
+    "intro": "Teaches an agent to play by watching, then by practising. Every stage runs on this machine, and each one needs the stage before it — which is why they are a numbered sequence rather than four buttons that all look equally ready. Nothing here records that a stage has run before, so a stage is only ever shown as blocked, running, or ready."
   },
   "notes": {
     "title": "Notes",

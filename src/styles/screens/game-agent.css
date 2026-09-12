@@ -1,0 +1,83 @@
+/* Game agent pipeline. From the v2 design source (screens.css, "Game agent
+   pipeline"). The data-state values are kept, but this app only ever sets
+   the ones it can actually verify — see GameAgent.tsx. */
+.stages { display: flex; flex-direction: column; }
+.stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  gap: var(--space-4) var(--space-5);
+  align-items: start;
+  padding: var(--space-6) 0;
+}
+.stage + .stage { border-top: 1px solid var(--border); }
+
+.stage-num {
+  display: grid;
+  place-items: center;
+  width: 28px; height: 28px;
+  border-radius: var(--radius-full);
+  background: var(--surface-3);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+.stage[data-state="done"]    .stage-num { background: var(--success-soft); color: var(--success-text); }
+.stage[data-state="running"] .stage-num { background: var(--brand-soft);   color: var(--brand-text); }
+.stage[data-state="blocked"] .stage-num { background: var(--surface-3);    color: var(--text-faint); }
+
+/* The connector makes the dependency visible: a stage cannot start until the
+   line above it is complete. */
+.stage:not(:last-child) .stage-num::after {
+  content: "";
+  position: absolute;
+  left: 13px;
+  top: 28px;
+  bottom: calc(var(--space-6) * -1);
+  width: 2px;
+  background: var(--border);
+}
+.stage[data-state="done"]:not(:last-child) .stage-num::after { background: var(--success); }
+
+.stage-body { min-width: 0; }
+.stage-body h3 { font-size: var(--text-base); }
+.stage-body p { margin-top: var(--space-2); font-size: var(--text-sm); color: var(--text-muted); line-height: var(--leading-body); }
+.stage-out {
+  margin-top: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  overflow-x: auto;
+  white-space: pre;
+}
+.stage-actions { display: flex; align-items: center; gap: var(--space-4); }
+.stage[data-state="blocked"] .stage-body h3,
+.stage[data-state="blocked"] .stage-body p { color: var(--text-faint); }
+
+
+/* A narrow field for an epoch count, so a two-digit number does not sit in
+   a control sized for a file path. Not in the design source — its pipeline
+   stages carry no inputs at all, because its stages are already finished. */
+.input-num { width: 80px; }
+
+/* The running/stopped line beside Track A's start button. The design shows
+   process state with a dot in its index-state row; this reuses that dot
+   rather than inventing a second way to say the same thing. */
+.status-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex: 1;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+/* Stage actions wrap: a stage here can carry two text fields, a number and
+   a button, where the design's carries a badge and one button. Without
+   this they would squeeze the description column instead of moving down. */
+.stage-actions { flex-wrap: wrap; justify-content: flex-end; max-width: 420px; }
+.stage-actions .input { width: 150px; }
+.stage-actions .input-num { width: 80px; }

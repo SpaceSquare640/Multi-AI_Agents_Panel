@@ -64,7 +64,7 @@
     "usedByCount_other": "被 {{count}} 個 Agent 使用",
     "importCustomSkill": "匯入自訂 Skill…",
     "importingSkill": "匯入中…",
-    "importWarning": "⚠ 匯入技能會以與內建技能相同的信任等級執行其 Python 程式碼。其行為受 skill.json 中宣告的權限約束——未宣告的檔案系統／網路能力會被真正封鎖，而不僅是警告——但請僅從您信任的來源匯入技能。",
+    "importWarning": "匯入技能會以與內建技能相同的信任等級執行其 Python 程式碼。其行為受 skill.json 中宣告的權限約束——未宣告的檔案系統／網路能力會被真正封鎖，而不僅是警告——但請僅從您信任的來源匯入技能。",
     "export": "匯出…",
     "exporting": "匯出中…",
     "exportedTo": "已匯出至 {{path}}",
@@ -89,7 +89,7 @@
     "softBudget": "軟性呼叫預算",
     "unset": "未設定",
     "softBudgetHint": "次呼叫——僅作為本機提醒，不會封鎖任何動作",
-    "budgetWarning": "⚠ 已達到軟性預算上限 {{cap}} 次呼叫（目前已 {{total}} 次）。這僅是提醒——雲端 Agent 仍會繼續運作。",
+    "budgetWarning": "已達到軟性預算上限 {{cap}} 次呼叫（目前已 {{total}} 次）。這僅是提醒——雲端 Agent 仍會繼續運作。",
     "costHint": "估計花費並不完整：只有具備 token 記錄與已知定價的 OpenRouter 金鑰才會計入，Anthropic、OpenAI 與本地 Provider 一律不計。請視為「已知成本的小計」而非完整帳單。下方的呼叫次數則是完整的。",
     "noneRecorded": "尚未記錄任何使用量。",
     "callsByProvider": "各供應商呼叫次數",
@@ -491,7 +491,7 @@
     },
     "gameAgent": {
       "heading": "遊戲操作 Agent（實驗性）",
-      "warning": "⚠ 啟動後，此應用程式會在本機持續進行真實螢幕截圖並模擬真實滑鼠／鍵盤輸入，直到您點擊「停止」為止。僅在您點擊下方「開始」時才會啟動——不會自動觸發。需要在 Ollama 中已拉取具視覺能力的模型（例如 llava）。",
+      "warning": "啟動後，此應用程式會在本機持續進行真實螢幕截圖並模擬真實滑鼠／鍵盤輸入，直到您點擊「停止」為止。僅在您點擊下方「開始」時才會啟動——不會自動觸發。需要在 Ollama 中已拉取具視覺能力的模型（例如 llava）。",
       "modelPlaceholder": "Ollama 視覺模型（例如 llava）",
       "statusLabel": "狀態：",
       "statusRunning": "執行中",
@@ -501,7 +501,7 @@
       "start": "開始"
     },
     "recording": {
-      "heading": "深度強化學習：錄製示範（實驗性）",
+      "heading": "錄製示範",
       "hint": "軌道 B（詳見遊戲操作 Agent 設計文件）——目前僅實作「錄製」此一流程階段。此功能會將螢幕截圖與您的滑鼠／鍵盤輸入擷取至資料夾以供日後訓練使用；本身不會自動執行任何操作。需要已安裝 game_agent_rl/requirements.txt 的 Python 環境。",
       "sessionNamePlaceholder": "工作階段名稱",
       "outputDirectoryPlaceholder": "輸出目錄",
@@ -529,20 +529,20 @@
       "sessionDirHeading": "工作階段資料夾",
       "sessionDirHint": "指向「錄製」（或範例產生器）建立的工作階段資料夾——下方每個步驟都會讀寫這個資料夾。",
       "sessionDirPlaceholder": "工作階段資料夾",
-      "labelHeading": "1. 標記",
+      "labelHeading": "標記",
       "labelHint": "把錄製的畫面影格與原始輸入事件轉成有標記的訓練樣本。",
       "labelRun": "執行標記",
       "running": "執行中…",
-      "bcHeading": "2. 訓練（行為克隆）",
+      "bcHeading": "訓練（行為克隆）",
       "bcHint": "訓練模型模仿已標記的工作階段，寫出一個 checkpoint 檔案。",
       "bcRun": "執行 train-bc",
       "checkpointOutPlaceholder": "Checkpoint 輸出路徑（例如 policy.pt）",
       "epochsPlaceholder": "訓練輪數",
-      "rlHeading": "3. 改良（選用，依獎勵加權微調）",
+      "rlHeading": "改良（選用，依獎勵加權微調）",
       "rlHint": "用工作階段資料夾內、放在 labels.jsonl 旁的 rewards.jsonl 檔案微調既有 checkpoint。",
       "rlRun": "執行 train-rl",
       "checkpointInPlaceholder": "Checkpoint 輸入路徑（例如 policy.pt）",
-      "playHeading": "4. 執行遊玩",
+      "playHeading": "執行遊玩",
       "playHint": "載入訓練好的 checkpoint，跑即時迴圈：截圖 -> 模型 -> 真實滑鼠／鍵盤操作，直到您停止為止。",
       "playRun": "開始遊玩"
     }
@@ -556,7 +556,14 @@
     "hitCount_other": "{{count}} 筆結果"
   },
   "gameAgentPage": {
-    "title": "遊戲操作 Agent"
+    "title": "遊戲代理",
+    "localOnly": "僅本機",
+    "trackA": "Track A · 即時視覺模型",
+    "trackB": "Track B · 深度強化學習",
+    "pipeline": "管線",
+    "promptLabel": "每一影格都會附上的指示",
+    "takeoverTitle": "這會接管螢幕與輸入裝置",
+    "intro": "讓代理先用看的、再用練的方式學會玩。每個階段都在這台機器上執行，而且都依賴前一個階段 —— 這正是它們是編號序列、而不是四顆看起來同樣就緒的按鈕的原因。這裡不會記錄某個階段先前是否執行過，所以階段只會顯示為：缺少輸入、執行中、或可執行。"
   },
   "notes": {
     "title": "筆記",

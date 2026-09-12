@@ -61,7 +61,7 @@ function App() {
       <div className="app-tab-content screen-v2" data-screen-pane hidden={tab !== "semantic-search"}>
         <SemanticSearch />
       </div>
-      <div className="app-tab-content" data-screen-pane hidden={tab !== "game-agent"}>
+      <div className="app-tab-content screen-v2" data-screen-pane hidden={tab !== "game-agent"}>
         <GameAgent />
       </div>
       <div className="app-tab-content screen-v2" data-screen-pane hidden={tab !== "skills"}>

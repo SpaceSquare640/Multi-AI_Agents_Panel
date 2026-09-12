@@ -1,8 +1,51 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import { open as openFolderPicker } from "@tauri-apps/plugin-dialog";
-import "./MachineLearning.css";
+import { Icon } from "./shell/Icons";
+import "./styles/screens/game-agent.css";
+
+/** What a pipeline stage can be, and what this app is able to know.
+ *
+ *  The design has a fourth state, "done", with a tick and a Done badge.
+ *  It is not used here. Nothing on disk records that a stage has ever
+ *  run — `label_recording_session` and the two training commands return
+ *  their output and keep no state — so "done" could only mean "ran while
+ *  this window has been open", and a stage that forgets its own history
+ *  every restart should not be claiming completion. A stage that has
+ *  produced output in this session shows the output; that is a fact, and
+ *  it is the one worth showing. */
+type StageState = "blocked" | "running" | "ready";
+
+function Stage({
+  index,
+  state,
+  title,
+  description,
+  output,
+  children,
+}: {
+  index: number;
+  state: StageState;
+  title: string;
+  description: string;
+  output?: string | null;
+  children: ReactNode;
+}) {
+  return (
+    <div className="stage" data-state={state}>
+      <span className="stage-num" aria-hidden="true">
+        {state === "running" ? <Icon name="chevron" size="sm" /> : index}
+      </span>
+      <div className="stage-body">
+        <h3>{title}</h3>
+        <p>{description}</p>
+        {output != null && <div className="stage-out">{output}</div>}
+      </div>
+      <div className="stage-actions">{children}</div>
+    </div>
+  );
+}
 
 export default function GameAgent() {
   const { t } = useTranslation();
@@ -183,201 +226,307 @@ export default function GameAgent() {
     }
   }
 
+  const hasSessionDir = pipelineSessionDir.trim() !== "";
+  /* Blocked means a required input is missing, which is checkable. It does
+     not mean "the previous stage has not run" — that is exactly what this
+     app cannot know. */
+  const labelState: StageState = labelBusy ? "running" : hasSessionDir ? "ready" : "blocked";
+  const bcState: StageState = bcBusy ? "running" : hasSessionDir && bcCheckpointOut.trim() ? "ready" : "blocked";
+  const rlState: StageState = rlBusy
+    ? "running"
+    : hasSessionDir && rlCheckpointIn.trim() && rlCheckpointOut.trim()
+      ? "ready"
+      : "blocked";
+  const playState: StageState = playing || playBusy ? "running" : playCheckpoint.trim() ? "ready" : "blocked";
+  const recordState: StageState = recording || recordingBusy ? "running" : recordingOutputDir.trim() ? "ready" : "blocked";
+
   return (
-    <div className="ml-branch">
-      {error && (
-        <div className="acc-error" role="alert">
-          {error}
-          <button onClick={() => setError(null)} aria-label={t("acc.dismissError")}>×</button>
-        </div>
-      )}
+    <>
+      <div className="workspace-header">
+        <span className="workspace-title">{t("gameAgentPage.title")}</span>
+        <span className="badge" data-kind="local">
+          {t("gameAgentPage.localOnly")}
+        </span>
+      </div>
 
-      <section className="acc-section">
-        <h2>{t("acc.gameAgent.heading")}</h2>
-        <p className="acc-hint">{t("acc.gameAgent.warning")}</p>
-        <div className="acc-form-row">
-          <input
-            type="text"
-            placeholder={t("acc.gameAgent.modelPlaceholder")}
-            value={gameAgentModel}
-            onChange={(e) => setGameAgentModel(e.target.value)}
-            disabled={gameAgentRunning}
-          />
-        </div>
-        <textarea
-          rows={3}
-          value={gameAgentPrompt}
-          onChange={(e) => setGameAgentPrompt(e.target.value)}
-          disabled={gameAgentRunning}
-        />
-        <p>
-          {t("acc.gameAgent.statusLabel")}{" "}
-          {gameAgentRunning ? t("acc.gameAgent.statusRunning") : t("acc.gameAgent.statusStopped")}{" "}
-          {gameAgentRunning ? (
-            <button onClick={() => handleStopGameAgent()}>{t("acc.gameAgent.stop")}</button>
-          ) : (
-            <button disabled={gameAgentBusy} onClick={() => handleStartGameAgent()}>
-              {gameAgentBusy ? t("acc.gameAgent.starting") : t("acc.gameAgent.start")}
-            </button>
+      <div className="workspace-body">
+        <div className="pane">
+          {error && (
+            <div className="callout" data-kind="danger" role="alert">
+              <div className="callout-body">{error}</div>
+            </div>
           )}
-        </p>
-      </section>
 
-      <section className="acc-section">
-        <h2>{t("acc.recording.heading")}</h2>
-        <p className="acc-hint">{t("acc.recording.hint")}</p>
-        <div className="acc-form-row">
-          <input
-            type="text"
-            placeholder={t("acc.recording.sessionNamePlaceholder")}
-            value={recordingSession}
-            onChange={(e) => setRecordingSession(e.target.value)}
-            disabled={recording}
-          />
-          <input
-            type="text"
-            placeholder={t("acc.recording.outputDirectoryPlaceholder")}
-            value={recordingOutputDir}
-            onChange={(e) => setRecordingOutputDir(e.target.value)}
-            disabled={recording}
-          />
-          <button disabled={recording} onClick={() => handleBrowseRecordingOutputDir()}>
-            {t("acc.recording.browse")}
-          </button>
+          <p className="pane-intro">{t("gameAgentPage.intro")}</p>
+
+          <div className="callout" data-kind="warning">
+            <Icon name="alert" />
+            <div className="callout-body">
+              <strong>{t("gameAgentPage.takeoverTitle")}</strong>
+              {t("acc.gameAgent.warning")}
+            </div>
+          </div>
+
+          {/* Track A is not part of the pipeline: it is a different way of
+              playing (a vision model deciding each move live) rather than a
+              stage on the way to a trained policy. Keeping it above the
+              numbered sequence says that, where putting it inside would
+              imply it feeds the next stage. */}
+          <section>
+            <div className="section-head">
+              <h2>{t("acc.gameAgent.heading")}</h2>
+              <span className="count">{t("gameAgentPage.trackA")}</span>
+            </div>
+            <div className="card card-pad">
+              <div className="field">
+                <label className="field-label" htmlFor="ga-model">
+                  {t("acc.gameAgent.modelPlaceholder")}
+                </label>
+                <input
+                  id="ga-model"
+                  className="input"
+                  type="text"
+                  value={gameAgentModel}
+                  onChange={(e) => setGameAgentModel(e.target.value)}
+                  disabled={gameAgentRunning}
+                />
+              </div>
+              <div className="field">
+                <label className="field-label" htmlFor="ga-prompt">
+                  {t("gameAgentPage.promptLabel")}
+                </label>
+                <textarea
+                  id="ga-prompt"
+                  className="textarea"
+                  rows={3}
+                  value={gameAgentPrompt}
+                  onChange={(e) => setGameAgentPrompt(e.target.value)}
+                  disabled={gameAgentRunning}
+                />
+              </div>
+              <div className="stage-actions">
+                <span className="status-line">
+                  <span className="status-dot" data-state={gameAgentRunning ? "running" : "idle"} aria-hidden="true" />
+                  {gameAgentRunning ? t("acc.gameAgent.statusRunning") : t("acc.gameAgent.statusStopped")}
+                </span>
+                {gameAgentRunning ? (
+                  <button className="btn btn-danger btn-sm" type="button" onClick={() => handleStopGameAgent()}>
+                    {t("acc.gameAgent.stop")}
+                  </button>
+                ) : (
+                  <button
+                    className="btn btn-primary btn-sm"
+                    type="button"
+                    disabled={gameAgentBusy}
+                    onClick={() => handleStartGameAgent()}
+                  >
+                    {gameAgentBusy ? t("acc.gameAgent.starting") : t("acc.gameAgent.start")}
+                  </button>
+                )}
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <div className="section-head">
+              <h2>{t("gameAgentPage.pipeline")}</h2>
+              <span className="count">{t("gameAgentPage.trackB")}</span>
+            </div>
+
+            <div className="card card-pad">
+              <div className="field">
+                <label className="field-label" htmlFor="ga-session-dir">
+                  {t("ml.pipeline.sessionDirHeading")}
+                </label>
+                <div className="searchbar">
+                  <input
+                    id="ga-session-dir"
+                    className="input"
+                    type="text"
+                    placeholder={t("ml.pipeline.sessionDirPlaceholder")}
+                    value={pipelineSessionDir}
+                    onChange={(e) => setPipelineSessionDir(e.target.value)}
+                  />
+                  <button className="btn btn-secondary" type="button" onClick={() => handleBrowseSessionDir()}>
+                    {t("acc.recording.browse")}
+                  </button>
+                </div>
+                <p className="field-hint">{t("ml.pipeline.sessionDirHint")}</p>
+              </div>
+            </div>
+
+            <div className="card card-pad">
+              <div className="stages">
+                <Stage
+                  index={1}
+                  state={recordState}
+                  title={t("acc.recording.heading")}
+                  description={t("acc.recording.hint")}
+                  output={
+                    recordingOutputDir.trim() && recordingSession.trim()
+                      ? `${recordingOutputDir}/${recordingSession}`
+                      : null
+                  }
+                >
+                  <input
+                    className="input input-mono"
+                    type="text"
+                    aria-label={t("acc.recording.sessionNamePlaceholder")}
+                    placeholder={t("acc.recording.sessionNamePlaceholder")}
+                    value={recordingSession}
+                    onChange={(e) => setRecordingSession(e.target.value)}
+                    disabled={recording}
+                  />
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    type="button"
+                    disabled={recording}
+                    onClick={() => handleBrowseRecordingOutputDir()}
+                  >
+                    {t("acc.recording.browse")}
+                  </button>
+                  {recording ? (
+                    <button className="btn btn-danger btn-sm" type="button" onClick={() => handleStopRecording()}>
+                      {t("acc.recording.stop")}
+                    </button>
+                  ) : (
+                    <button
+                      className="btn btn-primary btn-sm"
+                      type="button"
+                      disabled={recordingBusy || !recordingOutputDir.trim()}
+                      onClick={() => handleStartRecording()}
+                    >
+                      {recordingBusy ? t("acc.recording.starting") : t("acc.recording.startRecording")}
+                    </button>
+                  )}
+                </Stage>
+
+                <Stage
+                  index={2}
+                  state={labelState}
+                  title={t("ml.pipeline.labelHeading")}
+                  description={t("ml.pipeline.labelHint")}
+                  output={labelOutput}
+                >
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    type="button"
+                    disabled={labelBusy || !hasSessionDir}
+                    onClick={() => handleLabel()}
+                  >
+                    {labelBusy ? t("ml.pipeline.running") : t("ml.pipeline.labelRun")}
+                  </button>
+                </Stage>
+
+                <Stage
+                  index={3}
+                  state={bcState}
+                  title={t("ml.pipeline.bcHeading")}
+                  description={t("ml.pipeline.bcHint")}
+                  output={bcOutput}
+                >
+                  <input
+                    className="input input-mono"
+                    type="text"
+                    aria-label={t("ml.pipeline.checkpointOutPlaceholder")}
+                    placeholder={t("ml.pipeline.checkpointOutPlaceholder")}
+                    value={bcCheckpointOut}
+                    onChange={(e) => setBcCheckpointOut(e.target.value)}
+                  />
+                  <input
+                    className="input input-num"
+                    type="number"
+                    min={1}
+                    aria-label={t("ml.pipeline.epochsPlaceholder")}
+                    value={bcEpochs}
+                    onChange={(e) => setBcEpochs(Number(e.target.value) || 1)}
+                  />
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    type="button"
+                    disabled={bcBusy || !hasSessionDir || !bcCheckpointOut.trim()}
+                    onClick={() => handleTrainBc()}
+                  >
+                    {bcBusy ? t("ml.pipeline.running") : t("ml.pipeline.bcRun")}
+                  </button>
+                </Stage>
+
+                <Stage
+                  index={4}
+                  state={rlState}
+                  title={t("ml.pipeline.rlHeading")}
+                  description={t("ml.pipeline.rlHint")}
+                  output={rlOutput}
+                >
+                  <input
+                    className="input input-mono"
+                    type="text"
+                    aria-label={t("ml.pipeline.checkpointInPlaceholder")}
+                    placeholder={t("ml.pipeline.checkpointInPlaceholder")}
+                    value={rlCheckpointIn}
+                    onChange={(e) => setRlCheckpointIn(e.target.value)}
+                  />
+                  <input
+                    className="input input-mono"
+                    type="text"
+                    aria-label={t("ml.pipeline.checkpointOutPlaceholder")}
+                    placeholder={t("ml.pipeline.checkpointOutPlaceholder")}
+                    value={rlCheckpointOut}
+                    onChange={(e) => setRlCheckpointOut(e.target.value)}
+                  />
+                  <input
+                    className="input input-num"
+                    type="number"
+                    min={1}
+                    aria-label={t("ml.pipeline.epochsPlaceholder")}
+                    value={rlEpochs}
+                    onChange={(e) => setRlEpochs(Number(e.target.value) || 1)}
+                  />
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    type="button"
+                    disabled={rlBusy || !hasSessionDir || !rlCheckpointIn.trim() || !rlCheckpointOut.trim()}
+                    onClick={() => handleTrainRl()}
+                  >
+                    {rlBusy ? t("ml.pipeline.running") : t("ml.pipeline.rlRun")}
+                  </button>
+                </Stage>
+
+                <Stage
+                  index={5}
+                  state={playState}
+                  title={t("ml.pipeline.playHeading")}
+                  description={t("ml.pipeline.playHint")}
+                >
+                  <input
+                    className="input input-mono"
+                    type="text"
+                    aria-label={t("ml.pipeline.checkpointInPlaceholder")}
+                    placeholder={t("ml.pipeline.checkpointInPlaceholder")}
+                    value={playCheckpoint}
+                    onChange={(e) => setPlayCheckpoint(e.target.value)}
+                    disabled={playing}
+                  />
+                  {playing ? (
+                    <button className="btn btn-danger btn-sm" type="button" onClick={() => handleStopPlay()}>
+                      {t("acc.gameAgent.stop")}
+                    </button>
+                  ) : (
+                    <button
+                      className="btn btn-primary btn-sm"
+                      type="button"
+                      disabled={playBusy || !playCheckpoint.trim()}
+                      onClick={() => handleStartPlay()}
+                    >
+                      {playBusy ? t("acc.gameAgent.starting") : t("ml.pipeline.playRun")}
+                    </button>
+                  )}
+                </Stage>
+              </div>
+            </div>
+          </section>
         </div>
-        <p>
-          {t("acc.recording.statusLabel")}{" "}
-          {recording ? t("acc.recording.statusRecording") : t("acc.recording.statusStopped")}{" "}
-          {recording ? (
-            <button onClick={() => handleStopRecording()}>{t("acc.recording.stop")}</button>
-          ) : (
-            <button disabled={recordingBusy || !recordingOutputDir.trim()} onClick={() => handleStartRecording()}>
-              {recordingBusy ? t("acc.recording.starting") : t("acc.recording.startRecording")}
-            </button>
-          )}
-        </p>
-        {recordingOutputDir.trim() && recordingSession.trim() && (
-          <p className="acc-hint">
-            {t("acc.recording.sessionDirLabel")}{" "}
-            <code>{`${recordingOutputDir}/${recordingSession}`}</code>{" "}
-            <button
-              onClick={() =>
-                navigator.clipboard.writeText(`${recordingOutputDir}/${recordingSession}`).catch(() => {})
-              }
-            >
-              {t("acc.recording.copyPath")}
-            </button>
-          </p>
-        )}
-      </section>
-
-      <section className="acc-section">
-        <h2>{t("ml.pipeline.sessionDirHeading")}</h2>
-        <p className="acc-hint">{t("ml.pipeline.sessionDirHint")}</p>
-        <div className="acc-form-row">
-          <input
-            type="text"
-            placeholder={t("ml.pipeline.sessionDirPlaceholder")}
-            value={pipelineSessionDir}
-            onChange={(e) => setPipelineSessionDir(e.target.value)}
-          />
-          <button onClick={() => handleBrowseSessionDir()}>{t("acc.recording.browse")}</button>
-        </div>
-      </section>
-
-      <section className="acc-section">
-        <h2>{t("ml.pipeline.labelHeading")}</h2>
-        <p className="acc-hint">{t("ml.pipeline.labelHint")}</p>
-        <button disabled={labelBusy || !pipelineSessionDir.trim()} onClick={() => handleLabel()}>
-          {labelBusy ? t("ml.pipeline.running") : t("ml.pipeline.labelRun")}
-        </button>
-        {labelOutput !== null && <pre className="ml-pipeline-output">{labelOutput}</pre>}
-      </section>
-
-      <section className="acc-section">
-        <h2>{t("ml.pipeline.bcHeading")}</h2>
-        <p className="acc-hint">{t("ml.pipeline.bcHint")}</p>
-        <div className="acc-form-row">
-          <input
-            type="text"
-            placeholder={t("ml.pipeline.checkpointOutPlaceholder")}
-            value={bcCheckpointOut}
-            onChange={(e) => setBcCheckpointOut(e.target.value)}
-          />
-          <input
-            type="number"
-            min={1}
-            placeholder={t("ml.pipeline.epochsPlaceholder")}
-            value={bcEpochs}
-            onChange={(e) => setBcEpochs(Number(e.target.value) || 1)}
-          />
-        </div>
-        <button
-          disabled={bcBusy || !pipelineSessionDir.trim() || !bcCheckpointOut.trim()}
-          onClick={() => handleTrainBc()}
-        >
-          {bcBusy ? t("ml.pipeline.running") : t("ml.pipeline.bcRun")}
-        </button>
-        {bcOutput !== null && <pre className="ml-pipeline-output">{bcOutput}</pre>}
-      </section>
-
-      <section className="acc-section">
-        <h2>{t("ml.pipeline.rlHeading")}</h2>
-        <p className="acc-hint">{t("ml.pipeline.rlHint")}</p>
-        <div className="acc-form-row">
-          <input
-            type="text"
-            placeholder={t("ml.pipeline.checkpointInPlaceholder")}
-            value={rlCheckpointIn}
-            onChange={(e) => setRlCheckpointIn(e.target.value)}
-          />
-          <input
-            type="text"
-            placeholder={t("ml.pipeline.checkpointOutPlaceholder")}
-            value={rlCheckpointOut}
-            onChange={(e) => setRlCheckpointOut(e.target.value)}
-          />
-          <input
-            type="number"
-            min={1}
-            placeholder={t("ml.pipeline.epochsPlaceholder")}
-            value={rlEpochs}
-            onChange={(e) => setRlEpochs(Number(e.target.value) || 1)}
-          />
-        </div>
-        <button
-          disabled={rlBusy || !pipelineSessionDir.trim() || !rlCheckpointIn.trim() || !rlCheckpointOut.trim()}
-          onClick={() => handleTrainRl()}
-        >
-          {rlBusy ? t("ml.pipeline.running") : t("ml.pipeline.rlRun")}
-        </button>
-        {rlOutput !== null && <pre className="ml-pipeline-output">{rlOutput}</pre>}
-      </section>
-
-      <section className="acc-section">
-        <h2>{t("ml.pipeline.playHeading")}</h2>
-        <p className="acc-hint">{t("ml.pipeline.playHint")}</p>
-        <div className="acc-form-row">
-          <input
-            type="text"
-            placeholder={t("ml.pipeline.checkpointInPlaceholder")}
-            value={playCheckpoint}
-            onChange={(e) => setPlayCheckpoint(e.target.value)}
-            disabled={playing}
-          />
-        </div>
-        <p>
-          {t("acc.gameAgent.statusLabel")}{" "}
-          {playing ? t("acc.gameAgent.statusRunning") : t("acc.gameAgent.statusStopped")}{" "}
-          {playing ? (
-            <button onClick={() => handleStopPlay()}>{t("acc.gameAgent.stop")}</button>
-          ) : (
-            <button disabled={playBusy || !playCheckpoint.trim()} onClick={() => handleStartPlay()}>
-              {playBusy ? t("acc.gameAgent.starting") : t("ml.pipeline.playRun")}
-            </button>
-          )}
-        </p>
-      </section>
-    </div>
+      </div>
+    </>
   );
 }

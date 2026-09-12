@@ -64,7 +64,7 @@
     "usedByCount_other": "Von {{count}} Agenten verwendet",
     "importCustomSkill": "Eigenen Skill importieren…",
     "importingSkill": "Wird importiert…",
-    "importWarning": "⚠ Das Importieren einer Fähigkeit führt deren Python-Code mit derselben Vertrauensstufe wie eine integrierte Fähigkeit aus. Sie ist an die in ihrer skill.json deklarierten Berechtigungen gebunden — eine nicht deklarierte Dateisystem-/Netzwerkfähigkeit wird tatsächlich blockiert, nicht nur gewarnt — importieren Sie Fähigkeiten jedoch nur aus vertrauenswürdigen Quellen.",
+    "importWarning": "Das Importieren einer Fähigkeit führt deren Python-Code mit derselben Vertrauensstufe wie eine integrierte Fähigkeit aus. Sie ist an die in ihrer skill.json deklarierten Berechtigungen gebunden — eine nicht deklarierte Dateisystem-/Netzwerkfähigkeit wird tatsächlich blockiert, nicht nur gewarnt — importieren Sie Fähigkeiten jedoch nur aus vertrauenswürdigen Quellen.",
     "export": "Exportieren…",
     "exporting": "Wird exportiert…",
     "exportedTo": "Exportiert nach {{path}}",
@@ -90,7 +90,7 @@
     "softBudget": "Weiches Aufrufbudget",
     "unset": "nicht festgelegt",
     "softBudgetHint": "Aufrufe — nur eine lokale Erinnerung, blockiert nichts",
-    "budgetWarning": "⚠ Sie haben Ihr weiches Budget von {{cap}} Aufrufen erreicht ({{total}} bisher). Dies ist nur eine Erinnerung — Cloud-Agenten arbeiten weiter.",
+    "budgetWarning": "Sie haben Ihr weiches Budget von {{cap}} Aufrufen erreicht ({{total}} bisher). Dies ist nur eine Erinnerung — Cloud-Agenten arbeiten weiter.",
     "costHint": "Die Kostenschätzung ist unvollständig: Sie wird nur für OpenRouter-Schlüssel mit erfassten Token-Zahlen und bekannten Modellpreisen berechnet. Anthropic, OpenAI und lokale Provider fließen nicht ein — also ein Zwischenstand bekannter Kosten, keine Rechnung. Die Aufrufzahlen darunter sind vollständig.",
     "noneRecorded": "Noch keine Nutzung erfasst.",
     "callsByProvider": "Aufrufe nach Anbieter",
@@ -493,7 +493,7 @@
     },
     "gameAgent": {
       "heading": "Spielenden Agent (experimentell)",
-      "warning": "⚠ Der Start führt dazu, dass die App auf diesem Computer echte Screenshots aufnimmt und echte Maus-/Tastatureingaben simuliert, in einer Schleife, bis Sie auf Stopp klicken. Er startet ausschließlich, wenn Sie unten auf „Start“ klicken — nichts löst ihn automatisch aus. Erfordert ein bereits in Ollama heruntergeladenes bildfähiges Modell (z. B. llava).",
+      "warning": "Der Start führt dazu, dass die App auf diesem Computer echte Screenshots aufnimmt und echte Maus-/Tastatureingaben simuliert, in einer Schleife, bis Sie auf Stopp klicken. Er startet ausschließlich, wenn Sie unten auf „Start“ klicken — nichts löst ihn automatisch aus. Erfordert ein bereits in Ollama heruntergeladenes bildfähiges Modell (z. B. llava).",
       "modelPlaceholder": "Ollama-Vision-Modell (z. B. llava)",
       "statusLabel": "Status:",
       "statusRunning": "läuft",
@@ -503,7 +503,7 @@
       "start": "Start"
     },
     "recording": {
-      "heading": "Deep RL: Demonstration aufzeichnen (experimentell)",
+      "heading": "Demonstration aufzeichnen",
       "hint": "Spur B (siehe Design-Dokument des spielenden Agenten) — bisher existiert nur die „Aufzeichnungs“-Pipeline-Stufe. Dies erfasst Screenshots sowie Ihre Maus-/Tastatureingaben in einem Ordner für späteres Training; es automatisiert selbst nichts. Erfordert Python mit installiertem game_agent_rl/requirements.txt.",
       "sessionNamePlaceholder": "Sitzungsname",
       "outputDirectoryPlaceholder": "Ausgabeverzeichnis",
@@ -531,20 +531,20 @@
       "sessionDirHeading": "Sitzungsordner",
       "sessionDirHint": "Verweisen Sie hier auf einen von „Aufzeichnen“ (oder dem Beispielgenerator) erstellten Sitzungsordner — jeder Schritt unten liest und schreibt darin.",
       "sessionDirPlaceholder": "Sitzungsordner",
-      "labelHeading": "1. Beschriften",
+      "labelHeading": "Beschriften",
       "labelHint": "Wandelt aufgezeichnete Frames und rohe Eingabeereignisse in beschriftete Trainingsbeispiele um.",
       "labelRun": "Beschriftung ausfuehren",
       "running": "Wird ausgefuehrt…",
-      "bcHeading": "2. Trainieren (Behavior Cloning)",
+      "bcHeading": "Trainieren (Behavior Cloning)",
       "bcHint": "Trainiert ein Modell, die beschriftete Sitzung nachzuahmen, und schreibt eine Checkpoint-Datei.",
       "bcRun": "train-bc ausfuehren",
       "checkpointOutPlaceholder": "Checkpoint-Ausgabepfad (z. B. policy.pt)",
       "epochsPlaceholder": "Epochen",
-      "rlHeading": "3. Verbessern (optional, belohnungsgewichtetes Feintuning)",
+      "rlHeading": "Verbessern (optional, belohnungsgewichtetes Feintuning)",
       "rlHint": "Feintuning eines bestehenden Checkpoints mit einer rewards.jsonl-Datei neben labels.jsonl im Sitzungsordner.",
       "rlRun": "train-rl ausfuehren",
       "checkpointInPlaceholder": "Checkpoint-Eingabepfad (z. B. policy.pt)",
-      "playHeading": "4. Abspielen",
+      "playHeading": "Abspielen",
       "playHint": "Laedt einen trainierten Checkpoint und fuehrt eine Live-Schleife aus: Screenshot -> Modell -> echte Maus-/Tastaturaktion, bis Sie stoppen.",
       "playRun": "Start"
     }
@@ -559,7 +559,14 @@
     "hitCount_other": "{{count}} Treffer"
   },
   "gameAgentPage": {
-    "title": "Spiel-Agent"
+    "title": "Spiel-Agent",
+    "localOnly": "Nur lokal",
+    "trackA": "Track A · Live-Bildmodell",
+    "trackB": "Track B · Deep RL",
+    "pipeline": "Pipeline",
+    "promptLabel": "Anweisung, die jedes Einzelbild begleitet",
+    "takeoverTitle": "Das übernimmt Bildschirm und Eingabegeräte",
+    "intro": "Bringt einem Agenten das Spielen bei — erst durch Zusehen, dann durch Üben. Jede Stufe läuft auf diesem Rechner und braucht die vorherige; deshalb eine nummerierte Folge statt vier gleich bereit wirkender Schaltflächen. Dass eine Stufe schon einmal lief, wird nirgends festgehalten — eine Stufe erscheint daher nur als blockiert, laufend oder bereit."
   },
   "notes": {
     "title": "Notizen",

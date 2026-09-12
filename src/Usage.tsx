@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
+import { Icon } from "./shell/Icons";
 import type { Agent, Session, UsageSummary } from "./types";
 import "./styles/screens/usage.css";
 
@@ -202,6 +203,7 @@ export default function Usage() {
 
               {overSoftCap && (
                 <div className="callout" data-kind="warning" style={{ marginTop: "var(--space-6)" }}>
+                  <Icon name="alert" />
                   <div className="callout-body">
                     {t("usage.budgetWarning", { cap: softCap!.toLocaleString(), total: totalCalls.toLocaleString() })}
                   </div>

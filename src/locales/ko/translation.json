@@ -64,7 +64,7 @@
     "usedByCount_other": "{{count}}개 Agent가 사용 중",
     "importCustomSkill": "사용자 Skill 가져오기…",
     "importingSkill": "가져오는 중…",
-    "importWarning": "⚠ 스킬을 가져오면 내장 스킬과 동일한 신뢰 수준으로 해당 Python 코드가 실행됩니다. skill.json에 선언된 권한에 구속되며——선언되지 않은 파일 시스템/네트워크 기능은 단순 경고가 아니라 실제로 차단됩니다——신뢰할 수 있는 출처의 스킬만 가져오세요.",
+    "importWarning": "스킬을 가져오면 내장 스킬과 동일한 신뢰 수준으로 해당 Python 코드가 실행됩니다. skill.json에 선언된 권한에 구속되며——선언되지 않은 파일 시스템/네트워크 기능은 단순 경고가 아니라 실제로 차단됩니다——신뢰할 수 있는 출처의 스킬만 가져오세요.",
     "export": "내보내기…",
     "exporting": "내보내는 중…",
     "exportedTo": "{{path}}(으)로 내보냈습니다",
@@ -89,7 +89,7 @@
     "softBudget": "소프트 호출 예산",
     "unset": "설정 안 됨",
     "softBudgetHint": "회 호출——로컬 알림용일 뿐 아무것도 차단하지 않습니다",
-    "budgetWarning": "⚠ 소프트 예산 한도인 {{cap}}회 호출에 도달했습니다(현재 {{total}}회). 이는 단순 알림일 뿐입니다——클라우드 Agent는 계속 작동합니다.",
+    "budgetWarning": "소프트 예산 한도인 {{cap}}회 호출에 도달했습니다(현재 {{total}}회). 이는 단순 알림일 뿐입니다——클라우드 Agent는 계속 작동합니다.",
     "costHint": "추정 비용은 부분적입니다. 토큰 수와 가격이 확인된 OpenRouter 키만 계산되며 Anthropic, OpenAI, 로컬 Provider는 포함되지 않습니다. 청구서가 아니라 '확인된 비용의 소계'로 보십시오. 아래 호출 횟수는 완전한 값입니다.",
     "noneRecorded": "아직 기록된 사용량이 없습니다.",
     "callsByProvider": "제공자별 호출 수",
@@ -491,7 +491,7 @@
     },
     "gameAgent": {
       "heading": "게임 플레이 Agent(실험적)",
-      "warning": "⚠ 이를 시작하면 이 앱은 「중지」를 클릭할 때까지 이 컴퓨터에서 실제 스크린샷을 찍고 실제 마우스/키보드 입력을 반복적으로 시뮬레이션합니다. 아래 「시작」을 클릭했을 때만 시작되며——자동으로 트리거되지 않습니다. Ollama에 이미 받아온 비전 지원 모델(예: llava)이 필요합니다.",
+      "warning": "이를 시작하면 이 앱은 「중지」를 클릭할 때까지 이 컴퓨터에서 실제 스크린샷을 찍고 실제 마우스/키보드 입력을 반복적으로 시뮬레이션합니다. 아래 「시작」을 클릭했을 때만 시작되며——자동으로 트리거되지 않습니다. Ollama에 이미 받아온 비전 지원 모델(예: llava)이 필요합니다.",
       "modelPlaceholder": "Ollama 비전 모델(예: llava)",
       "statusLabel": "상태:",
       "statusRunning": "실행 중",
@@ -501,7 +501,7 @@
       "start": "시작"
     },
     "recording": {
-      "heading": "심층 강화학습: 시연 녹화(실험적)",
+      "heading": "시연 녹화",
       "hint": "트랙 B(게임 플레이 Agent 설계 문서 참조)——지금까지는 \"녹화\" 파이프라인 단계만 존재합니다. 이는 스크린샷과 사용자의 마우스/키보드 입력을 이후 학습을 위해 폴더에 캡처합니다. 그 자체로는 아무것도 자동화하지 않습니다. game_agent_rl/requirements.txt가 설치된 Python이 필요합니다.",
       "sessionNamePlaceholder": "세션 이름",
       "outputDirectoryPlaceholder": "출력 디렉터리",
@@ -529,20 +529,20 @@
       "sessionDirHeading": "세션 폴더",
       "sessionDirHint": "\"녹화\"(또는 예제 생성기)로 만든 세션 폴더를 지정하세요—아래 각 단계는 이 폴더를 읽고 씁니다.",
       "sessionDirPlaceholder": "세션 폴더",
-      "labelHeading": "1. 라벨링",
+      "labelHeading": "라벨링",
       "labelHint": "녹화된 프레임과 원시 입력 이벤트를 라벨이 지정된 학습 예제로 변환합니다.",
       "labelRun": "라벨링 실행",
       "running": "실행 중…",
-      "bcHeading": "2. 학습(행동 복제)",
+      "bcHeading": "학습(행동 복제)",
       "bcHint": "라벨링된 세션을 모방하도록 모델을 학습시켜 체크포인트 파일을 저장합니다.",
       "bcRun": "train-bc 실행",
       "checkpointOutPlaceholder": "체크포인트 출력 경로(예: policy.pt)",
       "epochsPlaceholder": "에포크 수",
-      "rlHeading": "3. 개선(선택 사항, 보상 가중치 미세 조정)",
+      "rlHeading": "개선(선택 사항, 보상 가중치 미세 조정)",
       "rlHint": "세션 폴더에서 labels.jsonl 옆에 둔 rewards.jsonl 파일을 사용해 기존 체크포인트를 미세 조정합니다.",
       "rlRun": "train-rl 실행",
       "checkpointInPlaceholder": "체크포인트 입력 경로(예: policy.pt)",
-      "playHeading": "4. 플레이",
+      "playHeading": "플레이",
       "playHint": "학습된 체크포인트를 불러와 중지할 때까지 스크린샷 -> 모델 -> 실제 마우스/키보드 동작 루프를 실행합니다.",
       "playRun": "플레이 시작"
     }
@@ -556,7 +556,14 @@
     "hitCount_other": "{{count}}건"
   },
   "gameAgentPage": {
-    "title": "게임 조작 Agent"
+    "title": "게임 에이전트",
+    "localOnly": "로컬 전용",
+    "trackA": "Track A · 실시간 비전 모델",
+    "trackB": "Track B · 심층 강화학습",
+    "pipeline": "파이프라인",
+    "promptLabel": "모든 프레임과 함께 보내는 지시",
+    "takeoverTitle": "화면과 입력 장치를 점유합니다",
+    "intro": "보고 배우게 한 뒤 연습으로 익히게 합니다. 모든 단계는 이 컴퓨터에서 실행되며 각 단계는 앞 단계를 필요로 합니다. 그래서 똑같아 보이는 버튼 네 개가 아니라 번호가 매겨진 순서입니다. 단계가 이전에 실행됐는지는 기록되지 않으므로 상태는 입력 부족, 실행 중, 실행 가능 중 하나로만 표시됩니다."
   },
   "notes": {
     "title": "노트",

@@ -64,7 +64,7 @@
     "usedByCount_other": "Utilisée par {{count}} Agents",
     "importCustomSkill": "Importer une Skill…",
     "importingSkill": "Importation…",
-    "importWarning": "⚠ Importer une compétence exécute son code Python avec le même niveau de confiance qu'une compétence intégrée. Elle est liée aux permissions déclarées dans son skill.json — une capacité de système de fichiers/réseau non déclarée est réellement bloquée, pas seulement signalée — mais n'importez des compétences que depuis des sources en qui vous avez confiance.",
+    "importWarning": "Importer une compétence exécute son code Python avec le même niveau de confiance qu'une compétence intégrée. Elle est liée aux permissions déclarées dans son skill.json — une capacité de système de fichiers/réseau non déclarée est réellement bloquée, pas seulement signalée — mais n'importez des compétences que depuis des sources en qui vous avez confiance.",
     "export": "Exporter…",
     "exporting": "Exportation…",
     "exportedTo": "Exporté vers {{path}}",
@@ -90,7 +90,7 @@
     "softBudget": "Budget d'appels indicatif",
     "unset": "non défini",
     "softBudgetHint": "appels — un simple rappel local, ne bloque rien",
-    "budgetWarning": "⚠ Vous avez atteint votre budget indicatif de {{cap}} appels ({{total}} jusqu'ici). Ceci n'est qu'un rappel — les Agents cloud continuent de fonctionner.",
+    "budgetWarning": "Vous avez atteint votre budget indicatif de {{cap}} appels ({{total}} jusqu'ici). Ceci n'est qu'un rappel — les Agents cloud continuent de fonctionner.",
     "costHint": "Le coût estimé est partiel : il n'est calculé que pour les clés OpenRouter dont les jetons sont enregistrés et la tarification connue. Anthropic, OpenAI et les fournisseurs locaux n'y contribuent pas — à lire comme un sous-total des coûts connus, pas comme une facture. Le nombre d'appels ci-dessous, lui, est complet.",
     "noneRecorded": "Aucune utilisation enregistrée pour le moment.",
     "callsByProvider": "Appels par fournisseur",
@@ -493,7 +493,7 @@
     },
     "gameAgent": {
       "heading": "Agent joueur de jeux vidéo (expérimental)",
-      "warning": "⚠ Le démarrer fait en sorte que l'application prenne de véritables captures d'écran et simule de véritables entrées souris/clavier sur cet ordinateur, en boucle, jusqu'à ce que vous cliquiez sur Arrêter. Il ne démarre que lorsque vous cliquez sur « Démarrer » ci-dessous — rien ne le déclenche automatiquement. Nécessite un modèle capable de vision déjà récupéré dans Ollama (ex. llava).",
+      "warning": "Le démarrer fait en sorte que l'application prenne de véritables captures d'écran et simule de véritables entrées souris/clavier sur cet ordinateur, en boucle, jusqu'à ce que vous cliquiez sur Arrêter. Il ne démarre que lorsque vous cliquez sur « Démarrer » ci-dessous — rien ne le déclenche automatiquement. Nécessite un modèle capable de vision déjà récupéré dans Ollama (ex. llava).",
       "modelPlaceholder": "Modèle de vision Ollama (ex. llava)",
       "statusLabel": "Statut :",
       "statusRunning": "en cours d'exécution",
@@ -503,7 +503,7 @@
       "start": "Démarrer"
     },
     "recording": {
-      "heading": "RL profond : Enregistrer une démonstration (expérimental)",
+      "heading": "Enregistrer une démonstration",
       "hint": "Piste B (voir le document de conception de l'Agent joueur de jeux vidéo) — seule l'étape « enregistrement » du pipeline existe pour l'instant. Cela capture des captures d'écran et vos entrées souris/clavier dans un dossier pour un entraînement ultérieur ; cela n'automatise rien en soi. Nécessite Python avec game_agent_rl/requirements.txt installé.",
       "sessionNamePlaceholder": "Nom de la session",
       "outputDirectoryPlaceholder": "Répertoire de sortie",
@@ -531,20 +531,20 @@
       "sessionDirHeading": "Dossier de session",
       "sessionDirHint": "Pointez vers un dossier de session cree par Enregistrer (ou le generateur d'exemple) — chaque etape ci-dessous lit et ecrit dedans.",
       "sessionDirPlaceholder": "Dossier de session",
-      "labelHeading": "1. Etiqueter",
+      "labelHeading": "Etiqueter",
       "labelHint": "Transforme les images enregistrees et les evenements d'entree bruts en exemples d'entrainement etiquetes.",
       "labelRun": "Lancer l'etiquetage",
       "running": "En cours…",
-      "bcHeading": "2. Entrainer (clonage de comportement)",
+      "bcHeading": "Entrainer (clonage de comportement)",
       "bcHint": "Entraine un modele a imiter la session etiquetee et ecrit un fichier de point de controle.",
       "bcRun": "Lancer train-bc",
       "checkpointOutPlaceholder": "Chemin de sortie du point de controle (ex. policy.pt)",
       "epochsPlaceholder": "Epoques",
-      "rlHeading": "3. Ameliorer (optionnel, ajustement pondere par recompense)",
+      "rlHeading": "Ameliorer (optionnel, ajustement pondere par recompense)",
       "rlHint": "Ajuste un point de controle existant a l'aide d'un fichier rewards.jsonl place a cote de labels.jsonl dans le dossier de session.",
       "rlRun": "Lancer train-rl",
       "checkpointInPlaceholder": "Chemin d'entree du point de controle (ex. policy.pt)",
-      "playHeading": "4. Jouer",
+      "playHeading": "Jouer",
       "playHint": "Charge un point de controle entraine et execute une boucle en direct : capture d'ecran -> modele -> action reelle de souris/clavier, jusqu'a l'arret.",
       "playRun": "Demarrer"
     }
@@ -559,7 +559,14 @@
     "hitCount_other": "{{count}} résultats"
   },
   "gameAgentPage": {
-    "title": "Agent de jeu"
+    "title": "Agent de jeu",
+    "localOnly": "Local uniquement",
+    "trackA": "Track A · modèle visuel en direct",
+    "trackB": "Track B · RL profond",
+    "pipeline": "Pipeline",
+    "promptLabel": "Instruction envoyée avec chaque image",
+    "takeoverTitle": "Ceci prend le contrôle de l'écran et des périphériques de saisie",
+    "intro": "Apprend à un agent à jouer en regardant, puis en s'exerçant. Chaque étape s'exécute sur cette machine et dépend de la précédente — d'où une séquence numérotée plutôt que quatre boutons d'apparence également prête. Rien ici n'enregistre qu'une étape a déjà tourné : une étape n'est donc affichée que comme bloquée, en cours, ou prête."
   },
   "notes": {
     "title": "Notes",
