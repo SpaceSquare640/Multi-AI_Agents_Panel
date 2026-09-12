@@ -55,7 +55,7 @@ function App() {
       <div className="app-tab-content" data-screen-pane hidden={tab !== "chat"}>
         <Chat />
       </div>
-      <div className="app-tab-content" data-screen-pane hidden={tab !== "control-center"}>
+      <div className="app-tab-content screen-v2" data-screen-pane hidden={tab !== "control-center"}>
         <AIControlCenter onOpenUsage={() => setTab("usage")} onOpenManual={() => setTab("manual")} />
       </div>
       <div className="app-tab-content screen-v2" data-screen-pane hidden={tab !== "semantic-search"}>

@@ -1,0 +1,102 @@
+/* Models. From the v2 design source (screens.css, "Provider list" and
+   "Hardware fit").
+
+   Not ported: the design's `.fallback` order list (fallback is configured
+   per agent, in Chat) and its `.fit-grid` of machine specs (llmfit returns
+   per-model verdicts, not the VRAM/RAM figures that grid shows). */
+
+.provider {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  gap: var(--space-4) var(--space-5);
+  align-items: center;
+  padding: var(--space-6);
+}
+.provider + .provider { margin-top: var(--space-5); }
+.provider-mark {
+  display: grid;
+  place-items: center;
+  width: 28px; height: 28px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
+  color: var(--text-muted);
+}
+.provider-mark[data-where="local"] { background: var(--brand-soft); color: var(--provider-local); }
+.provider-mark[data-where="cloud"] { background: var(--accent-soft); color: var(--provider-cloud); }
+.provider-name { font-size: var(--text-base); font-weight: var(--weight-semibold); }
+.provider-sub {
+  margin-top: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+.provider-actions { display: flex; align-items: center; gap: var(--space-4); }
+/* The expanded detail spans the whole card, under all three columns. */
+.provider-detail {
+  grid-column: 1 / -1;
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--border);
+}
+
+/* Verdict rows. The tint repeats what the label already says rather than
+   replacing it: fits and will swap have to be distinguishable without colour
+   perception. */
+.verdict { display: flex; align-items: center; gap: var(--space-5); padding: var(--space-4) var(--space-5); border-radius: var(--radius-sm); }
+.verdict + .verdict { margin-top: var(--space-3); }
+.verdict .model { flex: 1; min-width: 0; font-family: var(--font-mono); font-size: var(--text-sm); overflow: hidden; text-overflow: ellipsis; }
+.verdict .size { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--text-xs); color: var(--text-faint); }
+.verdict[data-fit="good"]  { background: var(--success-soft); }
+.verdict[data-fit="tight"] { background: var(--warning-soft); }
+.verdict[data-fit="no"]    { background: var(--danger-soft); }
+
+/* A tinted badge inside a tinted row stacks two layers of the same hue, and
+   the text on top then fails: the danger badge on the danger row measured
+   4.12:1 and the faint size label 4.46:1. The row tint is the scanning
+   signal, so the badge inside it drops back to a single opaque layer and the
+   secondary label steps up from faint to muted. Neither change removes any
+   meaning — the badge still says what it said in words. */
+.verdict .badge { background: var(--surface); color: var(--text); }
+.verdict .size  { color: var(--text-muted); }
+
+
+/* --------------------------------------------------------------------------
+
+/* Tables. The design shows keys, installed models and MCP servers as
+   cards; here they stay tables, because each is a list of rows with the
+   same four or five fields and a table is what that is. The v2 table
+   component is used rather than v1's. */
+.acc-table-wrap { overflow-x: auto; }
+
+/* A provider card's expanded detail holds a table of that provider's
+   keys, so it needs to lose the design's fixed padding-left indent when
+   the content is full-width. */
+.provider-detail .table { margin-top: var(--space-3); }
+
+/* The Ollama storage note is a disclosure, which the design has no
+   equivalent for — its providers are configured, not explained. */
+.disclosure summary {
+  cursor: pointer;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+.disclosure summary:hover { color: var(--text); }
+.disclosure > *:not(summary) { margin-top: var(--space-4); }
+
+/* Forms wrap instead of overflowing: the key form has five controls and
+   the MCP form four, where the design's provider cards carry none — its
+   keys are added in a dialog this app does not have. */
+.acc-form-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+}
+.acc-form-grid .input { flex: 1; min-width: 180px; }
+.acc-form-grid .select { flex: none; }
+.acc-actions { display: flex; justify-content: flex-end; margin-top: var(--space-5); }
+.acc-batch { width: 100%; margin-top: var(--space-5); resize: vertical; font-family: var(--font-mono); }
+.acc-model-rows { margin-top: var(--space-5); max-height: 420px; overflow-y: auto; }
+.acc-hint-list { padding-left: var(--space-7); }
+.acc-hint-list li { margin-top: var(--space-2); list-style: disc; }
+.card-pad h3 + .acc-form-grid { margin-top: var(--space-4); }
+.provider-body { flex: 1; min-width: 0; }

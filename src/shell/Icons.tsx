@@ -45,6 +45,8 @@ const PATHS: Record<string, string> = {
   trash: '<path d="M4 6h12M8 6V4.5A.5.5 0 0 1 8.5 4h3a.5.5 0 0 1 .5.5V6M6 6l.7 10a1 1 0 0 0 1 1h4.6a1 1 0 0 0 1-1L14 6"/>',
   /* Brought over by Onboarding, for the rule categories. */
   key: '<circle cx="7" cy="10" r="3.5"/><path d="M10.5 10H17v3M14 10v2.5"/>',
+  /* Brought over by InstallGuidance. */
+  external: '<path d="M11 4h5v5M16 4l-7 7"/><path d="M15 12v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3"/>',
   'shield-alert': '<path d="M10 3 4 5.5v4.2c0 3.6 2.4 6.4 6 7.3 3.6-.9 6-3.7 6-7.3V5.5z"/><path d="M10 7.5v3M10 13h.01"/>',
 };
 

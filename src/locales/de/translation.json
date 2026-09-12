@@ -516,6 +516,21 @@
       "browse": "Durchsuchen…",
       "sessionDirLabel": "Sitzungsordner (für die folgenden CLI-Befehle verwenden):",
       "copyPath": "Kopieren"
+    },
+    "providers": "Anbieter",
+    "intro": "Woher die Modelle kommen und was diese Maschine erreichen kann. Schlüssel liegen lokal und gehen nur an den Anbieter, zu dem sie gehören.",
+    "providerSub": {
+      "noKey": "Cloud · kein Schlüssel",
+      "keyCount_one": "Cloud · {{count}} Schlüssel",
+      "keyCount_other": "Cloud · {{count}} Schlüssel",
+      "ollamaRunning_one": "Lokal · {{count}} Modell geladen",
+      "ollamaRunning_other": "Lokal · {{count}} Modelle geladen"
+    },
+    "providerBadge": {
+      "reachable": "Erreichbar",
+      "unreachable": "Nicht erreichbar",
+      "keyPresent": "Schlüssel vorhanden",
+      "notConfigured": "Nicht konfiguriert"
     }
   },
   "ml": {

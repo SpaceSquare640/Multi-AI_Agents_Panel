@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
 import InstallGuidance from "./InstallGuidance";
+import { Icon } from "./shell/Icons";
 import {
   CLOUD_PROVIDERS,
   type CuratedModel,
@@ -13,7 +14,7 @@ import {
   type OpenRouterModel,
   type ProviderKeyView,
 } from "./types";
-import "./AIControlCenter.css";
+import "./styles/screens/models.css";
 
 type BatchEntry = {
   provider: string;
@@ -40,6 +41,31 @@ function formatBytes(bytes: number | null): string {
   return gb >= 1 ? `${gb.toFixed(1)} GB` : `${(bytes / 1_000_000).toFixed(0)} MB`;
 }
 
+/** Maps llmfit's fit level onto the design's two verdict tints. Anything
+ *  that is not an unambiguous fit is drawn as the cautious one — reading
+ *  "tight" optimistically is the expensive way to be wrong. */
+function verdictFit(fitLevel: string): "good" | "tight" {
+  return /^(excellent|good|fits)/i.test(fitLevel.trim()) ? "good" : "tight";
+}
+
+/** Models — API keys, cloud catalogues, local Ollama models, hardware fit
+ *  and MCP servers. Rebuilt against the v2 design.
+ *
+ *  The design's sidebar for this screen lists Agents, and hangs Role
+ *  templates and New agent off it. Those live in Chat's sidebar in this
+ *  app, and moving them changes where agents are created rather than how
+ *  they look — so the sidebar is left alone here and the question travels
+ *  with Chat, the screen that would lose them. Same reasoning the rail
+ *  split used: decide it in the step that makes the decision real.
+ *
+ *  Providers become cards, which is the design's arrangement and a better
+ *  fit than a flat key table: a provider is a thing with a state, and
+ *  several keys can belong to one. The keys stay in a table inside the
+ *  card's detail — they are rows with the same five fields.
+ *
+ *  Not ported: the design's fallback-order list (fallback is configured
+ *  per agent, in Chat) and its hardware-fit grid of VRAM/RAM figures
+ *  (llmfit returns per-model verdicts, not machine specs). */
 export default function AIControlCenter({
   onOpenUsage,
   onOpenManual,
@@ -304,381 +330,540 @@ export default function AIControlCenter({
     (m) => !ollamaInstalled.some((installed) => installed.name === m.id),
   );
 
+  /* One card per provider. Cloud providers come from the fixed list;
+     Ollama is added as the local one, which is why it is not in it. */
+  const keysByProvider = new Map<string, ProviderKeyView[]>();
+  for (const k of keys) {
+    keysByProvider.set(k.provider, [...(keysByProvider.get(k.provider) ?? []), k]);
+  }
+
   return (
-    <div className="ai-control-center">
-      <h1>{t("acc.title")}</h1>
-      {error && (
-        <div className="acc-error" role="alert">
-          {error}
-          <button onClick={() => setError(null)} aria-label={t("acc.dismissError")}>×</button>
-        </div>
-      )}
-
-      <section className="acc-section">
-        <h2>{t("acc.apiKeys.heading")}</h2>
-
-        <form className="acc-form" onSubmit={handleAddSingle}>
-          <h3>{t("acc.apiKeys.addOne")}</h3>
-          <div className="acc-form-row">
-            <select value={singleProvider} onChange={(e) => setSingleProvider(e.target.value)}>
-              {CLOUD_PROVIDERS.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
-            <input
-              type="password"
-              placeholder={t("acc.apiKeys.apiKeyPlaceholder")}
-              value={singleSecret}
-              onChange={(e) => setSingleSecret(e.target.value)}
-              required
-            />
-            <input
-              type="text"
-              placeholder={t("acc.apiKeys.labelOptionalPlaceholder")}
-              value={singleLabel}
-              onChange={(e) => setSingleLabel(e.target.value)}
-            />
-            <input
-              type="text"
-              placeholder={t("acc.apiKeys.modelHintOptionalPlaceholder")}
-              value={singleModelHint}
-              onChange={(e) => setSingleModelHint(e.target.value)}
-            />
-            <button type="submit">{t("acc.apiKeys.add")}</button>
-          </div>
-        </form>
-
-        <form className="acc-form" onSubmit={handleBatchAdd}>
-          <h3>{t("acc.apiKeys.addInBulk")}</h3>
-          <p className="acc-hint">
-            {t("acc.apiKeys.bulkHintBeforeCode")}
-            <code>provider,secret,label,modelHint</code>
-            {t("acc.apiKeys.bulkHintAfterCode")}
-          </p>
-          <textarea
-            rows={5}
-            placeholder={"openrouter,sk-or-v1-...,Ling-3.0-flash (free),inclusionai/ling-3.0-flash:free\nopenrouter,sk-or-v1-...,Poolside S (free)"}
-            value={batchText}
-            onChange={(e) => setBatchText(e.target.value)}
-          />
-          <button type="submit">{t("acc.apiKeys.importAll")}</button>
-        </form>
-
-        <div className="acc-form">
-          <h3>{t("acc.apiKeys.importFromFiles")}</h3>
-          <p className="acc-hint">{t("acc.apiKeys.importFromFilesHint")}</p>
-          <div className="acc-form-row">
-            <select value={fileImportProvider} onChange={(e) => setFileImportProvider(e.target.value)}>
-              {CLOUD_PROVIDERS.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
-            <button type="button" disabled={fileImportBusy} onClick={() => handleImportFromFiles()}>
-              {fileImportBusy ? t("acc.apiKeys.importing") : t("acc.apiKeys.chooseFiles")}
-            </button>
-          </div>
-        </div>
-
-        <table className="acc-table">
-          <thead>
-            <tr>
-              <th>{t("acc.apiKeys.tableProvider")}</th>
-              <th>{t("acc.apiKeys.tableLabel")}</th>
-              <th>{t("acc.apiKeys.tableModelHint")}</th>
-              <th>{t("acc.apiKeys.tableKey")}</th>
-              <th>{t("acc.apiKeys.tableLastUsed")}</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {keys.length === 0 && (
-              <tr>
-                <td colSpan={6} className="acc-empty">
-                  {t("acc.apiKeys.noKeysYet")}
-                </td>
-              </tr>
-            )}
-            {keys.map((k) => (
-              <tr key={k.id}>
-                <td>{k.provider}</td>
-                <td>{k.label ?? "—"}</td>
-                <td>{k.modelHint ?? "—"}</td>
-                <td className="acc-mono">{k.maskedSecret}</td>
-                <td>{k.lastUsedAt ?? t("acc.apiKeys.never")}</td>
-                <td>
-                  <button onClick={() => handleDeleteKey(k.id)}>{t("acc.apiKeys.delete")}</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-
-      <section className="acc-section">
-        <h2>{t("acc.cloudModels.heading")}</h2>
-        <select value={modelProvider} onChange={(e) => setModelProvider(e.target.value)}>
-          {CLOUD_PROVIDERS.map((p) => (
-            <option key={p} value={p}>
-              {p}
-            </option>
-          ))}
-        </select>
-        {modelProvider === "openrouter" ? (
-          <>
-            <div className="acc-form-row">
-              <input
-                type="text"
-                placeholder={t("acc.cloudModels.searchPlaceholder")}
-                value={openRouterQuery}
-                onChange={(e) => setOpenRouterQuery(e.target.value)}
-              />
-              <button disabled={openRouterLoading} onClick={() => refreshOpenRouterModels(true).catch((e) => setError(String(e)))}>
-                {openRouterLoading ? t("acc.cloudModels.refreshing") : t("acc.cloudModels.refreshFromOpenRouter")}
-              </button>
-            </div>
-            {!openRouterLive && <p className="acc-hint">{t("acc.cloudModels.liveCatalogUnavailable")}</p>}
-            <ul className="acc-model-list">
-              {openRouterModels
-                .filter((m) => {
-                  const q = openRouterQuery.trim().toLowerCase();
-                  return !q || m.id.toLowerCase().includes(q) || m.name.toLowerCase().includes(q);
-                })
-                .map((m) => (
-                  <li key={m.id}>
-                    <span className="acc-mono">{m.id}</span> — {m.name}
-                    {(m.promptPricePerMillion !== null || m.completionPricePerMillion !== null) && (
-                      <span className="acc-hint">
-                        {t("acc.cloudModels.pricing", {
-                          promptPrice: m.promptPricePerMillion?.toFixed(2) ?? "?",
-                          completionPrice: m.completionPricePerMillion?.toFixed(2) ?? "?",
-                        })}
-                      </span>
-                    )}
-                  </li>
-                ))}
-            </ul>
-          </>
-        ) : (
-          <ul className="acc-model-list">
-            {curatedModels.map((m) => (
-              <li key={m.id}>
-                <span className="acc-mono">{m.id}</span> — {m.label}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section className="acc-section">
-        <h2>{t("acc.localModels.heading")}</h2>
-        <p>
-          {t("acc.localModels.statusLabel")}{" "}
-          {ollamaRunning === null
-            ? t("acc.localModels.statusChecking")
-            : ollamaRunning
-              ? t("acc.localModels.statusRunning")
-              : t("acc.localModels.statusNotRunning")}{" "}
-          <button onClick={() => refreshOllama().catch((e) => setError(String(e)))}>
+    <>
+      <div className="workspace-header">
+        <span className="workspace-title">{t("acc.title")}</span>
+        <div className="workspace-actions">
+          <button
+            className="btn btn-ghost btn-sm"
+            type="button"
+            onClick={() => {
+              refreshKeys().catch((e) => setError(String(e)));
+              refreshOllama().catch((e) => setError(String(e)));
+              refreshMcpServers().catch((e) => setError(String(e)));
+            }}
+          >
             {t("acc.localModels.refresh")}
           </button>
-        </p>
-        {/* Only shown when Ollama is actually missing — guidance for a
-            program that is already running would just be noise. */}
-        {ollamaRunning === false && (
-          <InstallGuidance command="winget install Ollama.Ollama" url="https://ollama.com/download" />
-        )}
+        </div>
+      </div>
 
-        <details className="acc-ollama-storage-hint">
-          <summary>{t("acc.localModels.storageHintSummary")}</summary>
-          <p className="acc-hint">
-            {t("acc.localModels.storageHintIntro", { endpoint: "localhost:11434" })}
-          </p>
-          {ollamaModelsEnvHint === undefined ? null : ollamaModelsEnvHint ? (
-            <p className="acc-hint">
-              {t("acc.localModels.storageHintEnvSet", { path: ollamaModelsEnvHint })}
-            </p>
-          ) : (
-            <p className="acc-hint">{t("acc.localModels.storageHintEnvUnset")}</p>
+      <div className="workspace-body">
+        <div className="pane pane-wide">
+          {error && (
+            <div className="callout" data-kind="danger" role="alert">
+              <div className="callout-body">{error}</div>
+            </div>
           )}
-          {suggestedOllamaModelsDir && <p className="acc-hint">{t("acc.localModels.storageHintSuggested")}</p>}
-          <ul className="acc-hint">
-            <li>
-              {t("acc.localModels.storageHintWindows", {
-                command: `setx OLLAMA_MODELS "${suggestedOllamaModelsDir ?? "C:\\path\\to\\folder"}"`,
-              })}
-            </li>
-            <li>
-              {t("acc.localModels.storageHintUnix", {
-                command: `export OLLAMA_MODELS=${suggestedOllamaModelsDir ?? "/path/to/folder"}`,
-              })}
-            </li>
-          </ul>
-          <p className="acc-hint">{t("acc.localModels.storageHintRestart")}</p>
-        </details>
 
-        {ollamaRunning && (
-          <>
-            <h3>{t("acc.localModels.installedHeading")}</h3>
-            <table className="acc-table">
-              <thead>
-                <tr>
-                  <th>{t("acc.localModels.tableModel")}</th>
-                  <th>{t("acc.localModels.tableSize")}</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {ollamaInstalled.length === 0 && (
-                  <tr>
-                    <td colSpan={3} className="acc-empty">
-                      {t("acc.localModels.noModelsInstalled")}
-                    </td>
-                  </tr>
-                )}
-                {ollamaInstalled.map((m) => (
-                  <tr key={m.name}>
-                    <td className="acc-mono">{m.name}</td>
-                    <td>{formatBytes(m.size)}</td>
-                    <td>
-                      <button onClick={() => handleDeleteOllamaModel(m.name)}>{t("acc.localModels.remove")}</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          {/* ---------- providers ---------- */}
+          <section>
+            <div className="section-head">
+              <h2>{t("acc.providers")}</h2>
+            </div>
 
-            <h3>{t("acc.localModels.availableHeading")}</h3>
-            <ul className="acc-model-list">
-              {notYetInstalled.map((m) => (
-                <li key={m.id}>
-                  <span className="acc-mono">{m.id}</span> — {m.label}{" "}
-                  <button disabled={pullingModel !== null} onClick={() => handlePullModel(m.id)}>
-                    {pullingModel === m.id
-                      ? pullProgress?.percent !== null && pullProgress?.percent !== undefined
-                        ? `${pullProgress.percent.toFixed(0)}%`
-                        : pullProgress?.status ?? t("acc.localModels.installing")
-                      : t("acc.localModels.install")}
+            <div className="card provider">
+              <span className="provider-mark" data-where="local">
+                <Icon name="local" size="sm" />
+              </span>
+              <div className="provider-body">
+                <div className="provider-name">Ollama</div>
+                <div className="provider-sub">
+                  {ollamaRunning === null
+                    ? t("acc.localModels.statusChecking")
+                    : ollamaRunning
+                      ? t("acc.providerSub.ollamaRunning", { count: ollamaInstalled.length })
+                      : t("acc.localModels.statusNotRunning")}
+                </div>
+              </div>
+              <div className="provider-actions">
+                <span
+                  className="badge"
+                  data-kind={ollamaRunning === null ? "idle" : ollamaRunning ? "running" : "failed"}
+                >
+                  {ollamaRunning === null
+                    ? t("acc.localModels.statusChecking")
+                    : ollamaRunning
+                      ? t("acc.providerBadge.reachable")
+                      : t("acc.providerBadge.unreachable")}
+                </span>
+              </div>
+            </div>
+
+            {CLOUD_PROVIDERS.map((provider) => {
+              const providerKeys = keysByProvider.get(provider) ?? [];
+              return (
+                <div className="card provider" key={provider}>
+                  <span className="provider-mark" data-where="cloud">
+                    <Icon name="key" size="sm" />
+                  </span>
+                  <div className="provider-body">
+                    <div className="provider-name">{provider}</div>
+                    <div className="provider-sub">
+                      {providerKeys.length === 0
+                        ? t("acc.providerSub.noKey")
+                        : t("acc.providerSub.keyCount", { count: providerKeys.length })}
+                    </div>
+                  </div>
+                  {/* The badge says a key exists; it does not say the key
+                      works. Nothing here validates a key against its
+                      provider, so "key present" is the strongest claim the
+                      data actually supports — the design's "Key valid" and
+                      "Key rejected" would both be guesses. */}
+                  <div className="provider-actions">
+                    <span className="badge" data-kind={providerKeys.length > 0 ? "running" : "idle"}>
+                      {providerKeys.length > 0
+                        ? t("acc.providerBadge.keyPresent")
+                        : t("acc.providerBadge.notConfigured")}
+                    </span>
+                  </div>
+                  {providerKeys.length > 0 && (
+                    <div className="provider-detail">
+                      <div className="acc-table-wrap">
+                        <table className="table">
+                          <thead>
+                            <tr>
+                              <th>{t("acc.apiKeys.tableLabel")}</th>
+                              <th>{t("acc.apiKeys.tableModelHint")}</th>
+                              <th>{t("acc.apiKeys.tableKey")}</th>
+                              <th>{t("acc.apiKeys.tableLastUsed")}</th>
+                              <th />
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {providerKeys.map((k) => (
+                              <tr key={k.id}>
+                                <td>{k.label ?? "—"}</td>
+                                <td>{k.modelHint ?? "—"}</td>
+                                <td className="mono">{k.maskedSecret}</td>
+                                <td>{k.lastUsedAt ?? t("acc.apiKeys.never")}</td>
+                                <td>
+                                  <button
+                                    className="btn btn-ghost btn-sm"
+                                    type="button"
+                                    onClick={() => handleDeleteKey(k.id)}
+                                  >
+                                    {t("acc.apiKeys.delete")}
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </section>
+
+          {/* ---------- adding keys ---------- */}
+          <section>
+            <div className="section-head">
+              <h2>{t("acc.apiKeys.heading")}</h2>
+            </div>
+
+            <div className="card card-pad">
+              <form onSubmit={handleAddSingle}>
+                <h3>{t("acc.apiKeys.addOne")}</h3>
+                <div className="acc-form-grid">
+                  <select className="select" value={singleProvider} onChange={(e) => setSingleProvider(e.target.value)}>
+                    {CLOUD_PROVIDERS.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    className="input"
+                    type="password"
+                    placeholder={t("acc.apiKeys.apiKeyPlaceholder")}
+                    value={singleSecret}
+                    onChange={(e) => setSingleSecret(e.target.value)}
+                    required
+                  />
+                  <input
+                    className="input"
+                    type="text"
+                    placeholder={t("acc.apiKeys.labelOptionalPlaceholder")}
+                    value={singleLabel}
+                    onChange={(e) => setSingleLabel(e.target.value)}
+                  />
+                  <input
+                    className="input"
+                    type="text"
+                    placeholder={t("acc.apiKeys.modelHintOptionalPlaceholder")}
+                    value={singleModelHint}
+                    onChange={(e) => setSingleModelHint(e.target.value)}
+                  />
+                  <button className="btn btn-primary" type="submit">
+                    {t("acc.apiKeys.add")}
                   </button>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
+                </div>
+              </form>
+            </div>
 
-      </section>
+            <div className="card card-pad">
+              <form onSubmit={handleBatchAdd}>
+                <h3>{t("acc.apiKeys.addInBulk")}</h3>
+                <p className="field-hint">
+                  {t("acc.apiKeys.bulkHintBeforeCode")}
+                  <code className="mono">provider,secret,label,modelHint</code>
+                  {t("acc.apiKeys.bulkHintAfterCode")}
+                </p>
+                <textarea
+                  className="textarea acc-batch"
+                  rows={5}
+                  placeholder={"openrouter,sk-or-v1-...,Ling-3.0-flash (free),inclusionai/ling-3.0-flash:free"}
+                  value={batchText}
+                  onChange={(e) => setBatchText(e.target.value)}
+                />
+                <div className="acc-actions">
+                  <button className="btn btn-secondary btn-sm" type="submit">
+                    {t("acc.apiKeys.importAll")}
+                  </button>
+                </div>
+              </form>
+            </div>
 
-      <section className="acc-section">
-        <h2>{t("acc.localModels.hardwareFitHeading")}</h2>
-        <p className="acc-hint">{t("acc.localModels.hardwareFitHint")}</p>
-        <button disabled={loadingHardwareRecommendations} onClick={() => void handleRecommendLocalModels()}>
-          {loadingHardwareRecommendations
-            ? t("acc.localModels.hardwareFitLoading")
-            : t("acc.localModels.hardwareFitButton")}
-        </button>
-        {hardwareRecommendations && (
-          <table className="acc-table">
-            <thead>
-              <tr>
-                <th>{t("acc.localModels.tableModel")}</th>
-                <th>{t("acc.localModels.hardwareFitLevel")}</th>
-                <th>{t("acc.localModels.hardwareFitScore")}</th>
-                <th>{t("acc.localModels.hardwareFitSpeed")}</th>
-                <th>{t("acc.localModels.hardwareFitQuant")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {hardwareRecommendations.map((m) => (
-                <tr key={m.name}>
-                  <td className="acc-mono">
-                    {m.name} ({m.parameterCount})
-                  </td>
-                  <td>{m.fitLevel}</td>
-                  <td>{m.score.toFixed(0)}</td>
-                  <td>{m.estimatedTokensPerSecond.toFixed(1)} tok/s</td>
-                  <td className="acc-mono">{m.bestQuantization}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
+            <div className="card card-pad">
+              <h3>{t("acc.apiKeys.importFromFiles")}</h3>
+              <p className="field-hint">{t("acc.apiKeys.importFromFilesHint")}</p>
+              <div className="acc-form-grid">
+                <select
+                  className="select"
+                  value={fileImportProvider}
+                  onChange={(e) => setFileImportProvider(e.target.value)}
+                >
+                  {CLOUD_PROVIDERS.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  className="btn btn-secondary"
+                  type="button"
+                  disabled={fileImportBusy}
+                  onClick={() => handleImportFromFiles()}
+                >
+                  {fileImportBusy ? t("acc.apiKeys.importing") : t("acc.apiKeys.chooseFiles")}
+                </button>
+              </div>
+            </div>
+          </section>
 
-      <section className="acc-section">
-        <h2>{t("acc.usage.heading")}</h2>
-        <p className="acc-hint">
-          {t("acc.usage.movedHint")}{" "}
-          <button onClick={onOpenUsage}>{t("acc.usage.openLink")}</button>
-        </p>
-      </section>
+          {/* ---------- cloud catalogue ---------- */}
+          <section>
+            <div className="section-head">
+              <h2>{t("acc.cloudModels.heading")}</h2>
+            </div>
+            <div className="card card-pad">
+              <div className="acc-form-grid">
+                <select className="select" value={modelProvider} onChange={(e) => setModelProvider(e.target.value)}>
+                  {CLOUD_PROVIDERS.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+                {modelProvider === "openrouter" && (
+                  <>
+                    <input
+                      className="input"
+                      type="search"
+                      placeholder={t("acc.cloudModels.searchPlaceholder")}
+                      value={openRouterQuery}
+                      onChange={(e) => setOpenRouterQuery(e.target.value)}
+                    />
+                    <button
+                      className="btn btn-secondary"
+                      type="button"
+                      disabled={openRouterLoading}
+                      onClick={() => refreshOpenRouterModels(true).catch((e) => setError(String(e)))}
+                    >
+                      {openRouterLoading
+                        ? t("acc.cloudModels.refreshing")
+                        : t("acc.cloudModels.refreshFromOpenRouter")}
+                    </button>
+                  </>
+                )}
+              </div>
 
-      <section className="acc-section">
-        <h2>{t("acc.mcp.heading")}</h2>
-        <p className="acc-hint">{t("acc.mcp.hint")}</p>
-        <p className="acc-hint">
-          {t("acc.mcp.examplesHint")} <button onClick={onOpenManual}>{t("acc.mcp.examplesHintLink")}</button>
-        </p>
-        <form className="acc-form" onSubmit={handleAddMcpServer}>
-          <div className="acc-form-row">
-            <input
-              type="text"
-              placeholder={t("acc.mcp.namePlaceholder")}
-              value={newMcpName}
-              onChange={(e) => setNewMcpName(e.target.value)}
-              required
-            />
-            <input
-              type="text"
-              placeholder={t("acc.mcp.commandPlaceholder")}
-              value={newMcpCommand}
-              onChange={(e) => setNewMcpCommand(e.target.value)}
-              required
-            />
-            <input
-              type="text"
-              placeholder={t("acc.mcp.argsPlaceholder")}
-              value={newMcpArgs}
-              onChange={(e) => setNewMcpArgs(e.target.value)}
-            />
-            <button type="submit" disabled={mcpBusy}>
-              {t("acc.mcp.add")}
-            </button>
-          </div>
-        </form>
-        <table className="acc-table">
-          <thead>
-            <tr>
-              <th>{t("acc.mcp.tableName")}</th>
-              <th>{t("acc.mcp.tableCommand")}</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {mcpServers.length === 0 && (
-              <tr>
-                <td colSpan={3} className="acc-empty">
-                  {t("acc.mcp.noneYet")}
-                </td>
-              </tr>
+              {modelProvider === "openrouter" && !openRouterLive && (
+                <div className="callout" data-kind="warning">
+                  <Icon name="alert" />
+                  <div className="callout-body">{t("acc.cloudModels.liveCatalogUnavailable")}</div>
+                </div>
+              )}
+
+              <div className="acc-model-rows">
+                {modelProvider === "openrouter"
+                  ? openRouterModels
+                      .filter((m) => {
+                        const q = openRouterQuery.trim().toLowerCase();
+                        return !q || m.id.toLowerCase().includes(q) || m.name.toLowerCase().includes(q);
+                      })
+                      .map((m) => (
+                        <div className="row row-tall" key={m.id}>
+                          <span className="name">
+                            <span className="mono">{m.id}</span>
+                            <span className="row-sub">
+                              {m.name}
+                              {(m.promptPricePerMillion !== null || m.completionPricePerMillion !== null) &&
+                                " · " +
+                                  t("acc.cloudModels.pricing", {
+                                    promptPrice: m.promptPricePerMillion?.toFixed(2) ?? "?",
+                                    completionPrice: m.completionPricePerMillion?.toFixed(2) ?? "?",
+                                  })}
+                            </span>
+                          </span>
+                        </div>
+                      ))
+                  : curatedModels.map((m) => (
+                      <div className="row row-tall" key={m.id}>
+                        <span className="name">
+                          <span className="mono">{m.id}</span>
+                          <span className="row-sub">{m.label}</span>
+                        </span>
+                      </div>
+                    ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ---------- local models ---------- */}
+          <section>
+            <div className="section-head">
+              <h2>{t("acc.localModels.heading")}</h2>
+            </div>
+
+            {ollamaRunning === false && (
+              <div className="card card-pad">
+                <InstallGuidance command="winget install Ollama.Ollama" url="https://ollama.com/download" />
+              </div>
             )}
-            {mcpServers.map((s) => (
-              <tr key={s.id}>
-                <td>{s.name}</td>
-                <td className="acc-mono">
-                  {s.command} {s.args.join(" ")}
-                </td>
-                <td>
-                  <button onClick={() => handleDeleteMcpServer(s.id)}>{t("acc.mcp.delete")}</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
 
-    </div>
+            {ollamaRunning && (
+              <div className="card card-pad">
+                <h3>{t("acc.localModels.installedHeading")}</h3>
+                <div className="acc-table-wrap">
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>{t("acc.localModels.tableModel")}</th>
+                        <th>{t("acc.localModels.tableSize")}</th>
+                        <th />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ollamaInstalled.length === 0 && (
+                        <tr>
+                          <td colSpan={3}>{t("acc.localModels.noModelsInstalled")}</td>
+                        </tr>
+                      )}
+                      {ollamaInstalled.map((m) => (
+                        <tr key={m.name}>
+                          <td className="mono">{m.name}</td>
+                          <td className="mono">{formatBytes(m.size)}</td>
+                          <td>
+                            <button
+                              className="btn btn-ghost btn-sm"
+                              type="button"
+                              onClick={() => handleDeleteOllamaModel(m.name)}
+                            >
+                              {t("acc.localModels.remove")}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <h3>{t("acc.localModels.availableHeading")}</h3>
+                <div className="acc-model-rows">
+                  {notYetInstalled.map((m) => (
+                    <div className="row row-tall" key={m.id}>
+                      <span className="name">
+                        <span className="mono">{m.id}</span>
+                        <span className="row-sub">{m.label}</span>
+                      </span>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        type="button"
+                        disabled={pullingModel !== null}
+                        onClick={() => handlePullModel(m.id)}
+                      >
+                        {pullingModel === m.id
+                          ? pullProgress?.percent !== null && pullProgress?.percent !== undefined
+                            ? `${pullProgress.percent.toFixed(0)}%`
+                            : (pullProgress?.status ?? t("acc.localModels.installing"))
+                          : t("acc.localModels.install")}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <details className="card card-pad disclosure">
+              <summary>{t("acc.localModels.storageHintSummary")}</summary>
+              <p className="field-hint">{t("acc.localModels.storageHintIntro", { endpoint: "localhost:11434" })}</p>
+              {ollamaModelsEnvHint === undefined ? null : ollamaModelsEnvHint ? (
+                <p className="field-hint">{t("acc.localModels.storageHintEnvSet", { path: ollamaModelsEnvHint })}</p>
+              ) : (
+                <p className="field-hint">{t("acc.localModels.storageHintEnvUnset")}</p>
+              )}
+              {suggestedOllamaModelsDir && <p className="field-hint">{t("acc.localModels.storageHintSuggested")}</p>}
+              <ul className="field-hint acc-hint-list">
+                <li>
+                  {t("acc.localModels.storageHintWindows", {
+                    command: `setx OLLAMA_MODELS "${suggestedOllamaModelsDir ?? "C:\\path\\to\\folder"}"`,
+                  })}
+                </li>
+                <li>
+                  {t("acc.localModels.storageHintUnix", {
+                    command: `export OLLAMA_MODELS=${suggestedOllamaModelsDir ?? "/path/to/folder"}`,
+                  })}
+                </li>
+              </ul>
+              <p className="field-hint">{t("acc.localModels.storageHintRestart")}</p>
+            </details>
+          </section>
+
+          {/* ---------- hardware fit ---------- */}
+          <section>
+            <div className="section-head">
+              <h2>{t("acc.localModels.hardwareFitHeading")}</h2>
+            </div>
+            <div className="card card-pad">
+              <p className="field-hint">{t("acc.localModels.hardwareFitHint")}</p>
+              <div className="acc-actions">
+                <button
+                  className="btn btn-secondary btn-sm"
+                  type="button"
+                  disabled={loadingHardwareRecommendations}
+                  onClick={() => void handleRecommendLocalModels()}
+                >
+                  {loadingHardwareRecommendations
+                    ? t("acc.localModels.hardwareFitLoading")
+                    : t("acc.localModels.hardwareFitButton")}
+                </button>
+              </div>
+              {hardwareRecommendations?.map((m) => (
+                <div className="verdict" data-fit={verdictFit(m.fitLevel)} key={m.name}>
+                  <span className="model">
+                    {m.name} ({m.parameterCount})
+                  </span>
+                  <span className="size">{m.bestQuantization}</span>
+                  <span className="size">{m.estimatedTokensPerSecond.toFixed(1)} tok/s</span>
+                  <span className="badge" data-kind={verdictFit(m.fitLevel) === "good" ? "succeeded" : "attention"}>
+                    {m.fitLevel}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* ---------- MCP ---------- */}
+          <section>
+            <div className="section-head">
+              <h2>{t("acc.mcp.heading")}</h2>
+            </div>
+            <div className="card card-pad">
+              <p className="field-hint">{t("acc.mcp.hint")}</p>
+              <p className="field-hint">
+                {t("acc.mcp.examplesHint")}{" "}
+                <button className="btn btn-ghost btn-sm" type="button" onClick={onOpenManual}>
+                  {t("acc.mcp.examplesHintLink")}
+                </button>
+              </p>
+              <form onSubmit={handleAddMcpServer}>
+                <div className="acc-form-grid">
+                  <input
+                    className="input"
+                    type="text"
+                    placeholder={t("acc.mcp.namePlaceholder")}
+                    value={newMcpName}
+                    onChange={(e) => setNewMcpName(e.target.value)}
+                    required
+                  />
+                  <input
+                    className="input"
+                    type="text"
+                    placeholder={t("acc.mcp.commandPlaceholder")}
+                    value={newMcpCommand}
+                    onChange={(e) => setNewMcpCommand(e.target.value)}
+                    required
+                  />
+                  <input
+                    className="input"
+                    type="text"
+                    placeholder={t("acc.mcp.argsPlaceholder")}
+                    value={newMcpArgs}
+                    onChange={(e) => setNewMcpArgs(e.target.value)}
+                  />
+                  <button className="btn btn-primary" type="submit" disabled={mcpBusy}>
+                    {t("acc.mcp.add")}
+                  </button>
+                </div>
+              </form>
+              <div className="acc-table-wrap">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>{t("acc.mcp.tableName")}</th>
+                      <th>{t("acc.mcp.tableCommand")}</th>
+                      <th />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mcpServers.length === 0 && (
+                      <tr>
+                        <td colSpan={3}>{t("acc.mcp.noneYet")}</td>
+                      </tr>
+                    )}
+                    {mcpServers.map((s) => (
+                      <tr key={s.id}>
+                        <td>{s.name}</td>
+                        <td className="mono">
+                          {s.command} {s.args.join(" ")}
+                        </td>
+                        <td>
+                          <button
+                            className="btn btn-ghost btn-sm"
+                            type="button"
+                            onClick={() => handleDeleteMcpServer(s.id)}
+                          >
+                            {t("acc.mcp.delete")}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <p className="pane-intro">
+            {t("acc.usage.movedHint")}{" "}
+            <button className="btn btn-ghost btn-sm" type="button" onClick={onOpenUsage}>
+              {t("acc.usage.openLink")}
+            </button>
+          </p>
+        </div>
+      </div>
+    </>
   );
 }

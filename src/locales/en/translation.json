@@ -516,6 +516,21 @@
       "browse": "Browse…",
       "sessionDirLabel": "Session folder (use this for the CLI steps):",
       "copyPath": "Copy"
+    },
+    "providers": "Providers",
+    "intro": "Where models come from, and what this machine can reach. Keys are stored locally and sent only to the provider they belong to.",
+    "providerSub": {
+      "noKey": "Cloud · no key",
+      "keyCount_one": "Cloud · {{count}} key",
+      "keyCount_other": "Cloud · {{count}} keys",
+      "ollamaRunning_one": "Local · {{count}} model pulled",
+      "ollamaRunning_other": "Local · {{count}} models pulled"
+    },
+    "providerBadge": {
+      "reachable": "Reachable",
+      "unreachable": "Not reachable",
+      "keyPresent": "Key present",
+      "notConfigured": "Not configured"
     }
   },
   "ml": {

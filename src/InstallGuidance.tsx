@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { Icon } from "./shell/Icons";
 
 /** Tells the user how to install an external program, instead of
  *  installing it for them.
@@ -45,20 +46,25 @@ export default function InstallGuidance({
 
   return (
     <div className="install-guidance">
-      <p className="acc-hint">{t("install.intro")}</p>
-      <div className="install-guidance-command">
-        <code>{command}</code>
-        <button type="button" onClick={() => void copy()}>
+      <p className="field-hint">{t("install.intro")}</p>
+      <div className="install-command">
+        <code className="mono">{command}</code>
+        <button className="btn btn-secondary btn-sm" type="button" onClick={() => void copy()}>
+          <Icon name="copy" size="sm" />
           {copied ? t("install.copied") : t("install.copy")}
         </button>
       </div>
-      <p className="acc-hint">
+      <p className="field-hint">
         {t("install.orDownload")}{" "}
-        <button type="button" className="link-button" onClick={() => void openUrl(url)}>
+        {/* A button rather than an anchor: opening it goes through the
+            opener plugin so the link lands in the real browser instead of
+            navigating the app's own webview away from itself. */}
+        <button className="btn btn-ghost btn-sm" type="button" onClick={() => void openUrl(url)}>
+          <Icon name="external" size="sm" />
           {url}
         </button>
       </p>
-      <p className="acc-hint">{t("install.afterwards")}</p>
+      <p className="field-hint">{t("install.afterwards")}</p>
     </div>
   );
 }

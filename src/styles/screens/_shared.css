@@ -97,3 +97,16 @@
   margin-top: var(--space-5);
 }
 .settings-status { font-size: var(--text-xs); color: var(--text-muted); }
+
+/* Install guidance. Not in the design source — it has no equivalent,
+   because its providers are configured rather than installed. */
+.install-guidance > * + * { margin-top: var(--space-4); }
+.install-command {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+}
+.install-command code { flex: 1; min-width: 0; font-size: var(--text-sm); overflow-x: auto; }

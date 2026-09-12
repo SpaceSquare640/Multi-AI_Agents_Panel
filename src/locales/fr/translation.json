@@ -516,6 +516,21 @@
       "browse": "Parcourir…",
       "sessionDirLabel": "Dossier de session (à utiliser dans les commandes CLI) :",
       "copyPath": "Copier"
+    },
+    "providers": "Fournisseurs",
+    "intro": "D'où viennent les modèles et ce que cette machine peut joindre. Les clés sont stockées localement et envoyées uniquement au fournisseur auquel elles appartiennent.",
+    "providerSub": {
+      "noKey": "Cloud · aucune clé",
+      "keyCount_one": "Cloud · {{count}} clé",
+      "keyCount_other": "Cloud · {{count}} clés",
+      "ollamaRunning_one": "Local · {{count}} modèle téléchargé",
+      "ollamaRunning_other": "Local · {{count}} modèles téléchargés"
+    },
+    "providerBadge": {
+      "reachable": "Joignable",
+      "unreachable": "Injoignable",
+      "keyPresent": "Clé présente",
+      "notConfigured": "Non configuré"
     }
   },
   "ml": {

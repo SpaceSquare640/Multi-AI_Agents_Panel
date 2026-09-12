@@ -514,6 +514,19 @@
       "browse": "찾아보기…",
       "sessionDirLabel": "세션 폴더(이후 CLI 명령에 사용하는 경로):",
       "copyPath": "복사"
+    },
+    "providers": "제공자",
+    "intro": "모델이 어디에서 오는지, 그리고 이 컴퓨터가 무엇에 접근할 수 있는지. 키는 로컬에 저장되며 해당 제공자에게만 전송됩니다.",
+    "providerSub": {
+      "noKey": "클라우드 · 키 없음",
+      "keyCount_other": "클라우드 · 키 {{count}}개",
+      "ollamaRunning_other": "로컬 · 모델 {{count}}개 받음"
+    },
+    "providerBadge": {
+      "reachable": "연결 가능",
+      "unreachable": "연결 불가",
+      "keyPresent": "키 있음",
+      "notConfigured": "설정 안 됨"
     }
   },
   "ml": {

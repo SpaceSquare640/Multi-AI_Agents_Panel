@@ -514,6 +514,19 @@
       "browse": "参照…",
       "sessionDirLabel": "セッションフォルダー（この後の CLI コマンドで使うパス）：",
       "copyPath": "コピー"
+    },
+    "providers": "プロバイダー",
+    "intro": "モデルの提供元と、このマシンから到達できる先。キーはローカルに保存され、所属するプロバイダーにのみ送信されます。",
+    "providerSub": {
+      "noKey": "クラウド · キーなし",
+      "keyCount_other": "クラウド · キー {{count}} 件",
+      "ollamaRunning_other": "ローカル · モデル {{count}} 件取得済み"
+    },
+    "providerBadge": {
+      "reachable": "到達可能",
+      "unreachable": "到達不可",
+      "keyPresent": "キーあり",
+      "notConfigured": "未設定"
     }
   },
   "ml": {

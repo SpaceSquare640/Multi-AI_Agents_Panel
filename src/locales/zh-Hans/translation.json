@@ -514,6 +514,19 @@
       "browse": "浏览…",
       "sessionDirLabel": "工作阶段文件夹（后续 CLI 命令要用这个路径）：",
       "copyPath": "复制"
+    },
+    "providers": "Provider",
+    "intro": "模型从哪里来，以及这台机器连得到什么。密钥只保存在本机，而且只会送往它所属的 Provider。",
+    "providerSub": {
+      "noKey": "云端 · 尚无密钥",
+      "keyCount_other": "云端 · {{count}} 把密钥",
+      "ollamaRunning_other": "本机 · 已下载 {{count}} 个模型"
+    },
+    "providerBadge": {
+      "reachable": "可连接",
+      "unreachable": "无法连接",
+      "keyPresent": "已有密钥",
+      "notConfigured": "尚未设置"
     }
   },
   "ml": {

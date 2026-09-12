@@ -514,6 +514,19 @@
       "browse": "瀏覽…",
       "sessionDirLabel": "工作階段資料夾（後續 CLI 指令要用這個路徑）：",
       "copyPath": "複製"
+    },
+    "providers": "Provider",
+    "intro": "模型從哪裡來，以及這台機器連得到什麼。金鑰只保存在本機，而且只會送往它所屬的 Provider。",
+    "providerSub": {
+      "noKey": "雲端 · 尚無金鑰",
+      "keyCount_other": "雲端 · {{count}} 把金鑰",
+      "ollamaRunning_other": "本機 · 已下載 {{count}} 個模型"
+    },
+    "providerBadge": {
+      "reachable": "可連線",
+      "unreachable": "無法連線",
+      "keyPresent": "已有金鑰",
+      "notConfigured": "尚未設定"
     }
   },
   "ml": {
