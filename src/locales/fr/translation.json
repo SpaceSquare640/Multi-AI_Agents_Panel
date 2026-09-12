@@ -403,7 +403,13 @@
     "deleteAgentConfirmTitle": "Supprimer definitivement ?",
     "deleteAgentConfirm": "Ceci supprime definitivement l'Agent « {{name}} » et ses autorisations (acces aux fichiers, Skills, MCP, ML). Les sessions et messages auxquels il a participe sont conserves, simplement dissocies de lui. Action irreversible.",
     "agentCount_one": "{{count}} agent",
-    "agentCount_other": "{{count}} agents"
+    "agentCount_other": "{{count}} agents",
+    "sessions": "Sessions",
+    "unseenReply": "Nouvelle réponse",
+    "sessionCount_one": "{{count}} session",
+    "sessionCount_other": "{{count}} sessions",
+    "runningCount_one": "{{count}} en cours",
+    "runningCount_other": "{{count}} en cours"
   },
   "acc": {
     "title": "Centre de contrôle IA",

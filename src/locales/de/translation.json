@@ -403,7 +403,13 @@
     "deleteAgentConfirmTitle": "Endgueltig loeschen?",
     "deleteAgentConfirm": "Dies loescht den Agenten \"{{name}}\" und seine Berechtigungen (Dateizugriff, Skills, MCP, ML) endgueltig. Sitzungen und Nachrichten, an denen er beteiligt war, bleiben erhalten, sind aber nicht mehr mit ihm verknuepft. Das kann nicht rueckgaengig gemacht werden.",
     "agentCount_one": "{{count}} Agent",
-    "agentCount_other": "{{count}} Agenten"
+    "agentCount_other": "{{count}} Agenten",
+    "sessions": "Sitzungen",
+    "unseenReply": "Neue Antwort",
+    "sessionCount_one": "{{count}} Sitzung",
+    "sessionCount_other": "{{count}} Sitzungen",
+    "runningCount_one": "{{count}} laufend",
+    "runningCount_other": "{{count}} laufend"
   },
   "acc": {
     "title": "KI-Kontrollzentrum",

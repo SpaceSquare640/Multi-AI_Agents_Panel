@@ -400,7 +400,11 @@
     "deleteAgentTitle": "永久删除",
     "deleteAgentConfirmTitle": "永久删除？",
     "deleteAgentConfirm": "这会永久删除 Agent「{{name}}」以及它的授权（文件访问、Skills、MCP、ML）。它参与过的工作阶段与消息会保留，只是不再连结到它。此操作无法复原。",
-    "agentCount_other": "{{count}} 个 Agent"
+    "agentCount_other": "{{count}} 个 Agent",
+    "sessions": "会话",
+    "unseenReply": "有新回复",
+    "sessionCount_other": "{{count}} 个会话",
+    "runningCount_other": "{{count}} 个进行中"
   },
   "acc": {
     "title": "AI 控制中心",

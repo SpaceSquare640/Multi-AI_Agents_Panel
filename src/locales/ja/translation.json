@@ -400,7 +400,11 @@
     "deleteAgentTitle": "完全に削除",
     "deleteAgentConfirmTitle": "完全に削除しますか？",
     "deleteAgentConfirm": "Agent「{{name}}」とその権限（ファイルアクセス、Skills、MCP、ML）を完全に削除します。参加していたセッションとメッセージは保持されますが、このAgentとの関連は解除されます。元に戻せません。",
-    "agentCount_other": "エージェント {{count}} 体"
+    "agentCount_other": "エージェント {{count}} 体",
+    "sessions": "セッション",
+    "unseenReply": "新しい返信",
+    "sessionCount_other": "セッション {{count}} 件",
+    "runningCount_other": "{{count}} 件実行中"
   },
   "acc": {
     "title": "AI コントロールセンター",

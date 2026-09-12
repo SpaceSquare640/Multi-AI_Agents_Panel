@@ -403,7 +403,13 @@
     "deleteAgentConfirmTitle": "Delete permanently?",
     "deleteAgentConfirm": "This permanently deletes the Agent \"{{name}}\" and its grants (file access, Skills, MCP, ML). Sessions and messages it took part in are kept, just no longer linked to it. This can't be undone.",
     "agentCount_one": "{{count}} agent",
-    "agentCount_other": "{{count}} agents"
+    "agentCount_other": "{{count}} agents",
+    "sessions": "Sessions",
+    "unseenReply": "New reply",
+    "sessionCount_one": "{{count}} session",
+    "sessionCount_other": "{{count}} sessions",
+    "runningCount_one": "{{count}} running",
+    "runningCount_other": "{{count}} running"
   },
   "acc": {
     "title": "AI Control Center",

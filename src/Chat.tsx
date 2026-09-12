@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { Icon } from "./shell/Icons";
 import { ShellSidebar, useIsActiveScreen } from "./shell/SidebarSlot";
 import { invoke } from "@tauri-apps/api/core";
 import { ask, open as openFolderPicker } from "@tauri-apps/plugin-dialog";
@@ -19,6 +20,8 @@ import type {
   SkillAccessGrant,
   SkillManifest,
 } from "./types";
+import "./styles/screens/agents.css";
+import "./styles/screens/chat.css";
 import "./Chat.css";
 
 /// `send_chat_message_with_tools` (agent_manager::function_calling) is
@@ -186,6 +189,7 @@ export default function Chat() {
 
   // New-group-session form state.
   const [showNewGroup, setShowNewGroup] = useState(false);
+  const [showNewSession, setShowNewSession] = useState(false);
   const [newGroupTitle, setNewGroupTitle] = useState("");
   const [newGroupAgentIds, setNewGroupAgentIds] = useState<string[]>([]);
 
@@ -202,6 +206,7 @@ export default function Chat() {
 
   const independentSessions = sessions.filter((s) => s.kind === "independent");
   const groupSessions = sessions.filter((s) => s.kind === "group");
+  const sendingCount = Object.values(tabs).filter((tab) => tab.sending).length;
 
 
   useEffect(() => {
@@ -967,73 +972,99 @@ export default function Chat() {
           mounted at once; without that, every screen with a sidebar would
           portal into the same host simultaneously. */}
       {isActiveScreen && (
-      <ShellSidebar>
-      <aside className="chat-sidebar">
-        <h2>{t("chat.independentSessions")}</h2>
-        <ul className="chat-session-list">
-          {independentSessions.map((s) => (
-            <li key={s.id} className="chat-session-list-item">
-              <button
-                className={openTabIds.includes(s.id) ? "active" : ""}
-                title={s.title}
-                onClick={() => openTab(s.id, s.kind)}
-              >
-                {s.title}
-                {tabs[s.id]?.hasUnseenReply && <span className="chat-unread-dot" />}
-              </button>
-              <button
-                className="chat-session-delete"
-                aria-label={t("chat.deleteSession", { title: s.title })}
-                title={t("chat.deleteSessionTitle")}
-                onClick={() => void handleDeleteSession(s.id, s.title)}
-              >
-                ×
-              </button>
-            </li>
-          ))}
-          {independentSessions.length === 0 && <li className="chat-empty">{t("chat.noSessions")}</li>}
-        </ul>
-
-        <h2>{t("chat.groupChats")}</h2>
-        <ul className="chat-session-list">
-          {groupSessions.map((s) => (
-            <li key={s.id} className="chat-session-list-item">
-              <button
-                className={openTabIds.includes(s.id) ? "active" : ""}
-                title={s.title}
-                onClick={() => openTab(s.id, s.kind)}
-              >
-                {s.title}
-                {tabs[s.id]?.hasUnseenReply && <span className="chat-unread-dot" />}
-              </button>
-              <button
-                className="chat-session-delete"
-                aria-label={t("chat.deleteSession", { title: s.title })}
-                title={t("chat.deleteSessionTitle")}
-                onClick={() => void handleDeleteSession(s.id, s.title)}
-              >
-                ×
-              </button>
-            </li>
-          ))}
-          {groupSessions.length === 0 && <li className="chat-empty">{t("chat.noGroupChats")}</li>}
-        </ul>
-
-        <button className="chat-link-button" onClick={() => setShowNewGroup((v) => !v)}>
-          {showNewGroup ? t("chat.cancel") : t("chat.newGroupChat")}
+      <ShellSidebar v2>
+      <div className="sidebar-header">
+        <span className="label">{t("chat.sessions")}</span>
+        <button
+          className="titlebar-btn"
+          type="button"
+          aria-label={t("chat.newSession")}
+          aria-pressed={showNewSession}
+          onClick={() => setShowNewSession((v) => !v)}
+        >
+          <Icon name="plus" size="sm" />
         </button>
-        {showNewGroup && (
-          <form className="chat-form" onSubmit={handleCreateGroupSession}>
+      </div>
+
+      <div className="sidebar-body">
+        {showNewSession && (
+          <form className="agent-form" onSubmit={handleCreateSession}>
+            <select className="select" value={newSessionAgentId} onChange={(e) => setNewSessionAgentId(e.target.value)}>
+              {agents.length === 0 && <option value="">{t("chat.noAgentsYetOption")}</option>}
+              {agents.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name} ({a.providerName}/{a.model})
+                </option>
+              ))}
+            </select>
             <input
+              className="input"
+              type="text"
+              placeholder={t("chat.sessionTitlePlaceholder")}
+              value={newSessionTitle}
+              onChange={(e) => setNewSessionTitle(e.target.value)}
+            />
+            <button className="btn btn-primary btn-sm" type="submit">
+              {t("chat.start")}
+            </button>
+          </form>
+        )}
+
+        <div className="label sidebar-section-label">{t("chat.independentSessions")}</div>
+        {independentSessions.map((s) => (
+          <div className="agent-row" key={s.id}>
+            <button
+              className="row agent-row-main"
+              type="button"
+              aria-current={openTabIds.includes(s.id) ? "true" : undefined}
+              onClick={() => openTab(s.id, s.kind)}
+            >
+              <span className="name">{s.title}</span>
+              {/* The dot is the only signal that a background tab has
+                  answered, so it carries a label rather than relying on
+                  colour and position alone. */}
+              {tabs[s.id]?.hasUnseenReply && (
+                <span className="status-dot" data-state="running" role="img" aria-label={t("chat.unseenReply")} />
+              )}
+            </button>
+            <button
+              className="tree-action"
+              type="button"
+              aria-label={t("chat.deleteSession", { title: s.title })}
+              onClick={() => void handleDeleteSession(s.id, s.title)}
+            >
+              <Icon name="trash" size="sm" />
+            </button>
+          </div>
+        ))}
+        {independentSessions.length === 0 && <p className="tree-empty">{t("chat.noSessions")}</p>}
+
+        <div className="sidebar-group-head">
+          <span className="label">{t("chat.groupChats")}</span>
+          <button
+            className="tree-action sidebar-group-add"
+            type="button"
+            aria-label={t("chat.newGroupChat")}
+            aria-pressed={showNewGroup}
+            onClick={() => setShowNewGroup((v) => !v)}
+          >
+            <Icon name="plus" size="sm" />
+          </button>
+        </div>
+
+        {showNewGroup && (
+          <form className="agent-form" onSubmit={handleCreateGroupSession}>
+            <input
+              className="input"
               type="text"
               placeholder={t("chat.meetingTitlePlaceholder")}
               value={newGroupTitle}
               onChange={(e) => setNewGroupTitle(e.target.value)}
             />
-            <div className="chat-group-agent-picker">
-              {agents.length === 0 && <span className="chat-empty">{t("chat.noAgentsYet")}</span>}
+            <div className="group-member-picker">
+              {agents.length === 0 && <span className="field-hint">{t("chat.noAgentsYet")}</span>}
               {agents.map((a) => (
-                <label key={a.id} className="chat-group-agent-option">
+                <label key={a.id} className="group-member">
                   <input
                     type="checkbox"
                     checked={newGroupAgentIds.includes(a.id)}
@@ -1043,30 +1074,50 @@ export default function Chat() {
                 </label>
               ))}
             </div>
-            <button type="submit">{t("chat.startMeeting")}</button>
+            <button className="btn btn-primary btn-sm" type="submit">
+              {t("chat.startMeeting")}
+            </button>
           </form>
         )}
 
-        <h3>{t("chat.newSession")}</h3>
-        <form className="chat-form" onSubmit={handleCreateSession}>
-          <select value={newSessionAgentId} onChange={(e) => setNewSessionAgentId(e.target.value)}>
-            {agents.length === 0 && <option value="">{t("chat.noAgentsYetOption")}</option>}
-            {agents.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name} ({a.providerName}/{a.model})
-              </option>
-            ))}
-          </select>
-          <input
-            type="text"
-            placeholder={t("chat.sessionTitlePlaceholder")}
-            value={newSessionTitle}
-            onChange={(e) => setNewSessionTitle(e.target.value)}
-          />
-          <button type="submit">{t("chat.start")}</button>
-        </form>
+        {groupSessions.map((s) => (
+          <div className="agent-row" key={s.id}>
+            <button
+              className="row agent-row-main"
+              type="button"
+              aria-current={openTabIds.includes(s.id) ? "true" : undefined}
+              onClick={() => openTab(s.id, s.kind)}
+            >
+              <span className="name">{s.title}</span>
+              {tabs[s.id]?.hasUnseenReply && (
+                <span className="status-dot" data-state="running" role="img" aria-label={t("chat.unseenReply")} />
+              )}
+            </button>
+            <button
+              className="tree-action"
+              type="button"
+              aria-label={t("chat.deleteSession", { title: s.title })}
+              onClick={() => void handleDeleteSession(s.id, s.title)}
+            >
+              <Icon name="trash" size="sm" />
+            </button>
+          </div>
+        ))}
+        {groupSessions.length === 0 && <p className="tree-empty">{t("chat.noGroupChats")}</p>}
+      </div>
 
-      </aside>
+      <div className="sidebar-footer">
+        <div className="row">
+          {/* "Running" counts tabs with a request in flight, which is a
+              fact this component holds. The design also shows a filter
+              field; there is no session search to wire one to, so it is
+              not drawn. */}
+          <span className="name">
+            {t("chat.sessionCount", { count: sessions.length })}
+            {sendingCount > 0 && ` · ${t("chat.runningCount", { count: sendingCount })}`}
+          </span>
+        </div>
+      </div>
       </ShellSidebar>
       )}
 
