@@ -550,7 +550,13 @@
     }
   },
   "semanticSearch": {
-    "title": "Recherche semantique"
+    "title": "Recherche semantique",
+    "indexes": "Index",
+    "results": "Résultats",
+    "byMeaning": "par le sens, pas par mot-clé",
+    "grantedOnly": "Seuls les dossiers accordés à un Agent sont indexés. Rien d'autre sur cette machine n'est lu ni vectorisé.",
+    "hitCount_one": "{{count}} résultat",
+    "hitCount_other": "{{count}} résultats"
   },
   "gameAgentPage": {
     "title": "Agent de jeu"
@@ -606,7 +612,9 @@
       "ml": "Apprentissage automatique",
       "usage": "Utilisation",
       "settings": "Paramètres",
-      "help": "Aide"
+      "help": "Aide",
+      "semanticSearch": "Recherche sémantique",
+      "gameAgent": "Agent de jeu"
     },
     "status": {
       "localRuntime": "Ollama",

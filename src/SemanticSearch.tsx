@@ -1,12 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
+import { Icon } from "./shell/Icons";
+import { ShellSidebar, useIsActiveScreen } from "./shell/SidebarSlot";
 import type { Agent, MlAccessGrant, SemanticSearchResult, Session } from "./types";
-import "./MachineLearning.css";
+import "./styles/screens/semantic-search.css";
 
 /** One semantic-search index this app knows about, resolved from the raw
  *  per-agent/per-session grant data into everything a rebuild/search
- *  action needs — built once in `loadGrants` so the render/action code
+ *  action needs — built once in `loadIndexes` so the render/action code
  *  below never has to re-derive `indexName`/`actingAgentId` itself. */
 type IndexEntry = {
   key: string;
@@ -18,16 +20,35 @@ type IndexEntry = {
   actingAgentId: string;
 };
 
+/** Semantic search, rebuilt against the v2 design.
+ *
+ *  The indexes move to the shell's context sidebar and one of them is
+ *  selected at a time, which is the design's arrangement. The previous
+ *  version stacked every index as its own card, each with its own
+ *  rebuild button, search field and result list — so the same query had
+ *  to be typed once per index, and the results of different indexes
+ *  never appeared in the same place.
+ *
+ *  Three parts of the design are not here. Its match-mode toggle
+ *  (meaning / exact) has no counterpart: `semantic_search_query` only
+ *  matches by meaning. Its indexing meter needs progress events, and
+ *  `build_semantic_index` is one call that returns when it has finished
+ *  — a meter that jumps from nothing to complete would be decoration
+ *  pretending to be information. And its chunk counts are not exposed by
+ *  any command. */
 export default function SemanticSearch() {
   const { t } = useTranslation();
   const [error, setError] = useState<string | null>(null);
 
   const [indexes, setIndexes] = useState<IndexEntry[]>([]);
   const [loadingIndexes, setLoadingIndexes] = useState(true);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [indexingKey, setIndexingKey] = useState<string | null>(null);
-  const [searchQueries, setSearchQueries] = useState<Record<string, string>>({});
-  const [searchResults, setSearchResults] = useState<Record<string, SemanticSearchResult[]>>({});
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<Record<string, SemanticSearchResult[]>>({});
   const [searchingKey, setSearchingKey] = useState<string | null>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const isActiveScreen = useIsActiveScreen(headerRef);
 
   async function loadIndexes() {
     setLoadingIndexes(true);
@@ -81,7 +102,11 @@ export default function SemanticSearch() {
         )
       ).flat();
 
-      setIndexes([...agentEntries, ...sessionEntries]);
+      const all = [...agentEntries, ...sessionEntries];
+      setIndexes(all);
+      /* Keep the current selection if it still exists — a refresh should
+         not move someone off the index they were reading. */
+      setSelectedKey((prev) => (prev && all.some((e) => e.key === prev) ? prev : (all[0]?.key ?? null)));
     } catch (err) {
       setError(String(err));
     } finally {
@@ -93,6 +118,8 @@ export default function SemanticSearch() {
     loadIndexes();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const selected = indexes.find((e) => e.key === selectedKey) ?? null;
 
   async function handleRebuildIndex(entry: IndexEntry) {
     setError(null);
@@ -115,18 +142,18 @@ export default function SemanticSearch() {
   }
 
   async function handleSearch(entry: IndexEntry) {
-    const query = (searchQueries[entry.key] ?? "").trim();
-    if (!query) return;
+    const q = query.trim();
+    if (!q) return;
     setError(null);
     setSearchingKey(entry.key);
     try {
       const result = await invoke<{ results: SemanticSearchResult[] }>("semantic_search_query", {
         agentId: entry.actingAgentId,
         indexName: entry.indexName,
-        query,
+        query: q,
         topK: 5,
       });
-      setSearchResults((prev) => ({ ...prev, [entry.key]: result.results }));
+      setResults((prev) => ({ ...prev, [entry.key]: result.results }));
     } catch (err) {
       setError(String(err));
     } finally {
@@ -134,63 +161,139 @@ export default function SemanticSearch() {
     }
   }
 
+  const shown = selected ? results[selected.key] : undefined;
+
   return (
-    <div className="ml-branch">
-      {error && (
-        <div className="acc-error" role="alert">
-          {error}
-          <button onClick={() => setError(null)} aria-label={t("acc.dismissError")}>×</button>
-        </div>
+    <>
+      {isActiveScreen && (
+        <ShellSidebar v2>
+          <div className="sidebar-header">
+            <span className="label">{t("semanticSearch.indexes")}</span>
+          </div>
+
+          <div className="sidebar-body">
+            {indexes.map((entry) => (
+              <button
+                className="row row-tall"
+                type="button"
+                key={entry.key}
+                aria-current={entry.key === selectedKey ? "true" : undefined}
+                onClick={() => setSelectedKey(entry.key)}
+              >
+                <Icon name={entry.scopeKind === "session" ? "chat" : "models"} size="sm" />
+                <span className="name">
+                  {entry.label}
+                  <span className="row-sub">
+                    {entry.scopeKind === "session" ? t("ml.semanticSearch.groupChat") : t("ml.semanticSearch.agent")} ·{" "}
+                    {entry.capabilityName}
+                  </span>
+                </span>
+              </button>
+            ))}
+
+            {/* The empty state is stated once, in the workspace. Saying it
+                here as well put the same sentence twice on one screen.
+                The note below is different information — what the index
+                does and does not cover — so it stays. */}
+            <p className="sidebar-note">{t("semanticSearch.grantedOnly")}</p>
+          </div>
+        </ShellSidebar>
       )}
 
-      <section className="acc-section">
-        <div className="ml-section-head">
-          <h2>{t("ml.semanticSearch.heading")}</h2>
-          <button onClick={() => void loadIndexes()} disabled={loadingIndexes}>
+      <div className="workspace-header" ref={headerRef}>
+        <span className="workspace-title">{t("semanticSearch.title")}</span>
+        <div className="workspace-actions">
+          {/* Refresh is a labelled button here rather than an icon in the
+              sidebar header: the design's sprite has no refresh glyph,
+              because its sidebar header button adds a folder. Borrowing
+              the magnifier for it would have said "search" on a control
+              that re-reads the list. Usage and Skills already put Refresh
+              in this slot. */}
+          <button
+            className="btn btn-ghost btn-sm"
+            type="button"
+            disabled={loadingIndexes}
+            onClick={() => void loadIndexes()}
+          >
             {loadingIndexes ? t("skills.refreshing") : t("skills.refresh")}
           </button>
-        </div>
-        <p className="acc-hint">{t("ml.semanticSearch.hint")}</p>
-
-        {!loadingIndexes && indexes.length === 0 && <p className="acc-empty">{t("ml.semanticSearch.none")}</p>}
-
-        {indexes.map((entry) => (
-          <div className="ml-index-card" key={entry.key}>
-            <div className="ml-index-card-head">
-              <span className="ml-index-label">{entry.label}</span>
-              <span className={entry.scopeKind === "session" ? "source-tag custom" : "source-tag builtin"}>
-                {entry.scopeKind === "session" ? t("ml.semanticSearch.groupChat") : t("ml.semanticSearch.agent")}
-              </span>
-              <span className="acc-mono">{entry.capabilityName}</span>
-            </div>
-            <button disabled={indexingKey === entry.key} onClick={() => void handleRebuildIndex(entry)}>
-              {indexingKey === entry.key ? t("chat.indexing") : t("chat.rebuildIndex")}
+          {selected && (
+            <button
+              className="btn btn-secondary btn-sm"
+              type="button"
+              disabled={indexingKey === selected.key}
+              onClick={() => void handleRebuildIndex(selected)}
+            >
+              {indexingKey === selected.key ? t("chat.indexing") : t("chat.rebuildIndex")}
             </button>
-            <div className="acc-form-row">
-              <input
-                type="text"
-                placeholder={t("chat.searchFilesPlaceholder")}
-                value={searchQueries[entry.key] ?? ""}
-                onChange={(e) => setSearchQueries((prev) => ({ ...prev, [entry.key]: e.target.value }))}
-              />
-              <button disabled={searchingKey === entry.key} onClick={() => void handleSearch(entry)}>
-                {searchingKey === entry.key ? t("chat.searching") : t("chat.search")}
-              </button>
+          )}
+        </div>
+      </div>
+
+      <div className="workspace-body">
+        <div className="pane pane-wide">
+          {error && (
+            <div className="callout" data-kind="danger" role="alert">
+              <div className="callout-body">{error}</div>
             </div>
-            {searchResults[entry.key] && (
-              <ul className="acc-model-list">
-                {searchResults[entry.key].length === 0 && <li className="chat-empty">{t("chat.noResults")}</li>}
-                {searchResults[entry.key].map((r) => (
-                  <li key={r.path}>
-                    <span className="acc-mono">{r.path}</span> ({r.score.toFixed(2)})
-                    <p className="acc-hint">{r.excerpt}</p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        ))}
-      </section>
-    </div>
+          )}
+
+          <p className="pane-intro">{t("ml.semanticSearch.hint")}</p>
+
+          {!selected ? (
+            <p className="pane-intro">{t("ml.semanticSearch.none")}</p>
+          ) : (
+            <>
+              <form
+                className="searchbar"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void handleSearch(selected);
+                }}
+              >
+                <div className="input-group">
+                  <Icon name="search" size="sm" />
+                  <input
+                    className="input"
+                    type="search"
+                    placeholder={t("chat.searchFilesPlaceholder")}
+                    aria-label={t("chat.searchFilesPlaceholder")}
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                  />
+                </div>
+                <button className="btn btn-primary" type="submit" disabled={searchingKey === selected.key}>
+                  {searchingKey === selected.key ? t("chat.searching") : t("chat.search")}
+                </button>
+              </form>
+
+              {shown && (
+                <section>
+                  <div className="section-head">
+                    <h2>{t("semanticSearch.results")}</h2>
+                    <span className="count">{t("semanticSearch.hitCount", { count: shown.length })}</span>
+                    <span className="spacer" />
+                    <span className="count">{t("semanticSearch.byMeaning")}</span>
+                  </div>
+
+                  {shown.length === 0 && <p className="pane-intro">{t("chat.noResults")}</p>}
+
+                  {shown.map((r) => (
+                    <div className="card hit" key={r.path}>
+                      <div className="hit-head">
+                        <Icon name="notes" size="sm" />
+                        <span className="hit-path">{r.path}</span>
+                        <span className="hit-score">{r.score.toFixed(2)}</span>
+                      </div>
+                      <p className="hit-snippet">{r.excerpt}</p>
+                    </div>
+                  ))}
+                </section>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </>
   );
 }

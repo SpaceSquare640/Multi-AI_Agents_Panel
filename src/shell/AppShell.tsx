@@ -14,18 +14,24 @@ import "../styles/shell.css";
  *  configure. The system group is pushed to the bottom of the rail for
  *  the same reason.
  *
- *  This is eight destinations, not the design's nine. "Machine Learning"
- *  is one v1 screen that contains both Semantic Search and the Game
- *  Agent, and the design splits it into two rail items. Splitting it here
- *  would give two rail entries pointing at one screen, which reads as a
- *  bug. The split happens when those screens are ported, which is the
- *  step that makes two destinations real. */
+ *  Nine destinations. Step 2 shipped eight and deferred one decision:
+ *  v1's "Machine Learning" was a single screen holding both Semantic
+ *  Search and the Game Agent, and splitting the rail before those screens
+ *  were ported would have given two entries pointing at one place.
+ *
+ *  The split also had to be asked rather than assumed. A user correction
+ *  in v1.6.2 had explicitly put the Game Agent back *under* Machine
+ *  Learning after an earlier redesign made them siblings, so following
+ *  the design here meant reversing a stated decision. Confirmed with the
+ *  user before this change: the v2 arrangement wins, and the two are
+ *  separate destinations. */
 type TabId =
   | "chat"
   | "notes"
   | "control-center"
   | "skills"
-  | "ml"
+  | "semantic-search"
+  | "game-agent"
   | "usage"
   | "settings"
   | "manual";
@@ -49,7 +55,8 @@ const RAIL: RailGroup[] = [
     items: [
       { id: "control-center", labelKey: "shell.nav.models", icon: "models" },
       { id: "skills", labelKey: "shell.nav.skills", icon: "skills" },
-      { id: "ml", labelKey: "shell.nav.ml", icon: "game" },
+      { id: "semantic-search", labelKey: "shell.nav.semanticSearch", icon: "search" },
+      { id: "game-agent", labelKey: "shell.nav.gameAgent", icon: "game" },
     ],
   },
   {

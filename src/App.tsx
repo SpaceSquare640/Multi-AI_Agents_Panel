@@ -1,9 +1,10 @@
 import { useState } from "react";
 import AIControlCenter from "./AIControlCenter";
 import Chat from "./Chat";
-import MachineLearning from "./MachineLearning";
+import GameAgent from "./GameAgent";
 import Manual from "./Manual";
 import Notes from "./Notes";
+import SemanticSearch from "./SemanticSearch";
 import Onboarding, { hasAcknowledgedGuardrails } from "./Onboarding";
 import Settings from "./Settings";
 import Skills from "./Skills";
@@ -57,8 +58,11 @@ function App() {
       <div className="app-tab-content" data-screen-pane hidden={tab !== "control-center"}>
         <AIControlCenter onOpenUsage={() => setTab("usage")} onOpenManual={() => setTab("manual")} />
       </div>
-      <div className="app-tab-content" data-screen-pane hidden={tab !== "ml"}>
-        <MachineLearning />
+      <div className="app-tab-content screen-v2" data-screen-pane hidden={tab !== "semantic-search"}>
+        <SemanticSearch />
+      </div>
+      <div className="app-tab-content" data-screen-pane hidden={tab !== "game-agent"}>
+        <GameAgent />
       </div>
       <div className="app-tab-content screen-v2" data-screen-pane hidden={tab !== "skills"}>
         <Skills />

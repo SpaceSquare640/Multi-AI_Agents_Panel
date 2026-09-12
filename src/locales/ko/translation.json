@@ -548,7 +548,12 @@
     }
   },
   "semanticSearch": {
-    "title": "시맨틱 검색"
+    "title": "시맨틱 검색",
+    "indexes": "인덱스",
+    "results": "결과",
+    "byMeaning": "키워드가 아니라 의미로 일치",
+    "grantedOnly": "Agent에게 권한이 부여된 폴더만 색인됩니다. 이 컴퓨터의 다른 파일은 읽거나 임베딩하지 않습니다.",
+    "hitCount_other": "{{count}}건"
   },
   "gameAgentPage": {
     "title": "게임 조작 Agent"
@@ -603,7 +608,9 @@
       "ml": "머신 러닝",
       "usage": "사용량",
       "settings": "설정",
-      "help": "도움말"
+      "help": "도움말",
+      "semanticSearch": "의미 검색",
+      "gameAgent": "게임 에이전트"
     },
     "status": {
       "localRuntime": "Ollama",

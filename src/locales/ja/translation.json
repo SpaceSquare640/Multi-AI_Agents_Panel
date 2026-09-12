@@ -548,7 +548,12 @@
     }
   },
   "semanticSearch": {
-    "title": "セマンティック検索"
+    "title": "セマンティック検索",
+    "indexes": "インデックス",
+    "results": "結果",
+    "byMeaning": "キーワードではなく意味で照合",
+    "grantedOnly": "Agent に許可されたフォルダーだけがインデックス化されます。このマシン上のそれ以外は読み取りも埋め込みもされません。",
+    "hitCount_other": "{{count}} 件"
   },
   "gameAgentPage": {
     "title": "ゲーム操作 Agent"
@@ -603,7 +608,9 @@
       "ml": "機械学習",
       "usage": "使用量",
       "settings": "設定",
-      "help": "ヘルプ"
+      "help": "ヘルプ",
+      "semanticSearch": "セマンティック検索",
+      "gameAgent": "ゲームエージェント"
     },
     "status": {
       "localRuntime": "Ollama",

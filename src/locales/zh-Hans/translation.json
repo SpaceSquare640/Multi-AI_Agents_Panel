@@ -548,7 +548,12 @@
     }
   },
   "semanticSearch": {
-    "title": "语意搜索"
+    "title": "语意搜索",
+    "indexes": "索引",
+    "results": "结果",
+    "byMeaning": "按语义匹配，不是关键字",
+    "grantedOnly": "只有被授权给 Agent 的文件夹会建立索引。这台电脑上的其他文件不会被读取或嵌入。",
+    "hitCount_other": "{{count}} 条结果"
   },
   "gameAgentPage": {
     "title": "游戏操作 Agent"
@@ -603,7 +608,9 @@
       "ml": "机器学习",
       "usage": "用量",
       "settings": "设置",
-      "help": "帮助"
+      "help": "帮助",
+      "semanticSearch": "语义搜索",
+      "gameAgent": "游戏代理"
     },
     "status": {
       "localRuntime": "Ollama",

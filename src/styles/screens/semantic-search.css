@@ -1,0 +1,55 @@
+/* Semantic search. From the v2 design source (screens.css, "Semantic search").
+   `.index-state` and its meter are not ported: they report indexing progress,
+   and build_semantic_index is a single call that returns when it is done —
+   there are no progress events to drive them. A meter that jumps 0 to 100
+   would be decoration pretending to be information. */
+.searchbar { display: flex; gap: var(--space-4); }
+.searchbar .input-group { flex: 1; }
+
+.hit { padding: var(--space-6); }
+.hit + .hit { margin-top: var(--space-4); }
+.hit-head { display: flex; align-items: center; gap: var(--space-5); }
+.hit-path {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hit-score {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+.hit-snippet {
+  margin-top: var(--space-4);
+  font-size: var(--text-sm);
+  line-height: var(--leading-body);
+}
+.hit-snippet mark {
+  padding: 0 2px;
+  background: var(--warning-soft);
+  color: var(--warning-text);
+  border-radius: 2px;
+}
+
+
+/* Sidebar rows carry a second line, which the design writes as an inline
+   `display:block` on .row-sub. Stated here instead so the port does not
+   accumulate the one-off inline styles it is meant to be removing. */
+.sidebar[data-v2] .row-sub { display: block; }
+
+/* The design's closing note in the sidebar: only granted folders are ever
+   read. Worth keeping — it is the answer to "why is my file not here". */
+.sidebar-note {
+  padding: var(--space-7) var(--space-5);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+  line-height: var(--leading-body);
+}
+
+.section-head .spacer { flex: 1; }

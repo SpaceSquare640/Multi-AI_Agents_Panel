@@ -548,7 +548,12 @@
     }
   },
   "semanticSearch": {
-    "title": "語意搜尋"
+    "title": "語意搜尋",
+    "indexes": "索引",
+    "results": "結果",
+    "byMeaning": "依語意比對，不是關鍵字",
+    "grantedOnly": "只有被授權給 Agent 的資料夾會建立索引。這台電腦上的其他檔案不會被讀取或嵌入。",
+    "hitCount_other": "{{count}} 筆結果"
   },
   "gameAgentPage": {
     "title": "遊戲操作 Agent"
@@ -603,7 +608,9 @@
       "ml": "機器學習",
       "usage": "用量",
       "settings": "設定",
-      "help": "說明"
+      "help": "說明",
+      "semanticSearch": "語意搜尋",
+      "gameAgent": "遊戲代理"
     },
     "status": {
       "localRuntime": "Ollama",
