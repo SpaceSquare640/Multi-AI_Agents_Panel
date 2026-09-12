@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import "./Onboarding.css";
+import { Icon, type IconName } from "./shell/Icons";
+import "./styles/screens/onboarding.css";
 
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -21,6 +22,14 @@ interface RuleCategory {
   title: string;
   points: string[];
 }
+
+/** One icon per rule category, in the order the categories are written.
+ *  Positional rather than keyed off the title, because the titles are
+ *  translated and a lookup by translated string would break in six of
+ *  the seven locales. The fallback matters: a category added to the
+ *  translation file without one here still renders, with the generic
+ *  alert rather than no icon at all. */
+const CATEGORY_ICONS: IconName[] = ["key", "shield-alert", "chat", "check"];
 
 /** Onboarding's forced Guardrails step (see Screen Inventory's decided
  *  "是，強制" — Onboarding must force one pass over the Guardrails
@@ -76,37 +85,51 @@ export default function Onboarding({ onDismiss }: { onDismiss?: () => void }) {
   }
 
   return (
-    <div className="onboarding-backdrop">
+    <div className="onboard">
       <div
-        className="onboarding-modal"
+        className="onboard-card"
         role="dialog"
         aria-modal="true"
         aria-labelledby="onboarding-title"
         ref={modalRef}
       >
-        <h1 id="onboarding-title">{t("onboarding.title")}</h1>
-        <p className="onboarding-lead">{t("onboarding.lead")}</p>
+        <div className="onboard-mark">
+          <div>
+            <div className="onboard-app">{t("shell.appName")}</div>
+          </div>
+        </div>
 
-        <div className="onboarding-categories">
-          {ruleCategories.map((cat) => (
-            <div className="onboarding-category" key={cat.title}>
-              <div className="onboarding-category-title">{cat.title}</div>
-              <ul>
-                {cat.points.map((p) => (
-                  <li key={p}>{p}</li>
-                ))}
-              </ul>
+        <h1 id="onboarding-title">{t("onboarding.title")}</h1>
+        <p>{t("onboarding.lead")}</p>
+
+        {/* The design shows "Step 1 of 3" with progress dots. There is no
+            step 2 or 3 — this gate is the whole of onboarding — so the
+            indicator is not ported rather than shown pointing at steps
+            that do not exist. */}
+        <div className="rules">
+          {ruleCategories.map((cat, i) => (
+            <div className="rule" key={cat.title}>
+              <Icon name={CATEGORY_ICONS[i] ?? "alert"} />
+              <div className="rule-body">
+                <h3>{cat.title}</h3>
+                <ul>
+                  {cat.points.map((p) => (
+                    <li key={p}>{p}</li>
+                  ))}
+                </ul>
+              </div>
             </div>
           ))}
         </div>
 
-        <label className="onboarding-confirm">
+        <label className="onboard-confirm">
           <input type="checkbox" checked={checked} onChange={(e) => setChecked(e.target.checked)} />
           <span>{t("onboarding.confirmLabel")}</span>
         </label>
 
-        <div className="onboarding-actions">
-          <button className="onboarding-continue" disabled={!checked} onClick={acknowledge}>
+        <div className="onboard-foot">
+          <span className="spacer" />
+          <button className="btn btn-primary" type="button" disabled={!checked} onClick={acknowledge}>
             {t("onboarding.continue")}
           </button>
         </div>

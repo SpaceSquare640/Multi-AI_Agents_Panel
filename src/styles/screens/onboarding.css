@@ -1,0 +1,109 @@
+/* Onboarding. From the v2 design source (screens.css, "ONBOARDING").
+   `.onboard` is changed from a page layout to a fixed overlay: the design
+   draws this as its own page, but here it is a forced gate over an app that
+   is already mounted, and a non-overlay version would let the app behind it
+   be seen and scrolled. The card itself is unchanged.
+   `.steps` is not ported — see Onboarding.tsx. */
+.onboard {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  padding: var(--space-9);
+  background: var(--scrim);
+}
+.onboard-card {
+  width: 100%;
+  max-width: 640px;
+  padding: var(--space-10);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-3);
+}
+.onboard-mark { display: flex; align-items: center; gap: var(--space-6); }
+.onboard-mark img { width: 44px; height: 44px; border-radius: var(--radius-md); }
+.onboard-card h1 { margin-top: var(--space-8); font-size: var(--text-2xl); }
+.onboard-card > p {
+  margin-top: var(--space-5);
+  color: var(--text-muted);
+  line-height: var(--leading-loose);
+}
+.rules { margin-top: var(--space-8); }
+.rule {
+  display: flex;
+  gap: var(--space-5);
+  padding: var(--space-6) 0;
+}
+.rule + .rule { border-top: 1px solid var(--border); }
+.rule .icon { flex: none; margin-top: 2px; color: var(--danger-text); }
+.rule-body h3 { font-size: var(--text-base); }
+.rule-body p { margin-top: var(--space-2); font-size: var(--text-sm); color: var(--text-muted); line-height: var(--leading-body); }
+
+.onboard-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  margin-top: var(--space-9);
+  padding-top: var(--space-7);
+  border-top: 1px solid var(--border);
+}
+.onboard-foot .spacer { flex: 1; }
+
+
+/* ==========================================================================
+   COMPOSER SEND / STOP
+   One slot, two states. Both buttons are given the same minimum width so the
+   control does not shift under the pointer the moment a reply begins.
+   ========================================================================== */
+
+
+/* Checkbox row. The design's foot is a hint and a button; this gate also
+   has to be acknowledged, and the acknowledgement belongs above the action
+   it unlocks rather than beside it. */
+.onboard-confirm {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  margin-top: var(--space-8);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+.onboard-confirm input { margin-top: 2px; flex: none; }
+
+/* The rule bodies here are lists, not paragraphs: the summary is drawn
+   from four rule categories that each carry several points, where the
+   design's five rules are each one sentence. */
+.rule-body ul { margin-top: var(--space-3); padding-left: var(--space-7); }
+.rule-body li {
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  line-height: var(--leading-body);
+  list-style: disc;
+}
+
+/* The card is a v2 surface rendered outside any .screen-v2 wrapper — it
+   overlays the whole app rather than living in a pane — so it needs the
+   same base rules those wrappers carry, or it inherits v1's monospace
+   face and uppercase buttons. */
+.onboard {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-body);
+  color: var(--text);
+  text-align: left;
+}
+.onboard :where(h1, h2, h3) { margin: 0; text-transform: none; letter-spacing: var(--tracking-tight); }
+.onboard :where(p, ul, ol) { margin: 0; padding: 0; }
+.onboard :where(button, input) {
+  font: inherit;
+  color: inherit;
+  text-transform: none;
+  letter-spacing: normal;
+  box-shadow: none;
+  background: transparent;
+}
+.onboard-app { font-weight: var(--weight-semibold); }
