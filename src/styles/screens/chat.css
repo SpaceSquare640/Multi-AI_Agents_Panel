@@ -32,3 +32,66 @@
   font-size: var(--text-sm);
   cursor: pointer;
 }
+
+/* Roster rows in a meeting carry a second line for the model, the way the
+   design writes them. */
+.roster-sub { display: block; font-size: var(--text-2xs); color: var(--text-faint); }
+
+/* The boundary confirmation sits in the conversation rather than the
+   inspector: it is a question about the message about to be sent, and it
+   blocks until answered, so it must not live in a panel the user may have
+   collapsed. */
+.boundary-confirm { margin: var(--space-5) var(--space-8); }
+.boundary-preview {
+  max-height: 8rem;
+  margin: var(--space-4) 0;
+  padding: var(--space-4);
+  overflow: auto;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  white-space: pre-wrap;
+}
+
+/* Open-session tabs. The design has no equivalent — its chat screen shows
+   one session — but running several at once is what this app is for. */
+.chat-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-6) 0;
+  flex: none;
+}
+.chat-tab {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-size: var(--text-sm);
+}
+.chat-tab.is-active { background: var(--surface); border-color: var(--border-strong); }
+.chat-tab-select {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  max-width: 220px;
+  padding: var(--space-2) var(--space-4);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chat-tab.is-active .chat-tab-select { color: var(--text); }
+.chat-tab-close { padding: 0 var(--space-4); color: var(--text-faint); }
+.chat-tab-close:hover { color: var(--text); }
+
+/* The error banner keeps the pane's margins, since it sits outside one. */
+.chat-error-callout { margin: var(--space-5) var(--space-8) 0; }
+
+/* Search hits inside the inspector are narrower than the ones on the
+   Semantic Search screen, so the card padding comes down. */
+.inspector-hits { margin-top: var(--space-4); }
+.inspector-hits .hit { padding: var(--space-4); background: var(--surface-2); border-radius: var(--radius-sm); }
+.inspector-hits .hit + .hit { margin-top: var(--space-3); }

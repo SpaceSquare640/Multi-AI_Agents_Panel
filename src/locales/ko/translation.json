@@ -410,7 +410,10 @@
     "enterKey": "Enter",
     "sessionDetails": "세션",
     "provider": "제공자",
-    "model": "모델"
+    "model": "모델",
+    "meeting": "회의",
+    "participants": "참가자",
+    "turns": "턴"
   },
   "acc": {
     "title": "AI 컨트롤 센터",

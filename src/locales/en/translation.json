@@ -415,7 +415,10 @@
     "enterKey": "Enter",
     "sessionDetails": "Session",
     "provider": "Provider",
-    "model": "Model"
+    "model": "Model",
+    "meeting": "Meeting",
+    "participants": "Participants",
+    "turns": "Turns"
   },
   "acc": {
     "title": "AI Control Center",

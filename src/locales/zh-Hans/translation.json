@@ -410,7 +410,10 @@
     "enterKey": "Enter",
     "sessionDetails": "会话",
     "provider": "Provider",
-    "model": "模型"
+    "model": "模型",
+    "meeting": "会议",
+    "participants": "参与者",
+    "turns": "轮次"
   },
   "acc": {
     "title": "AI 控制中心",

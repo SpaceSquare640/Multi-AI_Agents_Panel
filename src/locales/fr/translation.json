@@ -415,7 +415,10 @@
     "enterKey": "Entrée",
     "sessionDetails": "Session",
     "provider": "Fournisseur",
-    "model": "Modèle"
+    "model": "Modèle",
+    "meeting": "Réunion",
+    "participants": "Participants",
+    "turns": "Tours"
   },
   "acc": {
     "title": "Centre de contrôle IA",

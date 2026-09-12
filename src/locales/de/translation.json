@@ -415,7 +415,10 @@
     "enterKey": "Enter",
     "sessionDetails": "Sitzung",
     "provider": "Anbieter",
-    "model": "Modell"
+    "model": "Modell",
+    "meeting": "Meeting",
+    "participants": "Teilnehmer",
+    "turns": "Runden"
   },
   "acc": {
     "title": "KI-Kontrollzentrum",

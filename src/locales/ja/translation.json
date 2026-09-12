@@ -410,7 +410,10 @@
     "enterKey": "Enter",
     "sessionDetails": "セッション",
     "provider": "プロバイダー",
-    "model": "モデル"
+    "model": "モデル",
+    "meeting": "ミーティング",
+    "participants": "参加者",
+    "turns": "ターン"
   },
   "acc": {
     "title": "AI コントロールセンター",

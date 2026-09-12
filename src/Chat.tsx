@@ -922,22 +922,29 @@ export default function Chat() {
   function renderSemanticSearchSection(sessionId: string, tab: TabState) {
     return (
       <>
-        <div className="chat-file-access">
-          <span>{t("chat.semanticSearchLabel")}</span>
-          {tab.mlGrants.length === 0 && <span className="chat-empty">{t("chat.notGranted")}</span>}
+        <span className="label">{t("chat.semanticSearchLabel")}</span>
+        <div className="roster">
+          {tab.mlGrants.length === 0 && <p className="field-hint">{t("chat.notGranted")}</p>}
           {tab.mlGrants.map((g) => (
-            <span key={g.id} className="chat-file-chip">
-              {g.capabilityName}
+            <div className="roster-item" key={g.id}>
+              <span className="roster-name">{g.capabilityName}</span>
               <button
-                onClick={() => handleRevokeMlCapability(sessionId, g.id)}
-                title={t("chat.revokeAccess")}
+                className="tree-action"
+                type="button"
                 aria-label={t("chat.revokeAccessToCapability", { capabilityName: g.capabilityName })}
+                onClick={() => handleRevokeMlCapability(sessionId, g.id)}
               >
                 ×
               </button>
-            </span>
+            </div>
           ))}
-          <select value={mlCapabilityToGrant} onChange={(e) => setMlCapabilityToGrant(e.target.value)}>
+        </div>
+        <div className="inspector-form">
+          <select
+            className="select"
+            value={mlCapabilityToGrant}
+            onChange={(e) => setMlCapabilityToGrant(e.target.value)}
+          >
             <option value="">{t("chat.grantMlCapability")}</option>
             {availableMlCapabilities
               .filter((c) => !tab.mlGrants.some((g) => g.capabilityName === c.name))
@@ -947,55 +954,64 @@ export default function Chat() {
                 </option>
               ))}
           </select>
-          <button className="chat-link-button" disabled={!mlCapabilityToGrant} onClick={() => handleGrantMlCapability(sessionId)}>
+          <button
+            className="btn btn-secondary btn-sm"
+            type="button"
+            disabled={!mlCapabilityToGrant}
+            onClick={() => handleGrantMlCapability(sessionId)}
+          >
             {t("chat.grant")}
           </button>
         </div>
         {tab.mlGrants.some((g) => g.capabilityName === "semantic_search") && (
-          <div className="chat-run-skill">
+          <>
+            <div className="inspector-form">
+              <input
+                className="input"
+                type="search"
+                placeholder={t("chat.searchFilesPlaceholder")}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <button
+                className="btn btn-secondary btn-sm"
+                type="button"
+                disabled={!searchQuery.trim() || searching}
+                onClick={() => handleSemanticSearch(sessionId)}
+              >
+                {searching ? t("chat.searching") : t("chat.search")}
+              </button>
+            </div>
             <button
-              className="chat-link-button"
+              className="btn btn-ghost btn-sm inspector-action"
+              type="button"
               disabled={indexing}
               onClick={() => handleBuildIndex(sessionId)}
-              title={t("chat.rebuildIndexTitle")}
             >
               {indexing ? t("chat.indexing") : t("chat.rebuildIndex")}
             </button>
-            <input
-              type="text"
-              placeholder={t("chat.searchFilesPlaceholder")}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <button
-              className="chat-link-button"
-              disabled={!searchQuery.trim() || searching}
-              onClick={() => handleSemanticSearch(sessionId)}
-            >
-              {searching ? t("chat.searching") : t("chat.search")}
-            </button>
-          </div>
+          </>
         )}
         {tab.searchResults && (
-          <ul className="chat-search-results">
-            {tab.searchResults.length === 0 && <li className="chat-empty">{t("chat.noResults")}</li>}
+          <div className="inspector-hits">
+            {tab.searchResults.length === 0 && <p className="field-hint">{t("chat.noResults")}</p>}
             {tab.searchResults.map((r) => (
-              <li key={r.path}>
-                <div className="chat-search-result-head">
-                  <span className="chat-search-result-path">{r.path}</span>
-                  <span className="chat-search-result-score">{r.score.toFixed(3)}</span>
+              <div className="hit" key={r.path}>
+                <div className="hit-head">
+                  <span className="hit-path">{r.path}</span>
+                  <span className="hit-score">{r.score.toFixed(2)}</span>
                 </div>
-                <div className="chat-search-result-excerpt">{r.excerpt}</div>
-              </li>
+                <p className="hit-snippet">{r.excerpt}</p>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </>
     );
   }
 
   return (
-    <div className="chat-page" ref={pageRef}>
+    <>
       {/* The session tree moves to the shell's context sidebar, which is
           where the v2 layout puts "context for the active rail item". The
           markup below is unchanged and is still a child of this component
@@ -1155,58 +1171,118 @@ export default function Chat() {
       </ShellSidebar>
       )}
 
-      <main className="chat-main">
-        {error &&
-          (() => {
-            const { code, rest } = parseErrorCode(error);
-            return (
-              <div className="chat-error" role="alert">
-                <div className="chat-error-body">
-                  {code && <span className="chat-error-code">{code}</span>}
-                  <span>{rest}</span>
-                </div>
-                <div className="chat-error-actions">
+      {error &&
+        (() => {
+          const { code, rest } = parseErrorCode(error);
+          return (
+            <div className="callout chat-error-callout" data-kind="danger" role="alert">
+              <Icon name="alert" />
+              <div className="callout-body">
+                {/* The code stays a separate chip: Design Principles has
+                    every error carry one, and it is the part worth
+                    copying into a bug report. */}
+                {code && <span className="badge" data-kind="failed">{code}</span>} {rest}
+                <div className="inspector-form">
                   {code && (
                     <button
-                      className="chat-error-copy"
+                      className="btn btn-ghost btn-sm"
+                      type="button"
                       onClick={() => void navigator.clipboard.writeText(error)}
                     >
                       {t("chat.copyErrorDetails")}
                     </button>
                   )}
-                  <button onClick={() => setError(null)} aria-label={t("chat.dismissError")}>×</button>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    type="button"
+                    onClick={() => setError(null)}
+                  >
+                    {t("chat.dismissError")}
+                  </button>
                 </div>
               </div>
-            );
-          })()}
+            </div>
+          );
+        })()}
 
-        {openTabIds.length > 0 && (
-          <div className="chat-tabs">
-            {openTabIds.map((id) => {
-              const title = sessions.find((s) => s.id === id)?.title ?? "…";
-              const tab = tabs[id];
-              return (
-                <div key={id} className={`chat-tab ${id === activeSessionId ? "active" : ""}`}>
-                  <button className="chat-tab-select" onClick={() => setActiveSessionId(id)}>
-                    {title}
-                    {tab?.sending && <span className="chat-tab-spinner" title="Waiting for reply…" />}
-                    {tab?.hasUnseenReply && <span className="chat-unread-dot" />}
-                  </button>
-                  <button
-                    className="chat-tab-close"
-                    onClick={() => closeTab(id)}
-                    title={t("chat.closeTabTitle")}
-                    aria-label={t("chat.closeTab", { title })}
-                  >
-                    ×
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
+      {/* Open tabs. The design has no tab strip — its chat screen shows one
+          session at a time — but running several at once is the point of
+          this app, so the strip stays and is drawn in the v2 vocabulary.
 
-        {!activeSessionId && <p className="chat-empty">{t("chat.pickOrStartSession")}</p>}
+          Rendered unconditionally because it is what useIsActiveScreen
+          anchors on: the hook needs one element that is always in the
+          tree to find the pane from, and every other part of this screen
+          comes and goes with the session. */}
+      <div className="chat-tabs" ref={pageRef}>
+        {openTabIds.map((id) => {
+          const title = sessions.find((s) => s.id === id)?.title ?? "…";
+          const tab = tabs[id];
+          return (
+            <div className={id === activeSessionId ? "chat-tab is-active" : "chat-tab"} key={id}>
+              <button className="chat-tab-select" type="button" onClick={() => setActiveSessionId(id)}>
+                {title}
+                {tab?.sending && (
+                  <span className="status-dot" data-state="running" role="img" aria-label={t("chat.sending")} />
+                )}
+                {tab?.hasUnseenReply && (
+                  <span className="status-dot" data-state="ok" role="img" aria-label={t("chat.unseenReply")} />
+                )}
+              </button>
+              <button
+                className="chat-tab-close"
+                type="button"
+                aria-label={t("chat.closeTab", { title })}
+                onClick={() => closeTab(id)}
+              >
+                ×
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+        {/* The workspace header the design gives every screen. Chat is the last
+          to get one: the tab strip was doing part of the job, but a strip of
+          tabs cannot say what the tab in front is, nor hold the actions that
+          belong to it. */}
+      {activeSessionId && activeTab && (
+        <div className="workspace-header">
+          {activeTab.kind === "group" ? (
+            <Icon name="chat" size="sm" />
+          ) : (
+            activeTab.agent && (
+              <span className="avatar" data-agent="1" aria-hidden="true">
+                {initials(activeTab.agent.name)}
+              </span>
+            )
+          )}
+          <span className="workspace-title">{sessions.find((s) => s.id === activeSessionId)?.title ?? ""}</span>
+          {activeTab.sending && (
+            <span className="badge" data-kind="running">
+              {t("chat.sending")}
+            </span>
+          )}
+          {activeTab.kind === "independent" && activeTab.agent && (
+            <span className="badge" data-kind={activeTab.agent.providerKind === "local" ? "local" : "cloud"}>
+              {activeTab.agent.providerName}
+            </span>
+          )}
+          {activeTab.kind === "group" && (
+            <div className="workspace-actions">
+              <button
+                className="btn btn-secondary btn-sm"
+                type="button"
+                disabled={activeTab.sending}
+                onClick={() => handleEndMeeting(activeSessionId)}
+              >
+                {t("chat.endMeeting")}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {!activeSessionId && <div className="workspace-body"><div className="pane"><p className="pane-intro">{t("chat.pickOrStartSession")}</p></div></div>}
 
         {activeSessionId && activeTab && (
           <>
@@ -1504,94 +1580,138 @@ export default function Chat() {
               </ShellInspector>
             )}
             {activeTab.kind === "group" && (
-              <div className="chat-header">
-                <div>
-                  {t("chat.groupChatLabel", { members: activeTab.members.map((m) => m.name).join(", ") || t("chat.noMembers") })}
+              <ShellInspector v2>
+                <div className="inspector-header">
+                  <span className="label">{t("chat.meeting")}</span>
                 </div>
-                <div className="chat-group-actions">
-                  <button
-                    className="chat-link-button"
-                    disabled={activeTab.sending}
-                    onClick={() => handleAdvanceTurn(activeSessionId)}
-                  >
-                    {t("chat.letThemContinue")}
-                  </button>
-                  <input
-                    type="number"
-                    min={1}
-                    max={6}
-                    value={autoContinueTurns}
-                    disabled={activeTab.sending}
-                    onChange={(e) => setAutoContinueTurns(Math.max(1, Math.min(6, Number(e.target.value) || 1)))}
-                    className="chat-auto-continue-count"
-                    title={t("chat.autoContinueTitle")}
-                  />
-                  <button
-                    className="chat-link-button"
-                    disabled={activeTab.sending}
-                    onClick={() => handleAutoContinue(activeSessionId, autoContinueTurns)}
-                    title={t("chat.continueTurnsTitle")}
-                  >
-                    {t("chat.continueTurns", { turns: autoContinueTurns })}
-                  </button>
-                  <button
-                    className="chat-link-button"
-                    disabled={activeTab.sending}
-                    onClick={() => handleEndMeeting(activeSessionId)}
-                  >
-                    {t("chat.endMeeting")}
-                  </button>
-                </div>
-                {activeTab.pendingBoundary && (
-                  <div className="chat-boundary-confirm">
-                    <div>
-                      <strong>{t("chat.boundaryConfirmTitle")}</strong> {t("chat.boundaryConfirmBody")}
+                <div className="inspector-body">
+                  <section className="inspector-section">
+                    <span className="label label-lead">{t("chat.participants")}</span>
+                    <div className="roster">
+                      {activeTab.members.length === 0 && <p className="field-hint">{t("chat.noMembers")}</p>}
+                      {activeTab.members.map((m, i) => (
+                        <div className="roster-item" key={m.id}>
+                          <span className="avatar" data-agent={String((i % 6) + 1)} aria-hidden="true">
+                            {initials(m.name)}
+                          </span>
+                          <span className="roster-name">
+                            {m.name}
+                            <span className="roster-sub mono">{m.model}</span>
+                          </span>
+                          <span className="badge" data-kind={m.providerKind === "local" ? "local" : "cloud"}>
+                            {m.providerName}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                    <pre className="chat-boundary-preview">{activeTab.pendingBoundary}</pre>
-                    <div className="chat-group-actions">
+                  </section>
+
+                  {/* The design shows a turn-limit meter here. The loop
+                      guard that stops a meeting running away is real, but
+                      its cap and the turn already reached are not exposed
+                      to the UI, so there is no number to fill a meter
+                      with — only the count this session will advance by
+                      when asked, which is a control rather than a state. */}
+                  <section className="inspector-section">
+                    <span className="label">{t("chat.turns")}</span>
+                    <div className="inspector-form">
+                      <input
+                        className="input input-num"
+                        type="number"
+                        min={1}
+                        max={6}
+                        value={autoContinueTurns}
+                        disabled={activeTab.sending}
+                        aria-label={t("chat.autoContinueTitle")}
+                        onChange={(e) => setAutoContinueTurns(Math.max(1, Math.min(6, Number(e.target.value) || 1)))}
+                      />
                       <button
-                        className="chat-link-button"
-                        onClick={() => handleConfirmBoundary(activeSessionId)}
+                        className="btn btn-secondary btn-sm"
+                        type="button"
+                        disabled={activeTab.sending}
+                        onClick={() => handleAutoContinue(activeSessionId, autoContinueTurns)}
                       >
-                        {t("chat.sendToCloud")}
-                      </button>
-                      <button
-                        className="chat-link-button"
-                        onClick={() => handleCancelBoundary(activeSessionId)}
-                      >
-                        {t("chat.cancel")}
+                        {t("chat.continueTurns", { turns: autoContinueTurns })}
                       </button>
                     </div>
+                    <button
+                      className="btn btn-ghost btn-sm inspector-action"
+                      type="button"
+                      disabled={activeTab.sending}
+                      onClick={() => handleAdvanceTurn(activeSessionId)}
+                    >
+                      {t("chat.letThemContinue")}
+                    </button>
+                  </section>
+
+                  <section className="inspector-section">
+                    <span className="label label-lead">{t("chat.filesSharedWithMeeting")}</span>
+                    <div className="roster">
+                      {activeTab.fileGrants.length === 0 && <p className="field-hint">{t("chat.noFoldersGranted")}</p>}
+                      {activeTab.fileGrants.map((g) => (
+                        <div className="roster-item" key={g.id}>
+                          <Icon name="folder" size="sm" />
+                          <span className="roster-name mono">{g.folderPath}</span>
+                          <button
+                            className="tree-action"
+                            type="button"
+                            aria-label={t("chat.revokeAccessToFolder", { folderPath: g.folderPath })}
+                            onClick={() => handleRevokeGrant(activeSessionId, g.id)}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      className="btn btn-secondary btn-sm inspector-action"
+                      type="button"
+                      disabled={activeTab.members.length === 0}
+                      onClick={() => handleGrantFolder(activeSessionId)}
+                    >
+                      {t("chat.grantFolder")}
+                    </button>
+                  </section>
+
+                  <section className="inspector-section">
+                    {renderSemanticSearchSection(activeSessionId, activeTab)}
+                  </section>
+                </div>
+              </ShellInspector>
+            )}
+
+            {/* The local→cloud boundary confirmation (E6004) stays in the
+                conversation, not the inspector. It is a question about the
+                message about to be sent, and it has to be answered before
+                anything else happens — a panel the user may have collapsed
+                is the wrong place for a blocking prompt. */}
+            {activeTab.pendingBoundary && (
+              <div className="callout boundary-confirm" data-kind="warning">
+                <Icon name="alert" />
+                <div className="callout-body">
+                  <strong>{t("chat.boundaryConfirmTitle")}</strong>
+                  {t("chat.boundaryConfirmBody")}
+                  <pre className="boundary-preview">{activeTab.pendingBoundary}</pre>
+                  <div className="inspector-form">
+                    <button
+                      className="btn btn-primary btn-sm"
+                      type="button"
+                      onClick={() => handleConfirmBoundary(activeSessionId)}
+                    >
+                      {t("chat.sendToCloud")}
+                    </button>
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      type="button"
+                      onClick={() => handleCancelBoundary(activeSessionId)}
+                    >
+                      {t("chat.cancel")}
+                    </button>
                   </div>
-                )}
-                <div className="chat-file-access">
-                  <span>{t("chat.filesSharedWithMeeting")}</span>
-                  {activeTab.fileGrants.length === 0 && (
-                    <span className="chat-empty">{t("chat.noFoldersGranted")}</span>
-                  )}
-                  {activeTab.fileGrants.map((g) => (
-                    <span key={g.id} className="chat-file-chip">
-                      {g.folderPath}
-                      <button
-                        onClick={() => handleRevokeGrant(activeSessionId, g.id)}
-                        title={t("chat.revokeAccess")}
-                        aria-label={t("chat.revokeAccessToFolder", { folderPath: g.folderPath })}
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                  <button
-                    className="chat-link-button"
-                    disabled={activeTab.members.length === 0}
-                    onClick={() => handleGrantFolder(activeSessionId)}
-                  >
-                    {t("chat.grantFolder")}
-                  </button>
                 </div>
-                {renderSemanticSearchSection(activeSessionId, activeTab)}
               </div>
             )}
+
             <div className="stream">
               {activeTab.messages.length === 0 && <p className="field-hint">{t("chat.noMessagesYet")}</p>}
               {activeTab.messages.map((m, i) => {
@@ -1702,7 +1822,6 @@ export default function Chat() {
             </div>
           </>
         )}
-      </main>
-    </div>
+    </>
   );
 }

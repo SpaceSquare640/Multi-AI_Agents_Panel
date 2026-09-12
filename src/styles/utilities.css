@@ -16,20 +16,31 @@
 
 /* Uppercase micro-label used for section headers in the sidebar and
    inspector. Tracking is widened because uppercase at 10-11px is
-   otherwise hard to parse. */
+   otherwise hard to parse.
+
+   One divergence from the design source, and it is measured rather than
+   preferred: it writes this colour as --text-faint, whose own token
+   comment records 5.50:1 — but that figure is against --bg, and every
+   place this label is actually used is a panel painted --surface. On
+   that backdrop it measures 4.23:1 in the dark theme and 3.83:1 in the
+   light one, under the 4.5 this text size needs. Stepping both tiers up
+   one keeps them as far apart as they were and puts both over the line.
+   This is the mistake the design's own audit names — measuring a colour
+   against the backdrop it usually lands on rather than the worst one it
+   can land on — reaching a case that audit did not cover. */
 .label {
   font-size: var(--text-2xs);
   font-weight: var(--weight-semibold);
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
-  color: var(--text-faint);
+  color: var(--text-muted);
 }
 
 /* A second tier, for the one or two sections on a panel that carry
    consequence. Used sparingly — if everything is promoted, nothing is. */
 .label-lead {
   font-size: var(--text-xs);
-  color: var(--text-muted);
+  color: var(--text);
 }
 
 /* Numeric and identifier data: tabular figures so columns never jitter
