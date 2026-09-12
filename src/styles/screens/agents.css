@@ -1,0 +1,50 @@
+/* Agent manager. Not in the design source as its own thing — the design's
+   Models sidebar lists agents but shows no form, because its agents already
+   exist. The rows reuse the shared row component; the forms are written
+   here against the same tokens. */
+
+.agent-row { display: flex; align-items: center; }
+.agent-row-main { flex: 1; min-width: 0; }
+/* Row actions appear on hover and on focus-visible, the same rule the Notes
+   tree uses: hover alone puts them out of reach of a keyboard. */
+.agent-row:hover .tree-action,
+.agent-row .tree-action:focus-visible { opacity: 1; }
+
+.sidebar-section-label { padding: var(--space-7) var(--row-px) var(--space-3); }
+
+.sidebar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-4) 0;
+}
+
+.agent-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: var(--space-5) var(--space-4);
+  padding: var(--space-5);
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+}
+.agent-form .input,
+.agent-form .select,
+.agent-form .textarea { width: 100%; }
+.agent-form .textarea { resize: vertical; }
+
+/* The staged fallback chain. Order is the whole meaning, so the steps are
+   numbered in the chip text rather than left to their position alone. */
+.fallback-editor { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.fallback-editor .grant { cursor: default; }
+.fallback-add { display: flex; flex-wrap: wrap; gap: var(--space-3); width: 100%; }
+.fallback-add .select { flex: none; width: auto; }
+.fallback-add .input { flex: 1; min-width: 100px; width: auto; }
+.chip-remove {
+  margin-left: var(--space-2);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-full);
+  color: inherit;
+  line-height: 1;
+}
+.chip-remove:hover { background: var(--surface-3); }

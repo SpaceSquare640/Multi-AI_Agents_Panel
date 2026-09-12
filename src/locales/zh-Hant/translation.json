@@ -399,7 +399,8 @@
     "deleteAgent": "刪除 {{name}}",
     "deleteAgentTitle": "永久刪除",
     "deleteAgentConfirmTitle": "永久刪除？",
-    "deleteAgentConfirm": "這會永久刪除 Agent「{{name}}」以及它的授權（檔案存取、Skills、MCP、ML）。它參與過的工作階段與訊息會保留，只是不再連結到它。此操作無法復原。"
+    "deleteAgentConfirm": "這會永久刪除 Agent「{{name}}」以及它的授權（檔案存取、Skills、MCP、ML）。它參與過的工作階段與訊息會保留，只是不再連結到它。此操作無法復原。",
+    "agentCount_other": "{{count}} 個 Agent"
   },
   "acc": {
     "title": "AI 控制中心",

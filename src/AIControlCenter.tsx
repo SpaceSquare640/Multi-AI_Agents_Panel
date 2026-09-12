@@ -1,10 +1,12 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
+import AgentManager from "./AgentManager";
 import InstallGuidance from "./InstallGuidance";
 import { Icon } from "./shell/Icons";
+import { ShellSidebar, useIsActiveScreen } from "./shell/SidebarSlot";
 import {
   CLOUD_PROVIDERS,
   type CuratedModel,
@@ -51,12 +53,11 @@ function verdictFit(fitLevel: string): "good" | "tight" {
 /** Models — API keys, cloud catalogues, local Ollama models, hardware fit
  *  and MCP servers. Rebuilt against the v2 design.
  *
- *  The design's sidebar for this screen lists Agents, and hangs Role
- *  templates and New agent off it. Those live in Chat's sidebar in this
- *  app, and moving them changes where agents are created rather than how
- *  they look — so the sidebar is left alone here and the question travels
- *  with Chat, the screen that would lose them. Same reasoning the rail
- *  split used: decide it in the step that makes the decision real.
+ *  The sidebar lists Agents, with New agent and the role templates under
+ *  it, which is where the design puts them. They were in Chat's sidebar
+ *  until this change — moving them alters where agents are created rather
+ *  than only how the screen looks, so it was confirmed with the user
+ *  first. See AgentManager, which owns that half.
  *
  *  Providers become cards, which is the design's arrangement and a better
  *  fit than a flat key table: a provider is a thing with a state, and
@@ -74,6 +75,8 @@ export default function AIControlCenter({
   onOpenManual: () => void;
 }) {
   const { t } = useTranslation();
+  const headerRef = useRef<HTMLDivElement>(null);
+  const isActiveScreen = useIsActiveScreen(headerRef);
   const [keys, setKeys] = useState<ProviderKeyView[]>([]);
   const [modelProvider, setModelProvider] = useState<string>("openrouter");
   const [curatedModels, setCuratedModels] = useState<CuratedModel[]>([]);
@@ -339,7 +342,13 @@ export default function AIControlCenter({
 
   return (
     <>
-      <div className="workspace-header">
+      {isActiveScreen && (
+        <ShellSidebar v2>
+          <AgentManager onError={setError} />
+        </ShellSidebar>
+      )}
+
+      <div className="workspace-header" ref={headerRef}>
         <span className="workspace-title">{t("acc.title")}</span>
         <div className="workspace-actions">
           <button

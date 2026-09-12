@@ -205,3 +205,16 @@ export interface RoleTemplate {
   /** "default" | "custom" */
   source: string;
 }
+
+/** Every provider an Agent can be created against. */
+export const PROVIDER_OPTIONS = ["anthropic", "openai", "openrouter", "ollama", "colibri", "omniroute"] as const;
+
+/** Providers that run as a local server the user starts themselves — no
+ *  Key Vault entry to pick or pin, unlike the cloud providers. Lived in
+ *  Chat until agent creation moved to its own component; both need it, so
+ *  it belongs with the types they both import. */
+const LOCAL_PROVIDERS = ["ollama", "colibri", "omniroute"] as const;
+
+export function isLocalProvider(provider: string): boolean {
+  return (LOCAL_PROVIDERS as readonly string[]).includes(provider);
+}

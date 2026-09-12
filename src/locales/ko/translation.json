@@ -399,7 +399,8 @@
     "deleteAgent": "{{name}} 삭제",
     "deleteAgentTitle": "영구 삭제",
     "deleteAgentConfirmTitle": "영구적으로 삭제하시겠습니까?",
-    "deleteAgentConfirm": "Agent \"{{name}}\" 및 그 권한(파일 접근, Skills, MCP, ML)이 영구적으로 삭제됩니다. 참여했던 세션과 메시지는 유지되지만 더 이상 이 Agent와 연결되지 않습니다. 되돌릴 수 없습니다."
+    "deleteAgentConfirm": "Agent \"{{name}}\" 및 그 권한(파일 접근, Skills, MCP, ML)이 영구적으로 삭제됩니다. 참여했던 세션과 메시지는 유지되지만 더 이상 이 Agent와 연결되지 않습니다. 되돌릴 수 없습니다.",
+    "agentCount_other": "에이전트 {{count}}개"
   },
   "acc": {
     "title": "AI 컨트롤 센터",

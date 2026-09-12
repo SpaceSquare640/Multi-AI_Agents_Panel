@@ -2,11 +2,10 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { ShellSidebar, useIsActiveScreen } from "./shell/SidebarSlot";
 import { invoke } from "@tauri-apps/api/core";
-import { ask, open as openFolderPicker, save as saveFilePicker } from "@tauri-apps/plugin-dialog";
+import { ask, open as openFolderPicker } from "@tauri-apps/plugin-dialog";
 import type {
   Agent,
   AgentMemory,
-  CuratedModel,
   FileAccessGrant,
   GroupTurnResult,
   McpAccessGrant,
@@ -15,25 +14,12 @@ import type {
   Message,
   MlAccessGrant,
   MlCapabilityManifest,
-  OllamaModel,
-  OpenRouterModelsResult,
-  ProviderKeyView,
-  RoleTemplate,
   SemanticSearchResult,
   Session,
   SkillAccessGrant,
   SkillManifest,
 } from "./types";
 import "./Chat.css";
-
-const PROVIDER_OPTIONS = ["anthropic", "openai", "openrouter", "ollama", "colibri", "omniroute"] as const;
-
-/// Providers that run as a local server the user starts themselves —
-/// no Key Vault entry to pick/pin, unlike the cloud providers above.
-const LOCAL_PROVIDERS = ["ollama", "colibri", "omniroute"] as const;
-function isLocalProvider(provider: string): boolean {
-  return (LOCAL_PROVIDERS as readonly string[]).includes(provider);
-}
 
 /// `send_chat_message_with_tools` (agent_manager::function_calling) is
 /// only implemented for Anthropic agents so far (see that module's doc
@@ -186,39 +172,13 @@ export default function Chat() {
   }
 
   // New-agent form state.
-  const [showNewAgent, setShowNewAgent] = useState(false);
-  const [newAgentName, setNewAgentName] = useState("");
-  const [newAgentProvider, setNewAgentProvider] = useState<string>("openrouter");
-  const [newAgentModels, setNewAgentModels] = useState<CuratedModel[]>([]);
-  const [newAgentModel, setNewAgentModel] = useState("");
-  const [newAgentSystemPrompt, setNewAgentSystemPrompt] = useState("");
-  const [newAgentTemplateId, setNewAgentTemplateId] = useState("");
-  const [newAgentProviderKeys, setNewAgentProviderKeys] = useState<ProviderKeyView[]>([]);
-  const [newAgentPinnedKeyId, setNewAgentPinnedKeyId] = useState("");
   // True once the user has manually picked a provider in this form session —
   // once set, selecting a role template stops overwriting it, since the
   // user's explicit choice should win over the template's suggestion.
-  const [newAgentProviderTouched, setNewAgentProviderTouched] = useState(false);
   // Cross-provider fallback chain, staged locally until the agent is
   // actually created (add_agent_fallback_provider needs a real agentId) —
   // e.g. Anthropic fails, fall through to OpenRouter. Tried in this order,
   // only after the primary provider's own key rotation is exhausted.
-  const [fallbackProvider, setFallbackProvider] = useState<string>("openrouter");
-  const [fallbackModel, setFallbackModel] = useState("");
-  const [fallbackChain, setFallbackChain] = useState<{ providerKind: string; providerName: string; model: string }[]>(
-    [],
-  );
-
-  // Role templates ("1 人公司"): default (built-in) + custom (user-authored).
-  // The same form handles both creating a new template and editing an
-  // existing one — `editingTemplateId` set means "editing", null means
-  // "creating a new one".
-  const [roleTemplates, setRoleTemplates] = useState<RoleTemplate[]>([]);
-  const [showNewTemplate, setShowNewTemplate] = useState(false);
-  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
-  const [templateName, setTemplateName] = useState("");
-  const [templateDescription, setTemplateDescription] = useState("");
-  const [templatePrompt, setTemplatePrompt] = useState("");
 
   // New-session form state.
   const [newSessionAgentId, setNewSessionAgentId] = useState("");
@@ -243,18 +203,10 @@ export default function Chat() {
   const independentSessions = sessions.filter((s) => s.kind === "independent");
   const groupSessions = sessions.filter((s) => s.kind === "group");
 
-  async function refreshRoleTemplates() {
-    const [defaults, custom] = await Promise.all([
-      invoke<RoleTemplate[]>("list_default_role_templates"),
-      invoke<RoleTemplate[]>("list_custom_role_templates"),
-    ]);
-    setRoleTemplates([...defaults, ...custom]);
-  }
 
   useEffect(() => {
     refreshAgents().catch((e) => setError(String(e)));
     refreshSessions().catch((e) => setError(String(e)));
-    refreshRoleTemplates().catch((e) => setError(String(e)));
     invoke<SkillManifest[]>("list_skills")
       .then(setAvailableSkills)
       .catch((e) => setError(String(e)));
@@ -271,161 +223,16 @@ export default function Chat() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [activeTab?.messages]);
 
+  /* Agents are created on the Models screen now, and every screen stays
+     mounted, so this one would otherwise keep showing the list it fetched
+     when the app started. Refetch each time it becomes the visible screen
+     — cheap, and the alternative is a session picker that does not list an
+     agent the user just made. */
   useEffect(() => {
-    if (!showNewAgent) return;
-    const selectedTemplate = roleTemplates.find((t) => t.id === newAgentTemplateId);
-    setNewAgentPinnedKeyId("");
-
-    function pickModels(models: CuratedModel[]) {
-      setNewAgentModels(models);
-      const suggested = selectedTemplate?.suggestedModel;
-      const suggestedIsAvailable = suggested && models.some((m) => m.id === suggested);
-      setNewAgentModel(suggestedIsAvailable ? suggested : models[0]?.id ?? "");
-    }
-
-    if (newAgentProvider === "ollama") {
-      // Suggesting a model the user hasn't actually pulled is worse than
-      // useless — picking it just fails outright, since Ollama has
-      // nothing to serve. Show only what's really installed on this
-      // machine, never the generic "models Ollama supports" list.
-      setNewAgentProviderKeys([]);
-      invoke<OllamaModel[]>("list_ollama_installed_models")
-        .then((models) => pickModels(models.map((m) => ({ id: m.name, label: m.name }))))
-        .catch((e) => setError(String(e)));
-      return;
-    }
-
-    if (isLocalProvider(newAgentProvider)) {
-      // colibri/omniroute have no "list what's actually loaded" API to
-      // query yet, so the curated list is the best available option —
-      // still better than nothing, unlike Ollama above.
-      setNewAgentProviderKeys([]);
-      invoke<CuratedModel[]>("list_curated_models", { provider: newAgentProvider })
-        .then(pickModels)
-        .catch((e) => setError(String(e)));
-      return;
-    }
-
-    invoke<ProviderKeyView[]>("list_provider_keys")
-      .then((keys) => {
-        const providerKeys = keys.filter((k) => k.provider === newAgentProvider);
-        setNewAgentProviderKeys(providerKeys);
-        // Prefer models the user has actually configured a key/hint for
-        // over dumping the entire static/live catalog — a Group Chat with
-        // several free-tier OpenRouter keys shouldn't default an Agent to
-        // a flagship model none of those keys can actually afford (see
-        // E3001 "requires more credits" errors this was causing).
-        const hintedModelIds = Array.from(
-          new Set(providerKeys.map((k) => k.modelHint).filter((h): h is string => !!h)),
-        );
-        if (hintedModelIds.length > 0) {
-          pickModels(hintedModelIds.map((id) => ({ id, label: id })));
-          return;
-        }
-        if (newAgentProvider === "openrouter") {
-          // The live catalog is what OpenRouter actually serves right
-          // now — a real, current list, not a static snapshot that can
-          // drift from what OpenRouter's lineup has become.
-          invoke<OpenRouterModelsResult>("list_openrouter_models_live", { forceRefresh: false })
-            .then((result) => pickModels(result.models.map((m) => ({ id: m.id, label: m.name }))))
-            .catch(() =>
-              invoke<CuratedModel[]>("list_curated_models", { provider: newAgentProvider })
-                .then(pickModels)
-                .catch((e) => setError(String(e))),
-            );
-          return;
-        }
-        invoke<CuratedModel[]>("list_curated_models", { provider: newAgentProvider })
-          .then(pickModels)
-          .catch((e) => setError(String(e)));
-      })
-      .catch((e) => setError(String(e)));
+    if (!isActiveScreen) return;
+    refreshAgents().catch((e) => setError(String(e)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showNewAgent, newAgentProvider]);
-
-  function handleSelectTemplate(templateId: string) {
-    setNewAgentTemplateId(templateId);
-    const template = roleTemplates.find((t) => t.id === templateId);
-    if (!template) {
-      setNewAgentSystemPrompt("");
-      return;
-    }
-    if (!newAgentName.trim()) setNewAgentName(template.name);
-    setNewAgentSystemPrompt(template.systemPrompt);
-    // Only auto-apply the suggested provider if the user hasn't manually
-    // picked one yet in this form session — a manual choice should never be
-    // silently overwritten by picking a template afterwards.
-    if (template.suggestedProviderName && !newAgentProviderTouched) {
-      setNewAgentProvider(template.suggestedProviderName);
-    }
-  }
-
-  function handleApplyTemplateSuggestion() {
-    const template = roleTemplates.find((t) => t.id === newAgentTemplateId);
-    if (template?.suggestedProviderName) {
-      setNewAgentProvider(template.suggestedProviderName);
-      setNewAgentProviderTouched(false);
-    }
-  }
-
-  async function handleCreateAgent(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    try {
-      const selectedTemplate = roleTemplates.find((t) => t.id === newAgentTemplateId);
-      const agent = await invoke<Agent>("create_agent", {
-        name: newAgentName,
-        roleTemplate: selectedTemplate?.name ?? null,
-        systemPrompt: newAgentSystemPrompt || null,
-        providerKind: isLocalProvider(newAgentProvider) ? "local" : "cloud",
-        providerName: newAgentProvider,
-        model: newAgentModel,
-      });
-      if (newAgentPinnedKeyId) {
-        await invoke("pin_agent_provider_key", { agentId: agent.id, providerKeyId: newAgentPinnedKeyId });
-      }
-      // Fallback chain steps are staged locally (see fallbackChain state)
-      // since add_agent_fallback_provider needs a real agentId — write
-      // them in order now that the agent actually exists.
-      for (const step of fallbackChain) {
-        await invoke("add_agent_fallback_provider", {
-          agentId: agent.id,
-          providerKind: step.providerKind,
-          providerName: step.providerName,
-          model: step.model,
-        });
-      }
-      setNewAgentName("");
-      setNewAgentSystemPrompt("");
-      setNewAgentTemplateId("");
-      setNewAgentPinnedKeyId("");
-      setNewAgentProviderTouched(false);
-      setFallbackChain([]);
-      setFallbackModel("");
-      setShowNewAgent(false);
-      await refreshAgents();
-      setNewSessionAgentId(agent.id);
-    } catch (err) {
-      setError(String(err));
-    }
-  }
-
-  function handleAddFallbackStep() {
-    if (!fallbackModel.trim()) return;
-    setFallbackChain((prev) => [
-      ...prev,
-      {
-        providerKind: isLocalProvider(fallbackProvider) ? "local" : "cloud",
-        providerName: fallbackProvider,
-        model: fallbackModel.trim(),
-      },
-    ]);
-    setFallbackModel("");
-  }
-
-  function handleRemoveFallbackStep(index: number) {
-    setFallbackChain((prev) => prev.filter((_, i) => i !== index));
-  }
+  }, [isActiveScreen]);
 
   /// Opens a session as a tab (loading its messages/agent(s)/grants the
   /// first time) and brings it to the front. Already-open tabs keep
@@ -504,23 +311,6 @@ export default function Chat() {
     }
   }
 
-  /** Permanently deletes an Agent — there's no undo, so this confirms
-   *  with the user first. See `Storage::delete_agent` for what's
-   *  cascaded (grants, session membership) vs. preserved (messages,
-   *  usage history, with the Agent reference nulled out). */
-  async function handleDeleteAgent(agentId: string, name: string) {
-    const confirmed = await ask(t("chat.deleteAgentConfirm", { name }), {
-      title: t("chat.deleteAgentConfirmTitle"),
-      kind: "warning",
-    });
-    if (!confirmed) return;
-    try {
-      await invoke("delete_agent", { agentId });
-      await refreshAgents();
-    } catch (err) {
-      setError(String(err));
-    }
-  }
 
   async function handleCreateSession(e: FormEvent) {
     e.preventDefault();
@@ -574,96 +364,11 @@ export default function Chat() {
   /// Creates a new custom template, or — when `editingTemplateId` is set
   /// — saves changes to that existing one in place instead. Same form,
   /// same handler; only which command gets called differs.
-  async function handleSaveTemplate(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    try {
-      if (editingTemplateId) {
-        await invoke("update_custom_role_template", {
-          id: editingTemplateId,
-          name: templateName,
-          description: templateDescription,
-          systemPrompt: templatePrompt,
-          suggestedProviderKind: null,
-          suggestedProviderName: null,
-          suggestedModel: null,
-        });
-      } else {
-        await invoke("create_custom_role_template", {
-          name: templateName,
-          description: templateDescription,
-          systemPrompt: templatePrompt,
-          suggestedProviderKind: null,
-          suggestedProviderName: null,
-          suggestedModel: null,
-        });
-      }
-      setTemplateName("");
-      setTemplateDescription("");
-      setTemplatePrompt("");
-      setEditingTemplateId(null);
-      setShowNewTemplate(false);
-      await refreshRoleTemplates();
-    } catch (err) {
-      setError(String(err));
-    }
-  }
 
-  function handleStartEditTemplate(template: RoleTemplate) {
-    setEditingTemplateId(template.id);
-    setTemplateName(template.name);
-    setTemplateDescription(template.description);
-    setTemplatePrompt(template.systemPrompt);
-    setShowNewTemplate(true);
-  }
 
-  function handleCancelTemplateForm() {
-    setEditingTemplateId(null);
-    setTemplateName("");
-    setTemplateDescription("");
-    setTemplatePrompt("");
-    setShowNewTemplate(false);
-  }
 
-  async function handleDeleteTemplate(id: string) {
-    setError(null);
-    try {
-      await invoke("delete_custom_role_template", { id });
-      await refreshRoleTemplates();
-    } catch (err) {
-      setError(String(err));
-    }
-  }
 
-  async function handleExportTemplate(template: RoleTemplate) {
-    setError(null);
-    try {
-      const destPath = await saveFilePicker({
-        defaultPath: `${template.name.replace(/[^a-zA-Z0-9 _-]/g, "_")}.json`,
-        filters: [{ name: "Role Template", extensions: ["json"] }],
-      });
-      if (!destPath) return; // user cancelled the picker
-      await invoke("export_custom_role_template", { id: template.id, destPath });
-    } catch (err) {
-      setError(String(err));
-    }
-  }
 
-  async function handleImportTemplate() {
-    setError(null);
-    try {
-      const sourcePath = await openFolderPicker({
-        directory: false,
-        multiple: false,
-        filters: [{ name: "Role Template", extensions: ["json"] }],
-      });
-      if (!sourcePath) return; // user cancelled the picker
-      await invoke("import_custom_role_template", { sourcePath });
-      await refreshRoleTemplates();
-    } catch (err) {
-      setError(String(err));
-    }
-  }
 
   /// Independent Session tabs grant a private folder to their one agent;
   /// Group Chat tabs grant a folder shared by every member currently in
@@ -1342,26 +1047,6 @@ export default function Chat() {
           </form>
         )}
 
-        <h2>{t("chat.agents")}</h2>
-        <ul className="chat-session-list">
-          {agents.map((a) => (
-            <li key={a.id} className="chat-session-list-item">
-              <button title={`${a.name} (${a.providerName}/${a.model})`} disabled>
-                {a.name}
-              </button>
-              <button
-                className="chat-session-delete"
-                aria-label={t("chat.deleteAgent", { name: a.name })}
-                title={t("chat.deleteAgentTitle")}
-                onClick={() => void handleDeleteAgent(a.id, a.name)}
-              >
-                ×
-              </button>
-            </li>
-          ))}
-          {agents.length === 0 && <li className="chat-empty">{t("chat.noAgentsYet")}</li>}
-        </ul>
-
         <h3>{t("chat.newSession")}</h3>
         <form className="chat-form" onSubmit={handleCreateSession}>
           <select value={newSessionAgentId} onChange={(e) => setNewSessionAgentId(e.target.value)}>
@@ -1381,183 +1066,6 @@ export default function Chat() {
           <button type="submit">{t("chat.start")}</button>
         </form>
 
-        <button
-          className="chat-link-button"
-          onClick={() => {
-            setShowNewAgent((v) => !v);
-            setNewAgentProviderTouched(false);
-          }}
-        >
-          {showNewAgent ? t("chat.cancel") : t("chat.newAgent")}
-        </button>
-        {showNewAgent && (
-          <form className="chat-form" onSubmit={handleCreateAgent}>
-            <select value={newAgentTemplateId} onChange={(e) => handleSelectTemplate(e.target.value)}>
-              <option value="">{t("chat.noRoleTemplate")}</option>
-              {roleTemplates.map((rt) => (
-                <option key={rt.id} value={rt.id}>
-                  {rt.name} {rt.source === "custom" ? t("chat.custom") : ""}
-                </option>
-              ))}
-            </select>
-            <input
-              type="text"
-              placeholder={t("chat.agentNamePlaceholder")}
-              value={newAgentName}
-              onChange={(e) => setNewAgentName(e.target.value)}
-              required
-            />
-            <select
-              value={newAgentProvider}
-              onChange={(e) => {
-                setNewAgentProvider(e.target.value);
-                setNewAgentProviderTouched(true);
-              }}
-            >
-              {PROVIDER_OPTIONS.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
-            {(() => {
-              const selectedTemplate = roleTemplates.find((rt) => rt.id === newAgentTemplateId);
-              const suggested = selectedTemplate?.suggestedProviderName;
-              if (!suggested || suggested === newAgentProvider) return null;
-              return (
-                <button type="button" className="chat-link-button" onClick={handleApplyTemplateSuggestion}>
-                  {t("chat.applySuggestedProvider", { provider: suggested })}
-                </button>
-              );
-            })()}
-            {newAgentProvider === "ollama" && newAgentModels.length === 0 ? (
-              <p className="acc-hint">{t("chat.noOllamaModelsInstalled")}</p>
-            ) : (
-              <select value={newAgentModel} onChange={(e) => setNewAgentModel(e.target.value)}>
-                {newAgentModels.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.label}
-                  </option>
-                ))}
-              </select>
-            )}
-            <textarea
-              rows={3}
-              placeholder={t("chat.systemPromptPlaceholder")}
-              value={newAgentSystemPrompt}
-              onChange={(e) => setNewAgentSystemPrompt(e.target.value)}
-            />
-            {!isLocalProvider(newAgentProvider) && (
-              <select value={newAgentPinnedKeyId} onChange={(e) => setNewAgentPinnedKeyId(e.target.value)}>
-                <option value="">{t("chat.useLatestKeyDefault", { provider: newAgentProvider })}</option>
-                {newAgentProviderKeys.map((k) => (
-                  <option key={k.id} value={k.id}>
-                    {t("chat.pinTo", { label: k.label ?? k.maskedSecret })}
-                  </option>
-                ))}
-              </select>
-            )}
-
-            <div className="chat-fallback-chain">
-              <span>{t("chat.fallbackLabel")}</span>
-              {fallbackChain.length === 0 && <span className="chat-empty">{t("chat.noneConfigured")}</span>}
-              {fallbackChain.map((step, i) => (
-                <span key={i} className="chat-file-chip">
-                  {i + 1}. {step.providerName}/{step.model}
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveFallbackStep(i)}
-                    title={t("chat.remove")}
-                    aria-label={t("chat.removeFallbackStep", { step: `${step.providerName}/${step.model}` })}
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-              <div className="acc-form-row">
-                <select value={fallbackProvider} onChange={(e) => setFallbackProvider(e.target.value)}>
-                  {PROVIDER_OPTIONS.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  type="text"
-                  placeholder={t("chat.modelIdPlaceholder")}
-                  value={fallbackModel}
-                  onChange={(e) => setFallbackModel(e.target.value)}
-                />
-                <button type="button" disabled={!fallbackModel.trim()} onClick={() => handleAddFallbackStep()}>
-                  {t("chat.addFallback")}
-                </button>
-              </div>
-            </div>
-
-            <button type="submit">{t("chat.createAgent")}</button>
-          </form>
-        )}
-
-        <h3>{t("chat.customRoleTemplates")}</h3>
-        <ul className="chat-session-list">
-          {roleTemplates
-            .filter((rt) => rt.source === "custom")
-            .map((rt) => (
-              <li key={rt.id} className="chat-template-row">
-                <span title={rt.description}>{rt.name}</span>
-                <span className="chat-template-row-actions">
-                  <button className="chat-link-button" onClick={() => handleStartEditTemplate(rt)}>
-                    {t("chat.edit")}
-                  </button>
-                  <button className="chat-link-button" onClick={() => handleExportTemplate(rt)}>
-                    {t("chat.export")}
-                  </button>
-                  <button className="chat-link-button" onClick={() => handleDeleteTemplate(rt.id)}>
-                    {t("chat.delete")}
-                  </button>
-                </span>
-              </li>
-            ))}
-          {roleTemplates.filter((rt) => rt.source === "custom").length === 0 && (
-            <li className="chat-empty">{t("chat.noCustomTemplates")}</li>
-          )}
-        </ul>
-
-        <button
-          className="chat-link-button"
-          onClick={() => (showNewTemplate ? handleCancelTemplateForm() : setShowNewTemplate(true))}
-        >
-          {showNewTemplate ? t("chat.cancel") : t("chat.newRoleTemplate")}
-        </button>
-        <button className="chat-link-button" onClick={() => handleImportTemplate()}>
-          {t("chat.importTemplate")}
-        </button>
-        {showNewTemplate && (
-          <form className="chat-form" onSubmit={handleSaveTemplate}>
-            <input
-              type="text"
-              placeholder={t("chat.templateNamePlaceholder")}
-              value={templateName}
-              onChange={(e) => setTemplateName(e.target.value)}
-              required
-            />
-            <input
-              type="text"
-              placeholder={t("chat.shortDescriptionPlaceholder")}
-              value={templateDescription}
-              onChange={(e) => setTemplateDescription(e.target.value)}
-              required
-            />
-            <textarea
-              rows={3}
-              placeholder={t("chat.systemPromptPlainPlaceholder")}
-              value={templatePrompt}
-              onChange={(e) => setTemplatePrompt(e.target.value)}
-              required
-            />
-            <button type="submit">{editingTemplateId ? t("chat.saveChanges") : t("chat.saveTemplate")}</button>
-          </form>
-        )}
       </aside>
       </ShellSidebar>
       )}
