@@ -345,7 +345,7 @@
     "importingSkill": "导入中…",
     "importCustomSkill": "+ 导入自定义技能…",
     "skillImportWarning": "⚠ 导入技能会以与内置技能相同的信任级别运行其 Python 代码。其行为受 skill.json 中声明的权限约束（见上方徽章）——未声明的文件系统/网络能力会被真正阻止，而不仅是警告——但请仅从您信任的来源导入技能。",
-    "letAgentCallSkills": "允许此 Agent 自行决定何时调用已授予的技能（仅限 Anthropic）",
+    "letAgentCallSkills": "允许此 Agent 自行决定何时调用已授予的技能（仅限支持的云端供应商）",
     "memories": "记忆（跨会话）",
     "noMemoriesYet": "暂无记忆",
     "rememberSomethingPlaceholder": "例如：用户偏好简洁的回复",

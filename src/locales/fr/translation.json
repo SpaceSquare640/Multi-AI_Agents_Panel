@@ -347,7 +347,7 @@
     "importingSkill": "Importation…",
     "importCustomSkill": "+ Importer une compétence personnalisée…",
     "skillImportWarning": "⚠ Importer une compétence exécute son code Python avec le même niveau de confiance qu'une compétence intégrée. Elle est liée aux permissions déclarées dans son skill.json (voir les badges ci-dessus) — une capacité de système de fichiers/réseau non déclarée est réellement bloquée, pas seulement signalée — mais n'importez des compétences que depuis des sources en qui vous avez confiance.",
-    "letAgentCallSkills": "Laisser cet Agent décider seul quand appeler une compétence accordée (Anthropic uniquement)",
+    "letAgentCallSkills": "Laisser cet Agent décider seul quand appeler une compétence accordée (fournisseurs cloud compatibles uniquement)",
     "memories": "Mémoire (entre sessions)",
     "noMemoriesYet": "aucun souvenir pour le moment",
     "rememberSomethingPlaceholder": "ex. l'utilisateur préfère des réponses concises",

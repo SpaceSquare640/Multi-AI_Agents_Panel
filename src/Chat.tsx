@@ -26,13 +26,26 @@ import "./styles/screens/chat-stream.css";
 import "./styles/screens/inspector.css";
 import "./Chat.css";
 
-/// `send_chat_message_with_tools` (agent_manager::function_calling) is
-/// only implemented for Anthropic agents so far (see that module's doc
-/// comment for why) — this mirrors that restriction in the UI so the
-/// toggle only appears where it would actually work, rather than
-/// offering it everywhere and surfacing "Unsupported" from the backend.
+/// The providers `send_chat_message_with_tools`
+/// (agent_manager::function_calling) implements a tool-calling protocol
+/// for. Local providers are deliberately absent: most local models do not
+/// reliably support structured tool calling, and a model that silently
+/// ignores the tools answers as if it had run the Skill when it never
+/// did. Keep this in step with `Wire::for_provider` on the Rust side —
+/// the backend is the authority, and anything listed here that it does
+/// not know returns "Unsupported" at send time.
+const FUNCTION_CALLING_PROVIDERS = ["anthropic", "openai", "openrouter"];
+
+/// Mirrors the backend restriction in the UI so the toggle only appears
+/// where it would actually work, rather than offering it everywhere and
+/// surfacing "Unsupported" after the user has already sent a message.
 function functionCallingEligible(tab: TabState): boolean {
-  return tab.kind === "independent" && tab.agent?.providerName === "anthropic" && tab.skillGrants.length > 0;
+  return (
+    tab.kind === "independent" &&
+    !!tab.agent &&
+    FUNCTION_CALLING_PROVIDERS.includes(tab.agent.providerName) &&
+    tab.skillGrants.length > 0
+  );
 }
 
 /// Per-session state, kept independently for every *open* tab so that
@@ -82,9 +95,9 @@ interface TabState {
   /** Whether the next message in this tab should be sent through
    *  `send_chat_message_with_tools` (agent_manager::function_calling)
    *  instead of the plain `send_chat_message`. Only meaningful — and
-   *  only shown in the UI — for an independent-session Anthropic agent
-   *  with at least one granted Skill (see `functionCallingEligible`
-   *  below); function calling isn't implemented for other providers yet. */
+   *  only shown in the UI — for an independent session whose agent is on
+   *  a provider with a tool-calling protocol, with at least one granted
+   *  Skill (see `functionCallingEligible` below). */
   useFunctionCalling: boolean;
 }
 

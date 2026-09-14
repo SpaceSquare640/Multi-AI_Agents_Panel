@@ -4,7 +4,7 @@
 
 use serde_json::{json, Value};
 
-use super::{ChatMessage, ProviderError};
+use super::{ChatMessage, ProviderError, ToolTurn};
 
 const API_URL: &str = "https://api.anthropic.com/v1/messages";
 const API_VERSION: &str = "2023-06-01";
@@ -72,14 +72,42 @@ pub fn parse_response(body: &Value) -> Result<String, ProviderError> {
         })
 }
 
-/// One turn of a tool-calling conversation: either the model answered in
-/// plain text, or it wants a tool run before it can continue. Mirrors
-/// the two shapes Anthropic's `content` array can hold when `tools` is
-/// passed on the request — see `parse_tooled_response`.
-#[derive(Debug, Clone, PartialEq)]
-pub enum AnthropicReply {
-    Text(String),
-    ToolUse { id: String, name: String, input: Value },
+// Anthropic's tool-calling wire shapes. The reply type itself is the
+// provider-neutral `ToolTurn` (see `providers::ToolTurn`) — only the
+// three JSON shapes below are Anthropic-specific, and they are what the
+// `AnthropicDialect` in `agent_manager::function_calling` delegates to.
+
+/// One entry of the `tools` array. Anthropic names the schema field
+/// `input_schema`; OpenAI-compatible APIs wrap the same information in a
+/// `function` object instead — see `openai_tools::tool_spec`.
+pub fn tool_spec(name: &str, description: &str) -> Value {
+    json!({ "name": name, "description": description, "input_schema": {"type": "object"} })
+}
+
+/// The assistant turn that records a tool call, to be appended to the
+/// conversation before the tool's result. Anthropic carries this as a
+/// `tool_use` block inside the message's `content` array.
+pub fn assistant_tool_call(id: &str, name: &str, input: &Value) -> Value {
+    json!({
+        "role": "assistant",
+        "content": [{"type": "tool_use", "id": id, "name": name, "input": input}],
+    })
+}
+
+/// The turn carrying a tool's result back to the model. Anthropic models
+/// this as a *user* message holding a `tool_result` block, and it has a
+/// first-class `is_error` flag — unlike the OpenAI-compatible shape,
+/// which has nowhere to put that and must fold the failure into the text.
+pub fn tool_result(id: &str, output: &Value, is_error: bool) -> Value {
+    json!({
+        "role": "user",
+        "content": [{
+            "type": "tool_result",
+            "tool_use_id": id,
+            "content": output.to_string(),
+            "is_error": is_error,
+        }],
+    })
 }
 
 /// Builds a Messages API request carrying raw, already-shaped message
@@ -107,7 +135,7 @@ pub fn build_tooled_request(model: &str, system: Option<&str>, raw_messages: &[V
 /// alongside it, but the tool call is what the loop needs to act on) or,
 /// failing that, the first `text` block, from a Messages API response
 /// built with `tools` on the request.
-pub fn parse_tooled_response(body: &Value) -> Result<AnthropicReply, ProviderError> {
+pub fn parse_tooled_response(body: &Value) -> Result<ToolTurn, ProviderError> {
     if let Some(error) = body.get("error") {
         let message = error.get("message").and_then(Value::as_str).unwrap_or("unknown error");
         let error_type = error.get("type").and_then(Value::as_str).unwrap_or("");
@@ -125,12 +153,12 @@ pub fn parse_tooled_response(body: &Value) -> Result<AnthropicReply, ProviderErr
             let id = block.get("id").and_then(Value::as_str).unwrap_or_default().to_string();
             let name = block.get("name").and_then(Value::as_str).unwrap_or_default().to_string();
             let input = block.get("input").cloned().unwrap_or(json!({}));
-            return Ok(AnthropicReply::ToolUse { id, name, input });
+            return Ok(ToolTurn::ToolUse { id, name, input });
         }
     }
     for block in blocks {
         if let Some(text) = block.get("text").and_then(Value::as_str) {
-            return Ok(AnthropicReply::Text(text.to_string()));
+            return Ok(ToolTurn::Text(text.to_string()));
         }
     }
     Err(ProviderError::Api { error_code: "E2000", message: "response had no text or tool_use content block".to_string() })
@@ -142,7 +170,7 @@ pub fn send_tooled(
     system: Option<&str>,
     raw_messages: &[Value],
     tools: &[Value],
-) -> Result<AnthropicReply, ProviderError> {
+) -> Result<ToolTurn, ProviderError> {
     let client = crate::http::cloud_inference();
     let response = client
         .post(API_URL)
@@ -269,7 +297,7 @@ mod tests {
         let reply = parse_tooled_response(&body).unwrap();
         assert_eq!(
             reply,
-            AnthropicReply::ToolUse {
+            ToolTurn::ToolUse {
                 id: "toolu_1".to_string(),
                 name: "raffle_winner_picker".to_string(),
                 input: json!({"entries": ["A", "B"]}),
@@ -280,7 +308,7 @@ mod tests {
     #[test]
     fn parse_tooled_response_falls_back_to_text_when_there_is_no_tool_use_block() {
         let body = json!({"content": [{"type": "text", "text": "hi there"}]});
-        assert_eq!(parse_tooled_response(&body).unwrap(), AnthropicReply::Text("hi there".to_string()));
+        assert_eq!(parse_tooled_response(&body).unwrap(), ToolTurn::Text("hi there".to_string()));
     }
 
     #[test]

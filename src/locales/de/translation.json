@@ -347,7 +347,7 @@
     "importingSkill": "Wird importiert…",
     "importCustomSkill": "+ Benutzerdefinierte Fähigkeit importieren…",
     "skillImportWarning": "⚠ Das Importieren einer Fähigkeit führt deren Python-Code mit derselben Vertrauensstufe wie eine integrierte Fähigkeit aus. Sie ist an die in ihrer skill.json deklarierten Berechtigungen gebunden (siehe Abzeichen oben) — eine nicht deklarierte Dateisystem-/Netzwerkfähigkeit wird tatsächlich blockiert, nicht nur gewarnt — importieren Sie Fähigkeiten jedoch nur aus vertrauenswürdigen Quellen.",
-    "letAgentCallSkills": "Diesen Agenten selbst entscheiden lassen, wann eine gewährte Fähigkeit aufgerufen wird (nur Anthropic)",
+    "letAgentCallSkills": "Diesen Agenten selbst entscheiden lassen, wann eine gewährte Fähigkeit aufgerufen wird (nur unterstützte Cloud-Anbieter)",
     "memories": "Gedächtnis (sitzungsübergreifend)",
     "noMemoriesYet": "noch keine Erinnerungen",
     "rememberSomethingPlaceholder": "z. B. der Benutzer bevorzugt knappe Antworten",

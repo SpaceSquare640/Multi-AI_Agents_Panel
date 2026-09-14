@@ -345,7 +345,7 @@
     "importingSkill": "インポート中…",
     "importCustomSkill": "+ カスタムスキルをインポート…",
     "skillImportWarning": "⚠ スキルをインポートすると、組み込みスキルと同じ信頼レベルでその Python コードが実行されます。skill.json で宣言された権限（上記のバッジを参照）に拘束されます——宣言されていないファイルシステム／ネットワーク機能は、単なる警告ではなく実際にブロックされます——ただし、信頼できるソースからのみスキルをインポートしてください。",
-    "letAgentCallSkills": "付与されたスキルをいつ呼び出すかをこの Agent が自ら判断できるようにする（Anthropic のみ）",
+    "letAgentCallSkills": "付与されたスキルをいつ呼び出すかをこの Agent が自ら判断できるようにする（対応クラウドプロバイダーのみ）",
     "memories": "記憶（セッションをまたいで）",
     "noMemoriesYet": "まだ記憶がありません",
     "rememberSomethingPlaceholder": "例：ユーザーは簡潔な返信を好む",

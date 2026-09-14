@@ -7,7 +7,25 @@ pub mod colibri;
 pub mod ollama;
 pub mod omniroute;
 pub mod openai;
+pub mod openai_tools;
 pub mod openrouter;
+
+/// One turn of a tool-calling conversation, in provider-neutral terms:
+/// either the model answered in plain text, or it wants a tool run before
+/// it can continue.
+///
+/// Deliberately *not* per-provider. The two wire shapes behind it differ
+/// (Anthropic returns a `tool_use` content block; OpenAI-compatible APIs
+/// return `tool_calls` on the message, with the arguments as a JSON
+/// *string*), but by the time a reply reaches the orchestration loop in
+/// `agent_manager::function_calling` those differences are already
+/// resolved — which is what lets one loop drive every provider that can
+/// call tools at all.
+#[derive(Debug, Clone, PartialEq)]
+pub enum ToolTurn {
+    Text(String),
+    ToolUse { id: String, name: String, input: serde_json::Value },
+}
 
 /// Token counts a provider reported for one call — the input to
 /// cost estimation (see `agent_manager::cost::estimate_usd`). Not every
