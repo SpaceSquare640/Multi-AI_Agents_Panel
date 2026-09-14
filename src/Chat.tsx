@@ -36,6 +36,12 @@ import "./Chat.css";
 /// not know returns "Unsupported" at send time.
 const FUNCTION_CALLING_PROVIDERS = ["anthropic", "openai", "openrouter"];
 
+/// What a stopped send comes back as, matching `commands::CANCELLED` on
+/// the Rust side. Kept as a named constant on both sides because the two
+/// have to agree exactly: if they drift, a send the user stopped starts
+/// showing up as a red error banner.
+const CANCELLED = "cancelled";
+
 /// Mirrors the backend restriction in the UI so the toggle only appears
 /// where it would actually work, rather than offering it everywhere and
 /// surfacing "Unsupported" after the user has already sent a message.
@@ -796,14 +802,46 @@ export default function Chat() {
         },
       }));
     } catch (err) {
-      setError(String(err));
-      patchTab(sessionId, { sending: false });
+      // A send the user stopped is not a failure, so it gets no error
+      // banner — the backend returns exactly this string (see
+      // `commands::CANCELLED`) precisely so the two can be told apart.
+      //
+      // The message list is reloaded rather than the draft being put
+      // back. The user's own message was persisted before the provider
+      // was ever called, so it is really in the transcript; restoring the
+      // draft as well would leave the same text in two places and send it
+      // twice if the user pressed Send again. Cancelling stops the reply,
+      // not the message that asked for it.
+      if (String(err) === CANCELLED) {
+        const messages = await invoke<Message[]>("list_messages", { sessionId });
+        patchTab(sessionId, { sending: false, messages });
+      } else {
+        setError(String(err));
+        patchTab(sessionId, { sending: false });
+      }
     }
   }
 
   function handleSend(e: FormEvent, sessionId: string) {
     e.preventDefault();
     void sendForSession(sessionId);
+  }
+
+  /// Asks the backend to stop the send in flight for this session.
+  ///
+  /// Deliberately does *not* clear `sending` itself. The request already
+  /// on the wire cannot be aborted (see the Rust `cancel` module), so the
+  /// command keeps running until it reaches its next cancellation
+  /// boundary; `sending` is cleared by `sendForSession`'s own catch when
+  /// it actually stops. Clearing it here would re-enable the composer
+  /// while the old send was still running, and a second send could then
+  /// start and take over the session's Stop button.
+  async function handleStop(sessionId: string) {
+    try {
+      await invoke("cancel_send", { sessionId });
+    } catch (err) {
+      setError(String(err));
+    }
   }
 
   /// "Let them keep talking" — one more agent turn in rotation with no
@@ -1824,12 +1862,29 @@ export default function Chat() {
                     <kbd>{t("chat.enterKey")}</kbd>
                   </span>
                   {/* The design pairs Send with a Stop in the same slot.
-                      There is no command to cancel a request in flight, so
-                      drawing Stop would offer a control that does nothing;
-                      the button reports that it is sending instead. */}
-                  <button className="btn btn-primary btn-sm composer-send" type="submit" disabled={!activeTab.draft.trim() || activeTab.sending}>
-                    {activeTab.sending ? t("chat.sending") : t("chat.send")}
-                  </button>
+                      Stop is only drawn where it can actually do
+                      something: an independent session's send goes
+                      through `cancel_send`, a group turn has no
+                      equivalent yet, so there the button keeps reporting
+                      that it is sending rather than offering a control
+                      that would do nothing. */}
+                  {activeTab.sending && activeTab.kind !== "group" ? (
+                    <button
+                      className="btn btn-secondary btn-sm composer-send"
+                      type="button"
+                      onClick={() => void handleStop(activeSessionId)}
+                    >
+                      {t("chat.stop")}
+                    </button>
+                  ) : (
+                    <button
+                      className="btn btn-primary btn-sm composer-send"
+                      type="submit"
+                      disabled={!activeTab.draft.trim() || activeTab.sending}
+                    >
+                      {activeTab.sending ? t("chat.sending") : t("chat.send")}
+                    </button>
+                  )}
                 </div>
               </form>
             </div>

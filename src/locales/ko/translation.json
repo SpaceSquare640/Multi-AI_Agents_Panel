@@ -388,6 +388,7 @@
     "messagePlaceholderGroup": "메시지 입력……(@AgentName으로 특정 상대를 호출할 수 있습니다)",
     "messagePlaceholderIndependent": "메시지 입력……(@file:C:\\path\\to\\file.txt로 부여된 파일을 첨부할 수 있습니다)",
     "sending": "전송 중…",
+    "stop": "중지",
     "send": "전송",
     "defaultSessionTitle": "{{agentName}}와(과)의 대화",
     "defaultAgentName": "agent",

@@ -390,6 +390,7 @@
     "messagePlaceholderGroup": "Nachricht eingeben… (verwenden Sie @AgentName, um jemand Bestimmten anzusprechen)",
     "messagePlaceholderIndependent": "Nachricht eingeben… (verwenden Sie @file:C:\\pfad\\zur\\datei.txt, um eine gewährte Datei anzuhängen)",
     "sending": "Wird gesendet…",
+    "stop": "Stopp",
     "send": "Senden",
     "defaultSessionTitle": "Chat mit {{agentName}}",
     "defaultAgentName": "agent",

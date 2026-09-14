@@ -390,6 +390,7 @@
     "messagePlaceholderGroup": "Type a message… (use @AgentName to call on someone specific)",
     "messagePlaceholderIndependent": "Type a message… (use @file:C:\\path\\to\\file.txt to attach a granted file)",
     "sending": "Sending…",
+    "stop": "Stop",
     "send": "Send",
     "defaultSessionTitle": "Chat with {{agentName}}",
     "defaultAgentName": "agent",

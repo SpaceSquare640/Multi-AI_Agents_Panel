@@ -63,6 +63,15 @@ pub enum ProviderError {
     /// there were none to try). Carries the Error Code Registry code
     /// ("E3001") and a description of each attempt.
     AllProvidersFailed { error_code: &'static str, attempts: Vec<String> },
+    /// The user pressed Stop and the send gave up at the next point it
+    /// controlled — see `crate::cancel` for exactly what that can and
+    /// cannot interrupt.
+    ///
+    /// The only variant with no `error_code`, deliberately: the Error
+    /// Code Registry exists to hand the user something to look up and
+    /// act on, and nothing here went wrong. Attaching a code would
+    /// present the user's own decision back to them as a fault.
+    Cancelled,
 }
 
 impl std::fmt::Display for ProviderError {
@@ -75,6 +84,7 @@ impl std::fmt::Display for ProviderError {
                 write!(f, "{error_code} could not reach provider: {message}")
             }
             ProviderError::Unsupported(name) => write!(f, "no provider adapter for '{name}' yet"),
+            ProviderError::Cancelled => write!(f, "cancelled"),
             ProviderError::GuardrailBlocked { error_code, reason } => {
                 write!(f, "{error_code} blocked by Guardrails: {reason}")
             }

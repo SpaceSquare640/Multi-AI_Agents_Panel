@@ -9,6 +9,7 @@
 //! network-calling closure; see its tests/live tests for the network side.
 
 use crate::agent_manager::providers::ProviderError;
+use crate::cancel::CancelToken;
 
 /// Tries `attempt` against each of `candidates` in order, stopping at the
 /// first success. If `candidates` is empty, or every attempt fails,
@@ -24,6 +25,12 @@ use crate::agent_manager::providers::ProviderError;
 /// token usage an OpenRouter call reported). It is not called for
 /// candidates never reached (e.g. after an earlier success).
 ///
+/// `cancel` is checked before each candidate, so pressing Stop during a
+/// long chain stops it at the next attempt boundary instead of sitting
+/// through every remaining key's timeout. It cannot interrupt an attempt
+/// already in flight — see `crate::cancel` for why, and for what
+/// cancelling does guarantee.
+///
 /// Generic over the success type `R` (originally hardcoded to `String`)
 /// so a caller that needs more than just the reply text back — e.g. an
 /// OpenRouter call that also wants the token-usage numbers alongside the
@@ -38,6 +45,7 @@ pub fn run_with_fallback<T, R>(
     describe: impl Fn(&T) -> String,
     mut attempt: impl FnMut(&T) -> Result<R, ProviderError>,
     mut on_attempt: impl FnMut(&T, Result<&R, &ProviderError>),
+    cancel: &CancelToken,
 ) -> Result<R, ProviderError> {
     if candidates.is_empty() {
         return Err(ProviderError::AllProvidersFailed {
@@ -48,6 +56,15 @@ pub fn run_with_fallback<T, R>(
 
     let mut attempts_log = Vec::with_capacity(candidates.len());
     for candidate in candidates {
+        // Checked before the attempt rather than after, so a Stop pressed
+        // while the previous candidate was timing out costs nothing more.
+        // Returned as `Cancelled` rather than folded into
+        // `AllProvidersFailed`: the remaining candidates were never
+        // tried, and reporting them as failures would be a lie about
+        // what was attempted.
+        if cancel.is_cancelled() {
+            return Err(ProviderError::Cancelled);
+        }
         match attempt(candidate) {
             Ok(reply) => {
                 on_attempt(candidate, Ok(&reply));
@@ -86,6 +103,7 @@ mod tests {
                 }
             },
             |_, _: Result<&String, &ProviderError>| {},
+            &CancelToken::never(),
         );
         assert_eq!(result, Ok("ok from a".to_string()));
         assert_eq!(tried, vec!["a"]);
@@ -105,6 +123,7 @@ mod tests {
                 }
             },
             |_, _: Result<&String, &ProviderError>| {},
+            &CancelToken::never(),
         );
         assert_eq!(result, Ok("ok from b".to_string()));
     }
@@ -117,6 +136,7 @@ mod tests {
             |c| format!("candidate {c}"),
             |_| Err::<String, _>(ProviderError::Network { error_code: "E2003", message: "unreachable".to_string() }),
             |_, _: Result<&String, &ProviderError>| {},
+            &CancelToken::never(),
         )
         .unwrap_err();
 
@@ -139,6 +159,7 @@ mod tests {
             |c| c.to_string(),
             |_| -> Result<String, _> { unreachable!() },
             |_, _: Result<&String, &ProviderError>| {},
+            &CancelToken::never(),
         )
         .unwrap_err();
         assert!(matches!(err, ProviderError::AllProvidersFailed { error_code: "E3001", .. }));
@@ -159,6 +180,7 @@ mod tests {
                 }
             },
             |c, outcome: Result<&String, &ProviderError>| log.push((c, outcome.is_ok())),
+            &CancelToken::never(),
         );
         assert_eq!(result, Ok("ok from b".to_string()));
         // "c" is never reached because "b" already succeeded.
@@ -174,8 +196,51 @@ mod tests {
             |c| c.to_string(),
             |_| Ok("the real reply".to_string()),
             |_, outcome: Result<&String, &ProviderError>| seen = outcome.ok().cloned(),
+            &CancelToken::never(),
         )
         .unwrap();
         assert_eq!(seen, Some("the real reply".to_string()));
+    }
+
+    #[test]
+    fn a_cancelled_chain_stops_at_the_next_candidate_instead_of_trying_the_rest() {
+        let candidates = vec!["a", "b", "c"];
+        let mut tried = Vec::new();
+        let state = crate::cancel::CancelState::default();
+        let token = state.begin("session-1");
+
+        let result = run_with_fallback(
+            &candidates,
+            |c| c.to_string(),
+            |c| {
+                tried.push(*c);
+                // The user presses Stop while the first candidate is
+                // failing; "b" and "c" must never be attempted.
+                state.request("session-1");
+                Err(ProviderError::Network { error_code: "E2003", message: "timed out".to_string() })
+            },
+            |_, _: Result<&String, &ProviderError>| {},
+            &token,
+        );
+
+        assert_eq!(result, Err(ProviderError::Cancelled));
+        assert_eq!(tried, vec!["a"]);
+    }
+
+    #[test]
+    fn a_chain_cancelled_before_it_starts_never_calls_a_provider_at_all() {
+        let candidates = vec!["a"];
+        let state = crate::cancel::CancelState::default();
+        let token = state.begin("session-1");
+        state.request("session-1");
+
+        let result = run_with_fallback(
+            &candidates,
+            |c| c.to_string(),
+            |_| -> Result<String, _> { panic!("no provider should be called after a cancel") },
+            |_, _: Result<&String, &ProviderError>| {},
+            &token,
+        );
+        assert_eq!(result, Err(ProviderError::Cancelled));
     }
 }

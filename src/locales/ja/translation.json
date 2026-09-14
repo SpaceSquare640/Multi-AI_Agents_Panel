@@ -388,6 +388,7 @@
     "messagePlaceholderGroup": "メッセージを入力……（@AgentName で特定の相手を呼び出せます）",
     "messagePlaceholderIndependent": "メッセージを入力……（@file:C:\\path\\to\\file.txt で付与済みのファイルを添付できます）",
     "sending": "送信中…",
+    "stop": "停止",
     "send": "送信",
     "defaultSessionTitle": "{{agentName}} とのチャット",
     "defaultAgentName": "agent",

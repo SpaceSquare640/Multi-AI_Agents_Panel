@@ -1,5 +1,6 @@
 mod agent_manager;
 mod bridge_support;
+mod cancel;
 mod commands;
 mod fallback;
 mod file_access;
@@ -19,6 +20,7 @@ mod usage_tracker;
 use std::sync::Mutex;
 
 use agent_manager::openrouter_catalog::OpenRouterCatalogState;
+use cancel::CancelState;
 use game_agent::{GameAgentState, RecordingState};
 use ml_engine::MlEngineRuntime;
 use skill_manager::SkillRuntime;
@@ -166,6 +168,10 @@ pub fn run() {
             app.manage(MlEngineRuntimeState(Mutex::new(ml_runtime)));
             app.manage(MlDir(ml_dir));
             app.manage(OpenRouterCatalogState(Mutex::new(None)));
+            // Empty at launch: it only ever holds sends that are in
+            // flight right now, and every send removes its own entry
+            // on the way out (see `cancel::CancelState::finish`).
+            app.manage(CancelState::default());
             // Starts every launch stopped — the game agent never runs
             // unless a user explicitly clicks "start" (see game_agent
             // module docs).
@@ -223,6 +229,7 @@ pub fn run() {
             commands::get_session_agent_id,
             commands::send_chat_message,
             commands::send_chat_message_with_tools,
+            commands::cancel_send,
             commands::grant_folder_access,
             commands::grant_folder_access_for_session,
             commands::list_file_access_grants,

@@ -4,6 +4,7 @@
 use serde::{Deserialize, Serialize};
 use tauri::{Manager, State};
 
+use crate::cancel::CancelState;
 use crate::agent_manager::curated_models::{self, CuratedModel};
 use crate::agent_manager::openrouter_catalog::{self, OpenRouterCatalogState, OpenRouterModelsResult};
 use crate::agent_manager::providers::{ollama, ChatMessage};
@@ -559,7 +560,12 @@ fn expand_file_references(storage: &Storage, agent_id: &str, content: &str) -> R
 /// message. The user's message is persisted even if the agent call then
 /// fails, so a retry doesn't lose it.
 #[tauri::command]
-pub fn send_chat_message(storage: State<Storage>, session_id: String, content: String) -> Result<Message, String> {
+pub fn send_chat_message(
+    storage: State<Storage>,
+    cancels: State<CancelState>,
+    session_id: String,
+    content: String,
+) -> Result<Message, String> {
     storage
         .add_message(&session_id, None, "user", &content)
         .map_err(|e| e.to_string())?;
@@ -610,11 +616,45 @@ pub fn send_chat_message(storage: State<Storage>, session_id: String, content: S
         history.insert(0, instructions);
     }
 
-    let reply = agent_manager::send_message(&storage, &agent, &history).map_err(|e| e.to_string())?;
+    // Registered as late as possible — everything above is local
+    // bookkeeping that finishes instantly, and there is nothing worth
+    // cancelling until a provider call is about to start.
+    let cancel = cancels.begin(&session_id);
+    let result = agent_manager::send_message_cancellable(&storage, &agent, &history, &cancel);
+    cancels.finish(&session_id);
+
+    let reply = result.map_err(|e| e.to_string())?;
+
+    // Checked again after the call returns, not only inside it: the last
+    // provider attempt may have succeeded a moment *after* the user
+    // pressed Stop, and persisting that reply would put a message the
+    // user cancelled into the transcript. See `crate::cancel`.
+    if cancel.is_cancelled() {
+        return Err(CANCELLED.to_string());
+    }
 
     storage
         .add_message(&session_id, Some(&agent_id), "assistant", &reply)
         .map_err(|e| e.to_string())
+}
+
+/// The error text both send commands return when a send was stopped.
+/// A constant rather than a literal in three places because the frontend
+/// matches on it to tell "the user stopped this" apart from a real
+/// failure, and a typo in one of them would surface a cancelled send as
+/// an error banner.
+pub const CANCELLED: &str = "cancelled";
+
+/// Asks the in-flight send for `session_id` to stop at its next
+/// cancellation boundary. Returns whether there was one to stop —
+/// `false` is the ordinary result of pressing Stop just as the reply
+/// lands, not a failure, and the frontend treats it as "already done".
+///
+/// This cannot abort a request already on the wire; see `crate::cancel`
+/// for what it does guarantee.
+#[tauri::command]
+pub fn cancel_send(cancels: State<CancelState>, session_id: String) -> bool {
+    cancels.request(&session_id)
 }
 
 /// Same shape as `send_chat_message`, but runs the agent with tool
@@ -633,6 +673,7 @@ pub fn send_chat_message_with_tools(
     storage: State<Storage>,
     skill_dirs: State<SkillDirs>,
     skill_runtime: State<SkillRuntimeState>,
+    cancels: State<CancelState>,
     session_id: String,
     content: String,
 ) -> Result<Message, String> {
@@ -670,9 +711,26 @@ pub fn send_chat_message_with_tools(
     // comment: holding a guard here for the whole call would block every
     // other Skill-related command for as long as this conversation with
     // Anthropic takes — a real bug this fixed, not a hypothetical one.
-    let result =
-        agent_manager::function_calling::run(&storage, &skill_runtime.0, &agent, &available_skills, &expanded_content)
-            .map_err(|e| e.to_string())?;
+    let cancel = cancels.begin(&session_id);
+    let outcome = agent_manager::function_calling::run(
+        &storage,
+        &skill_runtime.0,
+        &agent,
+        &available_skills,
+        &expanded_content,
+        &cancel,
+    );
+    cancels.finish(&session_id);
+
+    let result = outcome.map_err(|e| e.to_string())?;
+
+    // Nothing is persisted from a cancelled conversation — not the reply
+    // and not the tool-call transcript rows below. A cancelled run that
+    // still wrote its tool calls would leave the session showing work
+    // the user had explicitly stopped, with no reply to explain it.
+    if cancel.is_cancelled() {
+        return Err(CANCELLED.to_string());
+    }
 
     for call in &result.tool_calls {
         let content = format!(

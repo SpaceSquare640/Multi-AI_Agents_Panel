@@ -390,6 +390,7 @@
     "messagePlaceholderGroup": "Tapez un message… (utilisez @NomDeLAgent pour interpeller quelqu'un en particulier)",
     "messagePlaceholderIndependent": "Tapez un message… (utilisez @file:C:\\chemin\\vers\\fichier.txt pour joindre un fichier accordé)",
     "sending": "Envoi…",
+    "stop": "Arrêter",
     "send": "Envoyer",
     "defaultSessionTitle": "Discussion avec {{agentName}}",
     "defaultAgentName": "agent",

@@ -10,6 +10,7 @@ pub mod openrouter_catalog;
 pub mod providers;
 pub mod role_templates;
 
+use crate::cancel::CancelToken;
 use crate::fallback::run_with_fallback;
 use crate::guardrails;
 use crate::key_vault;
@@ -40,10 +41,23 @@ fn fetch_secret(entry: &ProviderKey) -> Result<String, ProviderError> {
 /// step callers can skip, it's inline in the only path that reaches a
 /// provider. See `AI Guardrails (必守規則).md`: this check may not be
 /// bypassed by any caller, role template, or user instruction.
-pub fn send_message(
+pub fn send_message(storage: &Storage, agent: &Agent, messages: &[ChatMessage]) -> Result<String, ProviderError> {
+    send_message_cancellable(storage, agent, messages, &CancelToken::never())
+}
+
+/// `send_message` with a Stop button behind it.
+///
+/// Split rather than adding a parameter to `send_message` because most
+/// callers have no Stop button to offer — a group-chat turn, a meeting
+/// summary, an orchestrator DAG node — and threading an always-false
+/// flag through all of them would put cancellation in the signature of
+/// paths that cannot cancel, which reads as a capability they do not
+/// have. See `crate::cancel` for the limits of what this interrupts.
+pub fn send_message_cancellable(
     storage: &Storage,
     agent: &Agent,
     messages: &[ChatMessage],
+    cancel: &CancelToken,
 ) -> Result<String, ProviderError> {
     if let Some(last_user_message) = messages.iter().rev().find(|m| m.role == "user") {
         // Keyword screen first (mandatory, always runs), then the
@@ -78,7 +92,7 @@ pub fn send_message(
     // key actually tried in the fallback chain, correctly attributed to
     // that key, rather than one summary row always attributed to
     // `latest_provider_key` regardless of which key the chain actually used.
-    dispatch(storage, agent, messages)
+    dispatch(storage, agent, messages, cancel)
 }
 
 /// The Key Vault entries `dispatch` should try, in order, for `agent`'s
@@ -157,6 +171,7 @@ fn dispatch_one(
     provider_name: &str,
     model: &str,
     messages: &[ChatMessage],
+    cancel: &CancelToken,
 ) -> Result<String, ProviderError> {
     // Usage logging is best-effort here: a logging failure shouldn't mask
     // the real result of a provider call. Every branch's `attempt`
@@ -212,6 +227,7 @@ fn dispatch_one(
                     providers::anthropic::send(&secret, model, messages).map(|text| (text, None))
                 },
                 |k, outcome| log_attempt(k, "anthropic", outcome),
+                cancel,
             )
         }
         Provider::OpenRouter => {
@@ -224,6 +240,7 @@ fn dispatch_one(
                     providers::openrouter::send_with_usage(&secret, model, messages)
                 },
                 |k, outcome| log_attempt(k, "openrouter", outcome),
+                cancel,
             )
         }
         Provider::OpenAi => {
@@ -236,6 +253,7 @@ fn dispatch_one(
                     providers::openai::send(&secret, model, messages).map(|text| (text, None))
                 },
                 |k, outcome| log_attempt(k, "openai", outcome),
+                cancel,
             )
         }
         // Local Ollama has no Key Vault entries to log against — the
@@ -246,6 +264,7 @@ fn dispatch_one(
             |_| "local Ollama".to_string(),
             |_| providers::ollama::send(model, messages).map(|text| (text, None)),
             |_, _| {},
+            cancel,
         ),
         // Colibrì (github.com/JustVugg/colibri) is local like Ollama —
         // the user runs their own `coli serve` process, so there's
@@ -255,6 +274,7 @@ fn dispatch_one(
             |_| "local colibrì".to_string(),
             |_| providers::colibri::send(model, messages).map(|text| (text, None)),
             |_, _| {},
+            cancel,
         ),
         // OmniRoute (github.com/diegosouzapw/OmniRoute) is a local,
         // self-hosted gateway — same "no Key Vault entry" treatment as
@@ -265,6 +285,7 @@ fn dispatch_one(
             |_| "local OmniRoute".to_string(),
             |_| providers::omniroute::send(model, messages).map(|text| (text, None)),
             |_, _| {},
+            cancel,
         ),
     };
 
@@ -280,10 +301,15 @@ fn dispatch_one(
 /// aggregated across all of them so the user can see exactly what was
 /// tried and why each one failed, not just the primary provider's
 /// attempts.
-fn dispatch(storage: &Storage, agent: &Agent, messages: &[ChatMessage]) -> Result<String, ProviderError> {
+fn dispatch(
+    storage: &Storage,
+    agent: &Agent,
+    messages: &[ChatMessage],
+    cancel: &CancelToken,
+) -> Result<String, ProviderError> {
     let mut all_attempts = Vec::new();
 
-    match dispatch_one(storage, agent, &agent.provider_name, &agent.model, messages) {
+    match dispatch_one(storage, agent, &agent.provider_name, &agent.model, messages, cancel) {
         Ok(reply) => return Ok(reply),
         Err(ProviderError::AllProvidersFailed { attempts, .. }) => all_attempts.extend(attempts),
         Err(ProviderError::Unsupported(name)) => {
@@ -294,7 +320,14 @@ fn dispatch(storage: &Storage, agent: &Agent, messages: &[ChatMessage]) -> Resul
 
     let fallback_chain = storage.list_agent_fallback_providers(&agent.id).unwrap_or_default();
     for step in fallback_chain {
-        match dispatch_one(storage, agent, &step.provider_name, &step.model, messages) {
+        // The second cancellation boundary, and the one that saves the
+        // most waiting: each step here is a whole provider with its own
+        // key rotation behind it, so a chain of three can hold the user
+        // for three full rounds of timeouts.
+        if cancel.is_cancelled() {
+            return Err(ProviderError::Cancelled);
+        }
+        match dispatch_one(storage, agent, &step.provider_name, &step.model, messages, cancel) {
             Ok(reply) => return Ok(reply),
             Err(ProviderError::AllProvidersFailed { attempts, .. }) => all_attempts.extend(attempts),
             Err(ProviderError::Unsupported(name)) => {

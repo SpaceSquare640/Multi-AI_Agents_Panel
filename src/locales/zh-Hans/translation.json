@@ -388,6 +388,7 @@
     "messagePlaceholderGroup": "输入消息……（使用 @AgentName 呼叫特定对象）",
     "messagePlaceholderIndependent": "输入消息……（使用 @file:C:\\path\\to\\file.txt 附加已授予的文件）",
     "sending": "发送中…",
+    "stop": "中止",
     "send": "发送",
     "defaultSessionTitle": "与 {{agentName}} 对话",
     "defaultAgentName": "agent",

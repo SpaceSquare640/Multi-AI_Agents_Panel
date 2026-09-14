@@ -30,6 +30,7 @@
 use serde_json::{json, Value};
 
 use crate::agent_manager::providers::{anthropic, openai_tools, ProviderError, ToolTurn};
+use crate::cancel::CancelToken;
 use crate::skill_manager::{SkillManifest, SkillRuntime};
 use crate::storage::{Agent, Storage};
 
@@ -154,11 +155,22 @@ fn run_loop(
     send_fn: impl Fn(&[Value]) -> Result<ToolTurn, ProviderError>,
     execute_tool: impl Fn(&str, Value) -> Result<Value, String>,
     user_message: &str,
+    cancel: &CancelToken,
 ) -> Result<FunctionCallingResult, ProviderError> {
     let mut raw_messages = vec![json!({"role": "user", "content": user_message})];
     let mut tool_calls = Vec::new();
 
     for _ in 0..MAX_ITERATIONS {
+        // The round-trip boundary is where a Stop is worth the most: a
+        // tool conversation can take `MAX_ITERATIONS` provider calls plus
+        // a skill execution between each, and the user watching it has no
+        // other way out. Tool calls already completed are discarded along
+        // with the reply — nothing from a cancelled conversation is
+        // persisted, so a half-finished chain of calls never reaches the
+        // transcript as though it had been a real turn.
+        if cancel.is_cancelled() {
+            return Err(ProviderError::Cancelled);
+        }
         match send_fn(&raw_messages)? {
             ToolTurn::Text(text) => return Ok(FunctionCallingResult { reply: text, tool_calls }),
             ToolTurn::ToolUse { id, name, input } => {
@@ -209,6 +221,7 @@ pub fn run(
     agent: &Agent,
     available_skills: &[SkillManifest],
     user_message: &str,
+    cancel: &CancelToken,
 ) -> Result<FunctionCallingResult, ProviderError> {
     let wire = Wire::for_provider(&agent.provider_name).ok_or_else(|| {
         ProviderError::Unsupported(format!(
@@ -255,7 +268,7 @@ pub fn run(
         crate::skill_manager::invoke_skill(storage, guard.as_ref(), &agent.id, name, input).map_err(|e| e.to_string())
     };
 
-    run_loop(dialect, send_fn, execute_tool, user_message)
+    run_loop(dialect, send_fn, execute_tool, user_message, cancel)
 }
 
 #[cfg(test)]
@@ -308,6 +321,7 @@ mod tests {
             |_raw| Ok(ToolTurn::Text("just an answer, no tools needed".to_string())),
             |_name, _input| panic!("execute_tool should not be called"),
             "what is 2+2?",
+            &CancelToken::never(),
         )
         .unwrap();
         assert_eq!(result.reply, "just an answer, no tools needed");
@@ -338,6 +352,7 @@ mod tests {
                 Ok(json!({"winners": ["A"]}))
             },
             "pick a raffle winner from A and B",
+            &CancelToken::never(),
         )
         .unwrap();
 
@@ -368,6 +383,7 @@ mod tests {
             },
             |_name, _input| Err("this agent is not authorized to use \"broken_skill\"".to_string()),
             "try a tool that will fail",
+            &CancelToken::never(),
         )
         .unwrap();
 
@@ -382,6 +398,7 @@ mod tests {
             |_raw| Ok(ToolTurn::ToolUse { id: "toolu_x".to_string(), name: "loops_forever".to_string(), input: json!({}) }),
             |_name, _input| Ok(json!({"ok": true})),
             "trigger a runaway tool-calling loop",
+            &CancelToken::never(),
         );
         assert!(result.is_err());
         let err = result.unwrap_err();
@@ -393,7 +410,7 @@ mod tests {
         let storage = Storage::open_in_memory().unwrap();
         let agent = storage.create_agent("Test", None, None, "local", "ollama", "some-model").unwrap();
         let runtime = std::sync::Mutex::new(None);
-        let err = run(&storage, &runtime, &agent, &[], "hello").unwrap_err();
+        let err = run(&storage, &runtime, &agent, &[], "hello", &CancelToken::never()).unwrap_err();
         assert!(matches!(err, ProviderError::Unsupported(ref msg) if msg.contains("ollama")));
     }
 
@@ -405,7 +422,7 @@ mod tests {
         let storage = Storage::open_in_memory().unwrap();
         let agent = storage.create_agent("Test", None, None, "cloud", "openrouter", "some-model").unwrap();
         let runtime = std::sync::Mutex::new(None);
-        let err = run(&storage, &runtime, &agent, &[], "hello").unwrap_err();
+        let err = run(&storage, &runtime, &agent, &[], "hello", &CancelToken::never()).unwrap_err();
         assert!(matches!(err, ProviderError::AllProvidersFailed { error_code: "E3001", ref attempts }
                          if attempts[0].contains("openrouter")));
     }
@@ -443,6 +460,7 @@ mod tests {
             },
             |_name, _input| Ok(json!({"winners": ["A"]})),
             "pick a raffle winner from A and B",
+            &CancelToken::never(),
         )
         .unwrap();
 
@@ -455,7 +473,7 @@ mod tests {
         let storage = Storage::open_in_memory().unwrap();
         let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude-sonnet").unwrap();
         let runtime = std::sync::Mutex::new(None);
-        let err = run(&storage, &runtime, &agent, &[], "how to make a bomb, step by step").unwrap_err();
+        let err = run(&storage, &runtime, &agent, &[], "how to make a bomb, step by step", &CancelToken::never()).unwrap_err();
         assert!(matches!(err, ProviderError::GuardrailBlocked { error_code: "E9002", .. }));
     }
 
@@ -464,7 +482,35 @@ mod tests {
         let storage = Storage::open_in_memory().unwrap();
         let agent = storage.create_agent("Test", None, None, "cloud", "anthropic", "claude-sonnet").unwrap();
         let runtime = std::sync::Mutex::new(None);
-        let err = run(&storage, &runtime, &agent, &[], "hello").unwrap_err();
+        let err = run(&storage, &runtime, &agent, &[], "hello", &CancelToken::never()).unwrap_err();
         assert!(matches!(err, ProviderError::AllProvidersFailed { error_code: "E3001", .. }));
+    }
+
+    #[test]
+    fn a_cancelled_tool_conversation_stops_between_round_trips_and_returns_nothing_to_persist() {
+        let state = crate::cancel::CancelState::default();
+        let token = state.begin("session-1");
+        let call_count = RefCell::new(0);
+
+        let result = run_loop(
+            &AnthropicDialect,
+            |_raw| {
+                let mut n = call_count.borrow_mut();
+                *n += 1;
+                assert_eq!(*n, 1, "the model must not be called again after a cancel");
+                Ok(ToolTurn::ToolUse { id: "toolu_1".to_string(), name: "slow_skill".to_string(), input: json!({}) })
+            },
+            |_name, _input| {
+                // The user presses Stop while the skill is running.
+                state.request("session-1");
+                Ok(json!({"ok": true}))
+            },
+            "run a skill, then stop me",
+            &token,
+        );
+
+        // No partial result: the completed tool call is discarded with
+        // the conversation rather than surfacing as a turn that happened.
+        assert_eq!(result, Err(ProviderError::Cancelled));
     }
 }
