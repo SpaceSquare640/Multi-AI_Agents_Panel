@@ -16,6 +16,25 @@ use serde::{Deserialize, Serialize};
 
 use crate::storage::CustomRoleTemplate;
 
+/// The Daily Assistant's system prompt, kept in its own file and embedded
+/// at compile time.
+///
+/// Every other default prompt is a string literal in the list below, and
+/// at three or four lines each that is the right place for them. This one
+/// is roughly ten times longer and written as Markdown with headings and
+/// bullet lists, which is where inlining stops paying: the same text as a
+/// Rust literal is fifty-odd lines of escaped newlines and `\`
+/// continuations, and getting one of those wrong still compiles — it just
+/// silently drops a line break or smuggles this file's indentation into
+/// the prompt. That is not hypothetical; it happened on the first attempt
+/// at exactly this prompt, and only a test caught it.
+///
+/// `include_str!` embeds the file at compile time, so there is no runtime
+/// file dependency and nothing to bundle with the installer. What it buys
+/// is that the prompt is now plain text: readable, diffable, and editable
+/// without thinking about escaping at all.
+const DAILY_ASSISTANT_PROMPT: &str = include_str!("prompts/daily-assistant.md");
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RoleTemplate {
@@ -226,9 +245,12 @@ pub fn default_templates() -> Vec<RoleTemplate> {
             "ollama",
             "qwen2.5-coder:1.5b",
         ),
+        // The one default whose prompt lives in a file rather than in
+        // this list — see DAILY_ASSISTANT_PROMPT.
+        //
         // Written in Traditional Chinese while every other default is in
-        // English, and deliberately so: the prompt's first instruction is
-        // to reply in Traditional Chinese, and a prompt that issues that
+        // English, and deliberately so: its first instruction is to reply
+        // in Traditional Chinese, and a prompt that issues that
         // instruction in another language is asking the model to infer
         // what it could simply demonstrate. Supplied by the user from
         // their own prompt library, kept verbatim rather than rewritten
@@ -237,28 +259,7 @@ pub fn default_templates() -> Vec<RoleTemplate> {
             "daily-assistant",
             "Daily Assistant",
             "日常生活助理：繁體中文、先講結論、不確定就說不確定",
-            "你是我的日常生活助理，請遵守以下原則：\n\
-            \n\
-            【溝通風格】\n\
-            - 一律使用繁體中文回覆\n\
-            - 回答簡潔精準，先講重點結論，再視需要補充說明\n\
-            - 不使用浮誇、中二或過度熱情的用詞\n\
-            - 不確定的資訊要明確說出「不確定」，不要編造\n\
-            \n\
-            【回答方式】\n\
-            - 問題明確就直接回答，不用先反問\n\
-            - 若問題有多種解法，簡述 2-3 個選項並給出建議，不要落落長列所有可能性\n\
-            - 需要條列時使用簡短清單，避免冗長段落\n\
-            - 涉及數字、日期、價格等資訊，務必註明是否為即時查詢結果\n\
-            \n\
-            【任務執行】\n\
-            - 若任務範圍不清楚，先確認一個關鍵問題再開始，不要每件事都反覆確認\n\
-            - 遇到需要做決定的模糊地帶，主動給出合理預設值並說明理由\n\
-            - 完成任務後簡短總結做了什麼，不需要逐步報告過程\n\
-            \n\
-            【界限】\n\
-            - 不確定或超出能力範圍的事，直接說明並建議替代方案\n\
-            - 涉及個人隱私或敏感資料，不主動記錄或外流",
+            DAILY_ASSISTANT_PROMPT.trim(),
             "cloud",
             "anthropic",
             "claude-sonnet-4-5",
@@ -281,25 +282,29 @@ mod tests {
     }
 
     #[test]
-    fn the_daily_assistant_prompt_survives_the_line_continuations_intact() {
-        // Its prompt is the only multi-line one, assembled from escaped
-        // newlines and `\`-continued source lines. Get one of those
-        // wrong and the text still compiles — it just silently loses a
-        // line break or gains the source file's indentation, which is
-        // exactly the kind of damage nobody notices by reading the Rust.
+    fn the_daily_assistant_prompt_arrives_whole_from_its_file() {
+        // `include_str!` cannot mangle the text the way hand-escaping
+        // did, so this no longer guards against lost line breaks. What it
+        // does guard against is the file going missing its content, being
+        // saved in the wrong encoding, or being replaced by something
+        // that is no longer this prompt — all of which compile fine.
         let daily = default_templates().into_iter().find(|t| t.id == "daily-assistant").unwrap();
 
-        for heading in ["【溝通風格】", "【回答方式】", "【任務執行】", "【界限】"] {
+        for heading in [
+            "## 核心定位",
+            "## 溝通風格",
+            "## 回答方式",
+            "## 資料蒐集與來源",
+            "## 任務執行",
+            "## 誠實與品質紅線",
+            "## 界限",
+        ] {
             assert!(daily.system_prompt.contains(heading), "missing section {heading}");
         }
-        assert!(daily.system_prompt.starts_with("你是我的日常生活助理"));
-        assert!(daily.system_prompt.trim_end().ends_with("不主動記錄或外流"));
-        // 4 sections + the opening line, each separated by a blank line.
-        assert_eq!(daily.system_prompt.matches("\n\n").count(), 4);
-        // No line carries the source file's indentation.
-        for line in daily.system_prompt.lines() {
-            assert_eq!(line, line.trim_start(), "leaked source indentation: {line:?}");
-        }
+        assert!(daily.system_prompt.starts_with("## 核心定位"));
+        // Trimmed, so neither the file's trailing newline nor any leading
+        // blank line reaches the model.
+        assert_eq!(daily.system_prompt, daily.system_prompt.trim());
     }
 
     #[test]
