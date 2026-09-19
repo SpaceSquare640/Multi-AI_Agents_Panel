@@ -45,7 +45,7 @@ turbovec = "1"
 # user's actual RAM/CPU/GPU (github.com/AlexsJones/llmfit). Not on
 # crates.io under this crate name (checked), so pinned to the git tag
 # matching the local copy the user pointed at (llmfit-core version.txt: 1.1.10).
-llmfit-core = { git = "https://github.com/AlexsJones/llmfit.git", tag = "v1.1.10" }
+llmfit-core = { git = "https://github.com/AlexsJones/llmfit.git", tag = "v1.1.12" }
 # mcp_manager: MCP (Model Context Protocol) client support — the official
 # Rust SDK, spawns/talks to local MCP servers over stdio (same shape as
 # the existing Python Skills bridge). See mcp_manager's doc comment for
