@@ -1,0 +1,46 @@
+name: Test build
+
+# Builds an installable Windows app on demand, without releasing anything.
+#
+# Why this exists: until now the only way to get something installable was
+# to push a version tag, which publishes a public Release and rewrites
+# CHANGELOG.md. That is the wrong order for verification — it means the
+# first real run of a change happens after it has already shipped. This
+# gives a build that can be installed and looked at *before* that point.
+#
+# Deliberately not on `push`. Every push already runs the fast checks in
+# ci.yml; a full Tauri bundle on top of that would cost minutes on every
+# commit to prove something almost no commit changes. This is the button
+# you press when you are about to go and look at the app.
+#
+# Deliberately no `workflow_dispatch` on release.yml either: publishing
+# stays reachable only by pushing a tag. The fewer entrances a release
+# path has, the harder it is to publish one by accident.
+on:
+  workflow_dispatch:
+
+# Read-only. The build needs nothing else, and a test build that cannot
+# write is a test build that cannot publish something by mistake.
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      # No tagName, so tauri-action builds without creating a Release.
+      - uses: ./.github/actions/build-windows
+      - name: Upload the installer as a workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer-${{ github.sha }}
+          path: |
+            src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/target/release/bundle/msi/*.msi
+          # Fail loudly rather than handing over an empty zip. A build
+          # that silently produced nothing is the one failure mode that
+          # would waste the most time downstream — you would install
+          # nothing and conclude the app was broken.
+          if-no-files-found: error
+          retention-days: 14

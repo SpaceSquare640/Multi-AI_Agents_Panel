@@ -31,36 +31,17 @@ jobs:
           # Full history, not the default shallow clone — git-cliff (below)
           # needs it to walk every commit back to the project's start.
           fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - uses: dtolnay/rust-toolchain@stable
-      - run: npm ci
-      - name: Download bundled Windows Python runtime
-        # See bridge_support.rs for the "bundle a portable Python so users
-        # don't need their own" gap this fills. Fetches the official
-        # embeddable package and unpacks it where tauri.windows.conf.json's
-        # bundle.resources expects it. Skills bridge only for now — it's
-        # pure stdlib, so the vanilla embeddable package (no pip) is enough.
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = "Stop"
-          $dest = "src-tauri/vendor/python-windows"
-          New-Item -ItemType Directory -Force -Path $dest | Out-Null
-          Invoke-WebRequest -Uri "https://www.python.org/ftp/python/3.12.8/python-3.12.8-embed-amd64.zip" -OutFile "python-embed.zip"
-          Expand-Archive -Path "python-embed.zip" -DestinationPath $dest -Force
+      # Toolchain, vendored Python, and the build itself live in a
+      # composite action shared with test-build.yml, so an installer built
+      # for verification is the same installer that ships. Only the
+      # release-specific work — publishing, checksums, changelog — stays
+      # here. See that action for why it is shared rather than duplicated.
       - id: tauri_build
-        uses: tauri-apps/tauri-action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: ./.github/actions/build-windows
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "Multi-AI Agents Panel ${{ github.ref_name }}"
-          releaseDraft: false
-          # GA as of v1.0.0 (user decision, see CI-CD Pipeline.md) — no more
-          # -alpha/-beta suffixes, tags are no longer marked prerelease.
-          prerelease: false
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
       - name: Generate and upload SHA256 checksum
         # The header comment above claims "a checksum is attached so users
         # can verify what they downloaded" — this step is what actually
