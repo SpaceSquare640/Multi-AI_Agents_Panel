@@ -13,16 +13,28 @@ pub struct CuratedModel {
     pub label: String,
 }
 
+/// The current Anthropic generation, most capable first.
+///
+/// This list had gone stale: it still offered Opus 4.5 and Sonnet 4.5,
+/// both superseded, while the OpenRouter list below had already moved on
+/// to Sonnet 5 and Opus 4.8. That gap only mattered once — someone
+/// picking a default and having their first request fail or run on a
+/// worse model than they asked for — which is exactly what a new user
+/// does. Haiku 4.5 is not stale: it is still the current small model.
+///
+/// Ids are exact and complete; Anthropic model ids carry no date suffix.
+/// Labelled rather than showing the raw id, matching the two lists below.
 pub fn anthropic_models() -> Vec<CuratedModel> {
     [
-        "claude-opus-4-5",
-        "claude-sonnet-4-5",
-        "claude-haiku-4-5",
+        ("claude-fable-5-1", "Claude Fable 5.1"),
+        ("claude-opus-5", "Claude Opus 5"),
+        ("claude-sonnet-5", "Claude Sonnet 5"),
+        ("claude-haiku-4-5", "Claude Haiku 4.5"),
     ]
     .into_iter()
-    .map(|id| CuratedModel {
+    .map(|(id, label)| CuratedModel {
         id: id.to_string(),
-        label: id.to_string(),
+        label: label.to_string(),
     })
     .collect()
 }

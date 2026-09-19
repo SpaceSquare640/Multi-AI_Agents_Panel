@@ -150,7 +150,7 @@ pub fn default_templates() -> Vec<RoleTemplate> {
             prompt::PRODUCT_LEAD,
             "cloud",
             "anthropic",
-            "claude-sonnet-4-5",
+            "claude-sonnet-5",
         ),
         default_template(
             "lead-architect",
@@ -159,7 +159,7 @@ pub fn default_templates() -> Vec<RoleTemplate> {
             prompt::LEAD_ARCHITECT,
             "cloud",
             "anthropic",
-            "claude-opus-4-5",
+            "claude-opus-5",
         ),
         default_template(
             "uiux-designer",
@@ -168,7 +168,7 @@ pub fn default_templates() -> Vec<RoleTemplate> {
             prompt::UIUX_DESIGNER,
             "cloud",
             "anthropic",
-            "claude-sonnet-4-5",
+            "claude-sonnet-5",
         ),
         default_template(
             "full-stack-developer",
@@ -177,7 +177,7 @@ pub fn default_templates() -> Vec<RoleTemplate> {
             prompt::FULL_STACK_DEVELOPER,
             "cloud",
             "anthropic",
-            "claude-sonnet-4-5",
+            "claude-sonnet-5",
         ),
         default_template(
             "qa-test-engineer",
@@ -186,7 +186,7 @@ pub fn default_templates() -> Vec<RoleTemplate> {
             prompt::QA_TEST_ENGINEER,
             "cloud",
             "anthropic",
-            "claude-sonnet-4-5",
+            "claude-sonnet-5",
         ),
         default_template(
             "security-vulnerability-tester",
@@ -195,7 +195,7 @@ pub fn default_templates() -> Vec<RoleTemplate> {
             prompt::SECURITY_VULNERABILITY_TESTER,
             "cloud",
             "anthropic",
-            "claude-opus-4-5",
+            "claude-opus-5",
         ),
         default_template(
             "release-devops-manager",
@@ -204,7 +204,7 @@ pub fn default_templates() -> Vec<RoleTemplate> {
             prompt::RELEASE_DEVOPS_MANAGER,
             "cloud",
             "anthropic",
-            "claude-sonnet-4-5",
+            "claude-sonnet-5",
         ),
         default_template(
             "issue-manager",
@@ -213,7 +213,7 @@ pub fn default_templates() -> Vec<RoleTemplate> {
             prompt::ISSUE_MANAGER,
             "cloud",
             "anthropic",
-            "claude-sonnet-4-5",
+            "claude-sonnet-5",
         ),
         default_template(
             "wiki-documentation-writer",
@@ -222,7 +222,7 @@ pub fn default_templates() -> Vec<RoleTemplate> {
             prompt::WIKI_DOCUMENTATION_WRITER,
             "cloud",
             "anthropic",
-            "claude-sonnet-4-5",
+            "claude-sonnet-5",
         ),
         default_template(
             "obsidian-knowledge-architect",
@@ -248,7 +248,7 @@ pub fn default_templates() -> Vec<RoleTemplate> {
             prompt::DAILY_ASSISTANT,
             "cloud",
             "anthropic",
-            "claude-sonnet-4-5",
+            "claude-sonnet-5",
         ),
     ]
 }

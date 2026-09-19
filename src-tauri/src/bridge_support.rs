@@ -179,11 +179,25 @@ mod tests {
 
     #[test]
     fn free_local_port_returns_a_port_that_is_actually_bindable() {
-        let port = free_local_port().expect("OS should hand back a free port");
-        // If the port weren't actually free, this second bind would fail —
-        // proves free_local_port() doesn't just return a hardcoded/stale
-        // value, it round-trips through the OS.
-        let listener = std::net::TcpListener::bind(("127.0.0.1", port));
-        assert!(listener.is_ok());
+        // Proves free_local_port() round-trips through the OS rather than
+        // returning a hardcoded or stale value: if the port were not
+        // genuinely free, binding it here would fail.
+        //
+        // Retried, because the check races by construction. The function
+        // binds port 0, reads back the number the OS assigned, and drops
+        // the listener — so between that and this bind, any other process
+        // on the machine can take the port. The function's own docs name
+        // that TOCTOU gap; what was not noticed is that this test had
+        // built its assertion on top of it, and on a loaded CI runner it
+        // loses the race often enough to turn a green build red for no
+        // reason (it did, on 2026-09-19).
+        //
+        // One success proves the round trip. Ten consecutive losses would
+        // mean something genuinely wrong, not bad luck.
+        let bound = (0..10).any(|_| {
+            let port = free_local_port().expect("OS should hand back a free port");
+            std::net::TcpListener::bind(("127.0.0.1", port)).is_ok()
+        });
+        assert!(bound, "ten attempts, none of which produced a bindable port");
     }
 }
