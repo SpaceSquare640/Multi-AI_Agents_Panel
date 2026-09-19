@@ -16,24 +16,36 @@ use serde::{Deserialize, Serialize};
 
 use crate::storage::CustomRoleTemplate;
 
-/// The Daily Assistant's system prompt, kept in its own file and embedded
-/// at compile time.
+/// Every default role's system prompt, each in its own file under
+/// `prompts/` and embedded at compile time.
 ///
-/// Every other default prompt is a string literal in the list below, and
-/// at three or four lines each that is the right place for them. This one
-/// is roughly ten times longer and written as Markdown with headings and
-/// bullet lists, which is where inlining stops paying: the same text as a
-/// Rust literal is fifty-odd lines of escaped newlines and `\`
-/// continuations, and getting one of those wrong still compiles — it just
-/// silently drops a line break or smuggles this file's indentation into
-/// the prompt. That is not hypothetical; it happened on the first attempt
-/// at exactly this prompt, and only a test caught it.
+/// They started as string literals in the list below, three or four lines
+/// each, and that was the right place for them at that length. They are
+/// now full role briefs — an order of magnitude longer, written as
+/// Markdown with headings and lists — and that is where inlining stops
+/// paying: the same text as a Rust literal is dozens of lines of escaped
+/// newlines and `\` continuations, and getting one wrong still compiles.
+/// It just drops a line break, or smuggles this file's indentation into
+/// the prompt. That is not hypothetical; it happened on the first prompt
+/// written this way, and only a test caught it.
 ///
-/// `include_str!` embeds the file at compile time, so there is no runtime
-/// file dependency and nothing to bundle with the installer. What it buys
-/// is that the prompt is now plain text: readable, diffable, and editable
-/// without thinking about escaping at all.
-const DAILY_ASSISTANT_PROMPT: &str = include_str!("prompts/daily-assistant.md");
+/// `include_str!` embeds at compile time: no runtime file to find, nothing
+/// extra to bundle with the installer. What it buys is that the prompts
+/// are plain text — readable, diffable, and editable without thinking
+/// about escaping at all.
+mod prompt {
+    pub const PRODUCT_LEAD: &str = include_str!("prompts/product-lead.md");
+    pub const LEAD_ARCHITECT: &str = include_str!("prompts/lead-architect.md");
+    pub const UIUX_DESIGNER: &str = include_str!("prompts/uiux-designer.md");
+    pub const FULL_STACK_DEVELOPER: &str = include_str!("prompts/full-stack-developer.md");
+    pub const QA_TEST_ENGINEER: &str = include_str!("prompts/qa-test-engineer.md");
+    pub const SECURITY_VULNERABILITY_TESTER: &str = include_str!("prompts/security-vulnerability-tester.md");
+    pub const RELEASE_DEVOPS_MANAGER: &str = include_str!("prompts/release-devops-manager.md");
+    pub const ISSUE_MANAGER: &str = include_str!("prompts/issue-manager.md");
+    pub const WIKI_DOCUMENTATION_WRITER: &str = include_str!("prompts/wiki-documentation-writer.md");
+    pub const OBSIDIAN_KNOWLEDGE_ARCHITECT: &str = include_str!("prompts/obsidian-knowledge-architect.md");
+    pub const DAILY_ASSISTANT: &str = include_str!("prompts/daily-assistant.md");
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -106,7 +118,7 @@ fn default_template(
         id: id.to_string(),
         name: name.to_string(),
         description: description.to_string(),
-        system_prompt: system_prompt.to_string(),
+        system_prompt: system_prompt.trim().to_string(),
         suggested_provider_kind: Some(suggested_provider_kind.to_string()),
         suggested_provider_name: Some(suggested_provider_name.to_string()),
         suggested_model: Some(suggested_model.to_string()),
@@ -118,23 +130,24 @@ fn default_template(
 /// `create_agent` never enforces them ("已定案：僅作預設建議值，使用者
 /// 可自由覆寫").
 ///
-/// Ten of the eleven are the "1 人公司" software-team roles, written in
-/// English and meant to hand work to one another. `daily-assistant` is
-/// not one of them: it is a general-purpose assistant with no place in
-/// that pipeline, added because plenty of what this app gets used for is
-/// not building software. It is kept in the same list rather than given
-/// a category of its own — one extra entry does not earn a grouping
-/// mechanism, and the description says plainly what it is.
+/// Ten of the eleven are the "1 人公司" software-team roles, written to
+/// hand work to one another: the Product Lead settles scope before the
+/// Architect settles structure before the Developer writes anything, and
+/// QA, Security, Release, Issues and Docs pick it up from there. They
+/// share a common spine — state your assumptions, show the plan and wait
+/// for a go-ahead before producing, never delete unilaterally, stay
+/// inside the paths you were given, hand off with the risks named.
+///
+/// `daily-assistant` is not one of them: a general-purpose assistant with
+/// no place in that pipeline, kept in the same list because one entry
+/// outside the pattern does not earn a grouping mechanism.
 pub fn default_templates() -> Vec<RoleTemplate> {
     vec![
         default_template(
             "product-lead",
             "Product Lead",
             "需求分析、拆解功能模組、決定優先順序",
-            "You are the Product Lead. Your job is requirements analysis: break down what the user \
-             wants into concrete feature modules, and decide priority order before any code gets \
-             written. Ask clarifying questions before proposing a spec. Do not write implementation \
-             code yourself — hand that off to the Full-Stack Developer role.",
+            prompt::PRODUCT_LEAD,
             "cloud",
             "anthropic",
             "claude-sonnet-4-5",
@@ -143,11 +156,7 @@ pub fn default_templates() -> Vec<RoleTemplate> {
             "lead-architect",
             "Lead Architect",
             "技術選型、資料庫結構設計、模組間的介面與擴展性",
-            "You are the Lead Architect. You own technology choices, data model design, and the \
-             interfaces/extensibility between modules. Involve yourself especially for refactors, \
-             performance work, or introducing a new third-party dependency — your job is making sure \
-             the architecture doesn't collapse under those changes. Defer feature-priority decisions \
-             to the Product Lead and hands-on implementation to the Full-Stack Developer.",
+            prompt::LEAD_ARCHITECT,
             "cloud",
             "anthropic",
             "claude-opus-4-5",
@@ -156,9 +165,7 @@ pub fn default_templates() -> Vec<RoleTemplate> {
             "uiux-designer",
             "UIUX Designer",
             "視覺風格、介面佈局、互動流程、色彩搭配",
-            "You are the UI/UX Designer. You own visual style, layout, interaction flow, and color \
-             (maintain a consistent, high-contrast aesthetic). Plan the screen layout and user flow \
-             before implementation starts, then hand off to the Full-Stack Developer to build it.",
+            prompt::UIUX_DESIGNER,
             "cloud",
             "anthropic",
             "claude-sonnet-4-5",
@@ -167,10 +174,7 @@ pub fn default_templates() -> Vec<RoleTemplate> {
             "full-stack-developer",
             "Full-Stack Developer",
             "實作具體程式碼、寫邏輯、串接 API、刻介面",
-            "You are the Full-Stack Developer. Once a spec and architecture are settled, you implement: \
-             write the actual code, wire up logic, integrate APIs, build the interface. Follow the \
-             Lead Architect's technical decisions and the UIUX Designer's layout rather than making \
-             your own architecture or design calls.",
+            prompt::FULL_STACK_DEVELOPER,
             "cloud",
             "anthropic",
             "claude-sonnet-4-5",
@@ -178,11 +182,8 @@ pub fn default_templates() -> Vec<RoleTemplate> {
         default_template(
             "qa-test-engineer",
             "QA & Test Engineer",
-            "寫單元測試、邊界條件檢查、追蹤 CI/CD 失敗原因與修復建置錯誤",
-            "You are the QA & Test Engineer. Write unit tests, check edge cases, diagnose CI/CD \
-             failures, and fix build errors. You get involved once code is written or a build starts \
-             failing — your job is finding what's broken and proving what isn't, not designing new \
-             features.",
+            "單元測試、邊界條件檢查、CI/CD 失敗診斷與建置修復",
+            prompt::QA_TEST_ENGINEER,
             "cloud",
             "anthropic",
             "claude-sonnet-4-5",
@@ -190,11 +191,8 @@ pub fn default_templates() -> Vec<RoleTemplate> {
         default_template(
             "security-vulnerability-tester",
             "Security & Vulnerability Tester",
-            "審查程式碼中的安全性漏洞、敏感資訊外洩風險、依賴套件安全掃描、驗證存取控制",
-            "You are the Security & Vulnerability Tester. Review code for security vulnerabilities, \
-             risk of leaking sensitive information, scan dependencies for known issues, and verify \
-             access-control/protection mechanisms. You get involved before release, and before adding \
-             any new third-party package or API.",
+            "漏洞審查、敏感資訊外洩、依賴套件 CVE、認證與授權驗證",
+            prompt::SECURITY_VULNERABILITY_TESTER,
             "cloud",
             "anthropic",
             "claude-opus-4-5",
@@ -202,10 +200,8 @@ pub fn default_templates() -> Vec<RoleTemplate> {
         default_template(
             "release-devops-manager",
             "Release & DevOps Manager",
-            "Git 分支管理、撰寫 Commit 訊息、處理 Merge Conflict、維護 Changelog 與文件",
-            "You are the Release & DevOps Manager. You own git branch management, commit messages, \
-             merge conflict resolution, and keeping the changelog/docs in sync with what shipped. You \
-             get involved when a feature is ready to merge, package, or release.",
+            "分支策略、commit 訊息、合併衝突、打包發布與部署",
+            prompt::RELEASE_DEVOPS_MANAGER,
             "cloud",
             "anthropic",
             "claude-sonnet-4-5",
@@ -213,22 +209,17 @@ pub fn default_templates() -> Vec<RoleTemplate> {
         default_template(
             "issue-manager",
             "Issue Manager",
-            "監控、分類、回應與追蹤 GitHub Issues，把回報轉化為具體開發任務",
-            "You are the Issue Manager. Monitor, categorize, respond to, and track GitHub Issues — \
-             turn bug reports, feature requests, and CI failures into concrete, actionable development \
-             tasks. This role is lighter-weight triage work, so a smaller/local model is often enough.",
-            "local",
-            "ollama",
-            "llama3.1:8b",
+            "標籤與優先級、問題摘要與回覆、根因分析、開發任務拆解",
+            prompt::ISSUE_MANAGER,
+            "cloud",
+            "anthropic",
+            "claude-sonnet-4-5",
         ),
         default_template(
             "wiki-documentation-writer",
             "Wiki & Documentation Writer",
-            "編寫與維護 GitHub Wiki、README、API 文件、操作手冊及 Changelog",
-            "You are the Wiki & Documentation Writer. Write and maintain the GitHub Wiki, README, API \
-             docs, user manual, and changelog. You get involved after a feature ships, an architecture \
-             change lands, or a new version releases — keep the docs honestly in sync with what the \
-             code actually does.",
+            "README、API 文件、操作手冊、變更日誌的撰寫與維護",
+            prompt::WIKI_DOCUMENTATION_WRITER,
             "cloud",
             "anthropic",
             "claude-sonnet-4-5",
@@ -237,29 +228,24 @@ pub fn default_templates() -> Vec<RoleTemplate> {
             "obsidian-knowledge-architect",
             "Obsidian Knowledge Architect",
             "管理與維護本地 Obsidian 知識庫中的專案筆記、開發日誌、架構靈感、雙向連結結構",
-            "You are the Obsidian Knowledge Architect. Manage and maintain the project's local Obsidian \
-             vault: dev notes, daily logs, architecture ideas, research, and the backlink structure \
-             tying them together. You get involved when a new technical reflection, meeting note, \
-             architecture sketch, or research finding needs to be organized into the vault.",
+            prompt::OBSIDIAN_KNOWLEDGE_ARCHITECT,
             "local",
             "ollama",
             "qwen2.5-coder:1.5b",
         ),
-        // The one default whose prompt lives in a file rather than in
-        // this list — see DAILY_ASSISTANT_PROMPT.
-        //
-        // Written in Traditional Chinese while every other default is in
-        // English, and deliberately so: its first instruction is to reply
-        // in Traditional Chinese, and a prompt that issues that
-        // instruction in another language is asking the model to infer
-        // what it could simply demonstrate. Supplied by the user from
-        // their own prompt library, kept verbatim rather than rewritten
-        // in this file's house style — it is their voice, not the app's.
+        // The one default written in Traditional Chinese, and deliberately
+        // so: its first instruction is to reply in Traditional Chinese, and
+        // a prompt that issues that instruction in another language is
+        // asking the model to infer what it could simply demonstrate.
+        // Supplied by the user from their own prompt library and kept
+        // verbatim — it is their voice, not the app's. The other ten are in
+        // English because the app ships in seven languages, and a prompt's
+        // own language steers what the model answers in.
         default_template(
             "daily-assistant",
             "Daily Assistant",
             "日常生活助理：繁體中文、先講結論、不確定就說不確定",
-            DAILY_ASSISTANT_PROMPT.trim(),
+            prompt::DAILY_ASSISTANT,
             "cloud",
             "anthropic",
             "claude-sonnet-4-5",
@@ -282,29 +268,38 @@ mod tests {
     }
 
     #[test]
-    fn the_daily_assistant_prompt_arrives_whole_from_its_file() {
+    fn every_prompt_file_arrives_whole_and_trimmed() {
         // `include_str!` cannot mangle the text the way hand-escaping
         // did, so this no longer guards against lost line breaks. What it
-        // does guard against is the file going missing its content, being
-        // saved in the wrong encoding, or being replaced by something
-        // that is no longer this prompt — all of which compile fine.
-        let daily = default_templates().into_iter().find(|t| t.id == "daily-assistant").unwrap();
+        // guards against is a file gone empty, truncated, or replaced by
+        // something that is no longer a role brief — all of which compile.
+        for t in default_templates() {
+            let prompt = &t.system_prompt;
+            assert!(prompt.len() > 400, "{} looks truncated ({} bytes)", t.id, prompt.len());
+            assert!(prompt.starts_with("# ") || prompt.starts_with("## "), "{} lost its heading", t.id);
+            assert_eq!(prompt, prompt.trim(), "{} carries surrounding whitespace", t.id);
+        }
+    }
 
-        for heading in [
-            "## 核心定位",
-            "## 溝通風格",
-            "## 回答方式",
-            "## 資料蒐集與來源",
-            "## 任務執行",
-            "## 誠實與品質紅線",
-            "## 界限",
-        ] {
+    #[test]
+    fn the_ten_pipeline_roles_share_their_working_rules() {
+        // The spine every "1 人公司" role is supposed to carry. A file
+        // rewritten without one of these would still compile, still load,
+        // and quietly drop a rule the user relies on — which is why they
+        // are asserted rather than trusted.
+        for t in default_templates().into_iter().filter(|t| t.id != "daily-assistant") {
+            for rule in ["Assumption:", "explicit go-ahead", "second, explicit confirmation"] {
+                assert!(t.system_prompt.contains(rule), "{} is missing: {rule}", t.id);
+            }
+        }
+    }
+
+    #[test]
+    fn the_daily_assistant_is_the_one_prompt_in_chinese() {
+        let daily = default_templates().into_iter().find(|t| t.id == "daily-assistant").unwrap();
+        for heading in ["## 核心定位", "## 資料蒐集與來源", "## 誠實與品質紅線", "## 界限"] {
             assert!(daily.system_prompt.contains(heading), "missing section {heading}");
         }
-        assert!(daily.system_prompt.starts_with("## 核心定位"));
-        // Trimmed, so neither the file's trailing newline nor any leading
-        // blank line reaches the model.
-        assert_eq!(daily.system_prompt, daily.system_prompt.trim());
     }
 
     #[test]
