@@ -221,7 +221,7 @@ pub struct MlAccessGrant {
 }
 
 /// A user-authored role template ("User Custom" in
-/// `Role Templates Index.md` — as opposed to the 10 built-in "Default"
+/// `Role Templates Index.md` — as opposed to the 11 built-in "Default"
 /// ones, which live in `agent_manager::role_templates` as Rust constants
 /// and are never stored here, so an app update can safely refresh them).
 #[derive(Debug, Clone, Serialize, Deserialize)]

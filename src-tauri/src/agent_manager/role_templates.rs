@@ -2,7 +2,7 @@
 //! apply when creating an Agent, instead of writing one from scratch.
 //!
 //! Two sources ("Default vs User Custom"):
-//! - `default_templates()` below — the 10 built-in roles, hardcoded here
+//! - `default_templates()` below — the 11 built-in roles, hardcoded here
 //!   (not in Storage) so an app update can safely refresh their content
 //!   without touching anything the user wrote.
 //! - `storage::CustomRoleTemplate` — user-authored, persisted, survives
@@ -95,9 +95,17 @@ fn default_template(
     }
 }
 
-/// The 10 built-in "1 人公司" roles. Suggested provider/model are
-/// defaults only — `create_agent` never enforces them
-/// ("已定案：僅作預設建議值，使用者可自由覆寫").
+/// The built-in roles. Suggested provider/model are defaults only —
+/// `create_agent` never enforces them ("已定案：僅作預設建議值，使用者
+/// 可自由覆寫").
+///
+/// Ten of the eleven are the "1 人公司" software-team roles, written in
+/// English and meant to hand work to one another. `daily-assistant` is
+/// not one of them: it is a general-purpose assistant with no place in
+/// that pipeline, added because plenty of what this app gets used for is
+/// not building software. It is kept in the same list rather than given
+/// a category of its own — one extra entry does not earn a grouping
+/// mechanism, and the description says plainly what it is.
 pub fn default_templates() -> Vec<RoleTemplate> {
     vec![
         default_template(
@@ -218,6 +226,43 @@ pub fn default_templates() -> Vec<RoleTemplate> {
             "ollama",
             "qwen2.5-coder:1.5b",
         ),
+        // Written in Traditional Chinese while every other default is in
+        // English, and deliberately so: the prompt's first instruction is
+        // to reply in Traditional Chinese, and a prompt that issues that
+        // instruction in another language is asking the model to infer
+        // what it could simply demonstrate. Supplied by the user from
+        // their own prompt library, kept verbatim rather than rewritten
+        // in this file's house style — it is their voice, not the app's.
+        default_template(
+            "daily-assistant",
+            "Daily Assistant",
+            "日常生活助理：繁體中文、先講結論、不確定就說不確定",
+            "你是我的日常生活助理，請遵守以下原則：\n\
+            \n\
+            【溝通風格】\n\
+            - 一律使用繁體中文回覆\n\
+            - 回答簡潔精準，先講重點結論，再視需要補充說明\n\
+            - 不使用浮誇、中二或過度熱情的用詞\n\
+            - 不確定的資訊要明確說出「不確定」，不要編造\n\
+            \n\
+            【回答方式】\n\
+            - 問題明確就直接回答，不用先反問\n\
+            - 若問題有多種解法，簡述 2-3 個選項並給出建議，不要落落長列所有可能性\n\
+            - 需要條列時使用簡短清單，避免冗長段落\n\
+            - 涉及數字、日期、價格等資訊，務必註明是否為即時查詢結果\n\
+            \n\
+            【任務執行】\n\
+            - 若任務範圍不清楚，先確認一個關鍵問題再開始，不要每件事都反覆確認\n\
+            - 遇到需要做決定的模糊地帶，主動給出合理預設值並說明理由\n\
+            - 完成任務後簡短總結做了什麼，不需要逐步報告過程\n\
+            \n\
+            【界限】\n\
+            - 不確定或超出能力範圍的事，直接說明並建議替代方案\n\
+            - 涉及個人隱私或敏感資料，不主動記錄或外流",
+            "cloud",
+            "anthropic",
+            "claude-sonnet-4-5",
+        ),
     ]
 }
 
@@ -226,13 +271,35 @@ mod tests {
     use super::*;
 
     #[test]
-    fn there_are_exactly_ten_default_templates_with_unique_ids() {
+    fn there_are_exactly_eleven_default_templates_with_unique_ids() {
         let templates = default_templates();
-        assert_eq!(templates.len(), 10);
+        assert_eq!(templates.len(), 11);
         let mut ids: Vec<&str> = templates.iter().map(|t| t.id.as_str()).collect();
         ids.sort();
         ids.dedup();
-        assert_eq!(ids.len(), 10, "default template ids must be unique");
+        assert_eq!(ids.len(), 11, "default template ids must be unique");
+    }
+
+    #[test]
+    fn the_daily_assistant_prompt_survives_the_line_continuations_intact() {
+        // Its prompt is the only multi-line one, assembled from escaped
+        // newlines and `\`-continued source lines. Get one of those
+        // wrong and the text still compiles — it just silently loses a
+        // line break or gains the source file's indentation, which is
+        // exactly the kind of damage nobody notices by reading the Rust.
+        let daily = default_templates().into_iter().find(|t| t.id == "daily-assistant").unwrap();
+
+        for heading in ["【溝通風格】", "【回答方式】", "【任務執行】", "【界限】"] {
+            assert!(daily.system_prompt.contains(heading), "missing section {heading}");
+        }
+        assert!(daily.system_prompt.starts_with("你是我的日常生活助理"));
+        assert!(daily.system_prompt.trim_end().ends_with("不主動記錄或外流"));
+        // 4 sections + the opening line, each separated by a blank line.
+        assert_eq!(daily.system_prompt.matches("\n\n").count(), 4);
+        // No line carries the source file's indentation.
+        for line in daily.system_prompt.lines() {
+            assert_eq!(line, line.trim_start(), "leaked source indentation: {line:?}");
+        }
     }
 
     #[test]
