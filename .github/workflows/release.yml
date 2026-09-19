@@ -42,6 +42,10 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: "Multi-AI Agents Panel ${{ github.ref_name }}"
           githubToken: ${{ secrets.GITHUB_TOKEN }}
+          # Read from the tag rather than set by hand, so the label can
+          # never disagree with the version it is labelling: a tag
+          # carrying a prerelease suffix is a prerelease, always.
+          prerelease: ${{ contains(github.ref_name, '-') }}
       - name: Generate and upload SHA256 checksum
         # The header comment above claims "a checksum is attached so users
         # can verify what they downloaded" — this step is what actually

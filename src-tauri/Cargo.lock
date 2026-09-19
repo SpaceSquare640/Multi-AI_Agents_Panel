@@ -2724,7 +2724,7 @@ dependencies = [
 
 [[package]]
 name = "multi-ai-agents-panel"
-version = "1.6.4"
+version = "1.7.0-beta"
 dependencies = [
  "base64 0.22.1",
  "chrono",

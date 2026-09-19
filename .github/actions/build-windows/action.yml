@@ -35,6 +35,16 @@ inputs:
       test build cannot write to the repository even by accident.
     required: false
     default: ""
+  prerelease:
+    description: >
+      Whether to mark the published Release as a prerelease. An input
+      rather than a fixed value: v1.0.0 went GA and stopped using
+      -alpha/-beta suffixes, and that decision still holds for finished
+      releases — but a beta cut for verification has to be labelled as
+      one, or GitHub presents it as the current stable build. Ignored
+      when no Release is being created.
+    required: false
+    default: "false"
 
 outputs:
   artifactPaths:
@@ -72,6 +82,4 @@ runs:
         tagName: ${{ inputs.tagName }}
         releaseName: ${{ inputs.releaseName }}
         releaseDraft: false
-        # GA as of v1.0.0 (user decision, see CI-CD Pipeline.md) — no more
-        # -alpha/-beta suffixes, tags are no longer marked prerelease.
-        prerelease: false
+        prerelease: ${{ inputs.prerelease }}
