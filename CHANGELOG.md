@@ -2,6 +2,20 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
+## [1.0.1-beta] - 2026-09-19
+
+### Added
+
+- Add a Daily Assistant role template
+
+### Changes
+
+- Chore: update CHANGELOG.md for v1.0.0-beta [skip ci]
+- Update the Daily Assistant prompt, and move it into a file
+- Rewrite the ten role templates as full briefs
+- Refresh the Anthropic model list, and de-flake the port test
+- Prepare 1.0.1-beta
+
 ## [1.0.0-beta] - 2026-09-19
 
 ### Added
