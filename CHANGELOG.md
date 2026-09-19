@@ -2,85 +2,18 @@
 
 All notable changes to this project. Generated with [git-cliff](https://git-cliff.org/).
 
-## [1.6.4] - 2026-08-24
-
-### Changes
-
-- Chore: update CHANGELOG.md for v1.6.2 [skip ci]
-- Chore: update CHANGELOG.md for v1.6.3 [skip ci]
-- Chore: bump version to 1.6.4
-
-### Fixed
-
-- Fix: widen Chat sidebar (move divider right, 260px -> 300px)
-- Fix: delete button expanding to fill row, squeezing session/agent titles to 1-2 chars
-
-## [1.6.3] - 2026-08-24
-
-### Changes
-
-- Chore: bump version to 1.6.3
-
-### Fixed
-
-- Fix: add missing Agent deletion (create-only, no way to delete)
-
-## [1.6.2] - 2026-08-24
-
-### Changes
-
-- Chore: update CHANGELOG.md for v1.6.0 [skip ci]
-- Chore: update CHANGELOG.md for v1.6.1 [skip ci]
-- Chore: bump version to 1.6.2
-
-### Fixed
-
-- Fix: restore Game Agent as a branch under Machine Learning, not its own tab
-
-## [1.6.1] - 2026-08-24
-
-### Changes
-
-- Chore: bump version to 1.6.1
-
-### Fixed
-
-- Fix: hyperlink bare URL in cherrytree.rs doc comment (CI rustdoc check)
-
-## [1.6.0] - 2026-08-24
+## [1.0.0-beta] - 2026-09-19
 
 ### Added
 
+- Feat: import/export custom Skills from the dedicated Skills screen
+- Feat: install Ollama directly from the app (Windows)
+- Feat: delete sessions and group chats
+- Feat: dedicated Machine Learning page
+- Feat: Track B train-rl and play stages, completing the pipeline
+- Feat: finish Track B as an in-app GUI pipeline, fix Manual sidebar wrap and recording UX
 - Feat: add a native hierarchical Notes tab, with CherryTree as a companion install option
-
-### Changes
-
-- Chore: update CHANGELOG.md for v1.5.3 [skip ci]
-- Chore: bump version to 1.6.0
-
-## [1.5.3] - 2026-08-24
-
-### Changes
-
-- Chore: update CHANGELOG.md for v1.5.2 [skip ci]
-- Chore: bump version to 1.5.3
-
-### Documentation
-
-- Docs: add curated MCP server examples to the manual
-
-## [1.5.2] - 2026-08-24
-
-### Changes
-
-- Chore: update CHANGELOG.md for v1.5.1 [skip ci]
-- Chore: bump version to 1.5.2
-
-### Fixed
-
-- Fix: unify data folder naming with the installer, improve Ollama storage guidance
-
-## [1.5.1] - 2026-08-24
+- Add an on-demand test build, sharing one build path with Release
 
 ### Changed
 
@@ -88,156 +21,109 @@ All notable changes to this project. Generated with [git-cliff](https://git-clif
 
 ### Changes
 
-- Chore: update CHANGELOG.md for v1.5.0 [skip ci]
-- Chore: bump version to 1.5.1
-
-## [1.5.0] - 2026-08-24
-
-### Added
-
-- Feat: finish Track B as an in-app GUI pipeline, fix Manual sidebar wrap and recording UX
-
-### Changes
-
-- Chore: update CHANGELOG.md for v1.4.3 [skip ci]
-- Chore: bump version to 1.5.0
-
-## [1.4.3] - 2026-08-24
-
-### Changes
-
-- Chore: update CHANGELOG.md for v1.4.2 [skip ci]
-- Chore: bump version to 1.4.3
-
-### Documentation
-
-- Docs: rewrite Machine Learning manual as short tutorials, not textbook articles
-
-## [1.4.2] - 2026-08-24
-
-### Changes
-
-- Chore: update CHANGELOG.md for v1.4.1 [skip ci]
-- Chore: bump version to 1.4.2
-
-### Fixed
-
-- Fix: path traversal in Skills import/export
-
-## [1.4.1] - 2026-08-23
-
-### Added
-
-- Feat: Track B train-rl and play stages, completing the pipeline
-
-### Changes
-
-- Chore: update CHANGELOG.md for v1.4.0 [skip ci]
-- Chore: bump version to 1.4.1
-
-### Fixed
-
-- Fix: CI has been red since v1.2.0 — dead_code on non-Windows
-
-## [1.4.0] - 2026-08-23
-
-### Added
-
-- Feat: dedicated Machine Learning page
-
-### Changes
-
-- Chore: update CHANGELOG.md for v1.3.0 [skip ci]
-- Chore: bump version to 1.4.0
-
-## [1.3.0] - 2026-08-23
-
-### Added
-
-- Feat: delete sessions and group chats
-
-### Changes
-
-- Chore: update CHANGELOG.md for v1.2.2 [skip ci]
-- Chore: bump version to 1.3.0
-
-## [1.2.2] - 2026-08-23
-
-### Changes
-
-- Chore: update CHANGELOG.md for v1.2.1 [skip ci]
-- Chore: bump version to 1.2.2
-
-### Fixed
-
-- Fix: only suggest models the user can actually use
-- Fix: self-heal the installer against leftover locked files
-
-## [1.2.1] - 2026-08-23
-
-### Changes
-
-- Chore: update CHANGELOG.md for v1.2.0 [skip ci]
-- Chore: bump version to 1.2.1
-
-### Documentation
-
-- Docs: finish the private-vault reference scrub
-
-## [1.2.0] - 2026-08-23
-
-### Added
-
-- Feat: install Ollama directly from the app (Windows)
-
-### Changes
-
-- Chore: update CHANGELOG.md for v1.1.0 [skip ci]
-- Chore: bump version to 1.2.0
-
-## [1.1.0] - 2026-08-23
-
-### Added
-
-- Feat: import/export custom Skills from the dedicated Skills screen
-
-### Changes
-
-- Chore: update CHANGELOG.md for v1.0.2 [skip ci]
-- Chore: bump version to 1.1.0
-
-## [1.0.2] - 2026-08-23
-
-### Changes
-
-- Chore: update CHANGELOG.md for v1.0.1 [skip ci]
-- Chore: bump version to 1.0.2
-
-### Fixed
-
-- Fix: kill Skills/ML Engine child processes on app exit
-- Fix: three real UI dead-ends found via user testing
-
-## [1.0.1] - 2026-08-23
-
-### Changes
-
+- Chore: update CHANGELOG.md for v0.18.0-beta [skip ci]
+- Chore: transition to GA — v1.0.0, no more prerelease tags
 - Update README.md
 - Chore: update CHANGELOG.md for v1.0.0 [skip ci]
 - Chore: bump version to 1.0.1
+- Chore: update CHANGELOG.md for v1.0.1 [skip ci]
+- Chore: bump version to 1.0.2
+- Chore: update CHANGELOG.md for v1.0.2 [skip ci]
+- Chore: bump version to 1.1.0
+- Chore: update CHANGELOG.md for v1.1.0 [skip ci]
+- Chore: bump version to 1.2.0
+- Chore: update CHANGELOG.md for v1.2.0 [skip ci]
+- Chore: bump version to 1.2.1
+- Chore: update CHANGELOG.md for v1.2.1 [skip ci]
+- Chore: bump version to 1.2.2
+- Chore: update CHANGELOG.md for v1.2.2 [skip ci]
+- Chore: bump version to 1.3.0
+- Chore: update CHANGELOG.md for v1.3.0 [skip ci]
+- Chore: bump version to 1.4.0
+- Chore: update CHANGELOG.md for v1.4.0 [skip ci]
+- Chore: bump version to 1.4.1
+- Chore: update CHANGELOG.md for v1.4.1 [skip ci]
+- Chore: bump version to 1.4.2
+- Chore: update CHANGELOG.md for v1.4.2 [skip ci]
+- Chore: bump version to 1.4.3
+- Chore: update CHANGELOG.md for v1.4.3 [skip ci]
+- Chore: bump version to 1.5.0
+- Chore: update CHANGELOG.md for v1.5.0 [skip ci]
+- Chore: bump version to 1.5.1
+- Chore: update CHANGELOG.md for v1.5.1 [skip ci]
+- Chore: bump version to 1.5.2
+- Chore: update CHANGELOG.md for v1.5.2 [skip ci]
+- Chore: bump version to 1.5.3
+- Chore: update CHANGELOG.md for v1.5.3 [skip ci]
+- Chore: bump version to 1.6.0
+- Chore: bump version to 1.6.1
+- Chore: update CHANGELOG.md for v1.6.0 [skip ci]
+- Chore: update CHANGELOG.md for v1.6.1 [skip ci]
+- Chore: bump version to 1.6.2
+- Chore: bump version to 1.6.3
+- Chore: update CHANGELOG.md for v1.6.2 [skip ci]
+- Chore: update CHANGELOG.md for v1.6.3 [skip ci]
+- Chore: bump version to 1.6.4
+- Chore: update CHANGELOG.md for v1.6.4 [skip ci]
+- Port the v2 design token layer, alongside v1 rather than over it
+- Port the v2 app shell: icon rail, titlebar, status bar
+- Port Chat's session tree into the shell's context sidebar
+- Bring over the v2 component layer, and put v1's styles in a cascade layer
+- Rebuild Usage against the v2 design
+- Rebuild the Manual against the v2 design
+- Rebuild Skills against the v2 design, with working grant chips
+- Rebuild Settings against the v2 design
+- Rebuild Notes against the v2 design
+- Split the rail into nine, and rebuild Semantic Search
+- Rebuild the Game Agent against the v2 design
+- Rebuild Onboarding against the v2 design
+- Rebuild Models and InstallGuidance against the v2 design
+- Move agent and role-template management out of Chat, into Models
+- Rebuild Chat's sidebar against the v2 design
+- Rebuild Chat's message stream and composer
+- Give the shell an inspector, and move Chat's agent panel into it
+- Finish Chat: group chat, workspace header, and the last v1 markup
+- Extend function calling to OpenAI and OpenRouter
+- Let the user stop a send that is already in flight
+- Update rustls past RUSTSEC-2026-0285
+- Check for updates automatically, and fix version precedence
+- Prepare 1.7.0-beta
+- Chore(deps): bump i18next from 26.4.0 to 26.4.1 (#18)
+- Chore(deps): bump tauri-plugin-opener from 2.5.4 to 2.5.5 in /src-tauri (#17)
+- Chore(deps): bump @tauri-apps/plugin-opener from 2.5.4 to 2.5.5 (#20)
+- Chore(deps): bump llmfit-core from v1.1.10 to v1.1.12 in /src-tauri (#21)
+- Chore(deps): bump react-i18next from 17.0.12 to 17.0.13 (#22)
+- Chore(deps): bump uuid from 1.24.0 to 1.26.0 in /src-tauri (#23)
+- Chore(deps): bump @tauri-apps/plugin-dialog from 2.7.2 to 2.7.3 (#24)
+- Chore(deps): bump tauri-plugin-dialog from 2.7.2 to 2.7.3 in /src-tauri (#25)
+- Chore(deps): bump rmcp from 3.1.4 to 3.2.0 in /src-tauri (#26)
+- Renumber the beta as 1.0.0-beta
 
 ### Documentation
 
 - Docs: rewrite README for v1.0.0 GA
 - Docs: trim README to a fast, precise intro
 - Docs: remove all references to the private planning vault
+- Docs: finish the private-vault reference scrub
+- Docs: rewrite Machine Learning manual as short tutorials, not textbook articles
+- Docs: add curated MCP server examples to the manual
 
-## [1.0.0] - 2026-08-23
+### Fixed
 
-### Changes
-
-- Chore: update CHANGELOG.md for v0.18.0-beta [skip ci]
-- Chore: transition to GA — v1.0.0, no more prerelease tags
+- Fix: kill Skills/ML Engine child processes on app exit
+- Fix: three real UI dead-ends found via user testing
+- Fix: only suggest models the user can actually use
+- Fix: self-heal the installer against leftover locked files
+- Fix: CI has been red since v1.2.0 — dead_code on non-Windows
+- Fix: path traversal in Skills import/export
+- Fix: unify data folder naming with the installer, improve Ollama storage guidance
+- Fix: hyperlink bare URL in cherrytree.rs doc comment (CI rustdoc check)
+- Fix: restore Game Agent as a branch under Machine Learning, not its own tab
+- Fix: add missing Agent deletion (create-only, no way to delete)
+- Fix: widen Chat sidebar (move divider right, 260px -> 300px)
+- Fix: delete button expanding to fill row, squeezing session/agent titles to 1-2 chars
+- Fix CI not running at all, and the release step that would have failed next
+- Fix the 30s blocking-HTTP timeout, and stop installing software for the user
 
 ## [0.18.0-beta] - 2026-08-23
 
