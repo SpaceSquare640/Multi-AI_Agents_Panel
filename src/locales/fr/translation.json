@@ -666,6 +666,14 @@
     "toggleSidebar": "Afficher/masquer le panneau latéral",
     "contextSidebar": "Contexte",
     "toggleInspector": "Afficher les détails",
-    "inspector": "Détails"
+    "inspector": "Détails",
+    "update": {
+        "available": "Une nouvelle version est disponible",
+        "versionAvailable": "La version {{version}} est disponible",
+        "betaAvailable": "La bêta {{version}} est disponible",
+        "betaWarning": "Version préliminaire : elle peut être instable.",
+        "view": "Voir la version",
+        "dismiss": "Pas maintenant"
+    }
   }
 }

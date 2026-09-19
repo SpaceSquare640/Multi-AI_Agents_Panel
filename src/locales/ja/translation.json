@@ -657,6 +657,14 @@
     "toggleSidebar": "サイドバーの表示切り替え",
     "contextSidebar": "コンテキスト",
     "toggleInspector": "詳細の表示切り替え",
-    "inspector": "詳細"
+    "inspector": "詳細",
+    "update": {
+        "available": "新しいバージョンがあります",
+        "versionAvailable": "バージョン {{version}} が利用できます",
+        "betaAvailable": "ベータ版 {{version}} が利用できます",
+        "betaWarning": "これはプレリリース版です。動作が不安定な場合があります。",
+        "view": "リリースを見る",
+        "dismiss": "今はしない"
+    }
   }
 }

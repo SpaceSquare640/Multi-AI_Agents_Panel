@@ -512,3 +512,56 @@ button.statusbar-item:hover { background: var(--surface-2); color: var(--text); 
 }
 .skip-link:focus-visible { transform: translateY(0); }
 
+/* ---------------------------------------------------------------------
+   Update marker and notification
+   --------------------------------------------------------------------- */
+
+/* The rail marker. `position: relative` is set here rather than assumed:
+   .rail-item is a flex container for its icon and has no positioning of
+   its own, so without this the dot would anchor to the rail and sit at
+   the top of the column instead of on the button. */
+.rail-item[data-badge] { position: relative; }
+.rail-item[data-badge]::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--brand);
+  /* A ring in the rail's own colour, so the dot keeps its edge against
+     an icon it happens to overlap. */
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+/* The notification.
+
+   Fixed rather than placed in the shell grid on purpose: the grid's
+   tracks are the app's regions, and adding a row for something that is
+   usually absent would make every screen's height depend on whether an
+   update happens to exist. Floating it costs nothing when it is not
+   there. */
+.update-toast {
+  position: fixed;
+  right: var(--space-7);
+  /* Clear of the status bar rather than overlapping it. */
+  bottom: calc(var(--space-7) + 28px);
+  z-index: 50;
+  display: flex;
+  gap: var(--space-5);
+  max-width: 360px;
+  padding: var(--space-6);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg, 0 8px 24px rgb(0 0 0 / 0.28));
+  font-size: var(--text-sm);
+}
+.update-toast-body > * + * { margin-top: var(--space-4); }
+.update-toast-actions { display: flex; gap: var(--space-4); }
+
+/* Respects a system preference for less motion by simply not animating:
+   the card appears rather than sliding. There is no entrance animation
+   to disable because none was added — noted so the absence reads as a
+   decision rather than an oversight. */

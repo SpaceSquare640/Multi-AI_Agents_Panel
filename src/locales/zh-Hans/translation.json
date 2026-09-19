@@ -657,6 +657,14 @@
     "toggleSidebar": "切换侧栏",
     "contextSidebar": "内容侧栏",
     "toggleInspector": "切换详细信息",
-    "inspector": "详细信息"
+    "inspector": "详细信息",
+    "update": {
+        "available": "有新版本可用",
+        "versionAvailable": "{{version}} 版可供更新",
+        "betaAvailable": "Beta {{version}} 可供更新",
+        "betaWarning": "这是预发行版本，可能不稳定。",
+        "view": "查看版本",
+        "dismiss": "暂不更新"
+    }
   }
 }

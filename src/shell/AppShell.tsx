@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Icon, IconSprite, type IconName } from "./Icons";
 import StatusBar from "./StatusBar";
 import { InspectorHostProvider, SidebarHostProvider } from "./SidebarSlot";
+import { useUpdateCheck } from "./useUpdateCheck";
 import "../styles/shell.css";
 
 /** The destinations in the icon rail, in their three groups.
@@ -83,6 +84,13 @@ export default function AppShell({
   children: ReactNode;
 }) {
   const { t } = useTranslation();
+
+  /* Checked here rather than in Settings because both of its outputs are
+     shell furniture: a marker on the rail and a notification over the
+     whole window. Settings keeps its own manual button — that one
+     answers a question the user just asked, and reports its own errors
+     because someone is waiting for the answer. */
+  const { update, notify, dismiss } = useUpdateCheck();
 
   /* Open/closed, plus whether the user said so themselves.
    *
@@ -223,11 +231,20 @@ export default function AppShell({
                     // destinations, and the rail is navigation rather
                     // than a tablist.
                     aria-current={item.id === active ? "page" : undefined}
+                    // The marker lives on Settings because that is where
+                    // the update section is — a dot somewhere the user
+                    // cannot act on would only say "something, somewhere".
+                    data-badge={item.id === "settings" && update ? "true" : undefined}
                     title={`${label} — ${t(group.labelKey)}`}
                     onClick={() => onNavigate(item.id)}
                   >
                     <Icon name={item.icon} />
                     <span className="sr-only">{label}</span>
+                    {item.id === "settings" && update && (
+                      // The dot itself is decorative CSS; this is what
+                      // makes it exist for a screen reader at all.
+                      <span className="sr-only">{t("shell.update.available")}</span>
+                    )}
                   </button>
                 );
               })}
@@ -250,6 +267,34 @@ export default function AppShell({
       {/* Always rendered, for the same reason the sidebar is: screens
           portal into this node, so it has to exist before they can. */}
       <aside className="inspector" ref={attachInspector} aria-label={t("shell.inspector")} />
+
+      {/* Deliberately not a modal. A dialog that blocks the window would
+          force a decision about an update at the moment the app opened,
+          which is the moment the user least wants to make one — and
+          there is nothing urgent here: no download is pending, nothing
+          expires. This sits in a corner and can be ignored, and the rail
+          marker remains after it is closed. */}
+      {notify && update && (
+        <div className="update-toast" role="status">
+          <Icon name="info" size="sm" />
+          <div className="update-toast-body">
+            <strong>
+              {update.isPrerelease
+                ? t("shell.update.betaAvailable", { version: update.latestVersion })
+                : t("shell.update.versionAvailable", { version: update.latestVersion })}
+            </strong>
+            {update.isPrerelease && <p className="field-hint">{t("shell.update.betaWarning")}</p>}
+            <div className="update-toast-actions">
+              <a className="btn btn-secondary btn-sm" href={update.releaseUrl} target="_blank" rel="noreferrer">
+                {t("shell.update.view")}
+              </a>
+              <button className="btn btn-ghost btn-sm" type="button" onClick={dismiss}>
+                {t("shell.update.dismiss")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <StatusBar />
     </div>

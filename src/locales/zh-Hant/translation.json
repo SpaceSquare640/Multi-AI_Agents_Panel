@@ -657,6 +657,14 @@
     "toggleSidebar": "切換側欄",
     "contextSidebar": "內容側欄",
     "toggleInspector": "切換詳細資訊",
-    "inspector": "詳細資訊"
+    "inspector": "詳細資訊",
+    "update": {
+        "available": "有新版本可用",
+        "versionAvailable": "{{version}} 版可供更新",
+        "betaAvailable": "Beta {{version}} 可供更新",
+        "betaWarning": "這是預發行版本，可能不穩定。",
+        "view": "查看版本",
+        "dismiss": "暫不更新"
+    }
   }
 }

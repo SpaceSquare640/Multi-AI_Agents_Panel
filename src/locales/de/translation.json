@@ -666,6 +666,14 @@
     "toggleSidebar": "Seitenleiste ein-/ausblenden",
     "contextSidebar": "Kontext",
     "toggleInspector": "Details umschalten",
-    "inspector": "Details"
+    "inspector": "Details",
+    "update": {
+        "available": "Eine neue Version ist verfügbar",
+        "versionAvailable": "Version {{version}} ist verfügbar",
+        "betaAvailable": "Beta {{version}} ist verfügbar",
+        "betaWarning": "Dies ist eine Vorabversion. Sie kann instabil sein.",
+        "view": "Release ansehen",
+        "dismiss": "Jetzt nicht"
+    }
   }
 }

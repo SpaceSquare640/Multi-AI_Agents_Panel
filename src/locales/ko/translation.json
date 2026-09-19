@@ -657,6 +657,14 @@
     "toggleSidebar": "사이드바 전환",
     "contextSidebar": "컨텍스트",
     "toggleInspector": "세부 정보 전환",
-    "inspector": "세부 정보"
+    "inspector": "세부 정보",
+    "update": {
+        "available": "새 버전이 있습니다",
+        "versionAvailable": "버전 {{version}} 사용 가능",
+        "betaAvailable": "베타 {{version}} 사용 가능",
+        "betaWarning": "사전 배포 버전입니다. 불안정할 수 있습니다.",
+        "view": "릴리스 보기",
+        "dismiss": "나중에"
+    }
   }
 }

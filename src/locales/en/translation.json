@@ -666,6 +666,14 @@
     "toggleSidebar": "Toggle sidebar",
     "contextSidebar": "Context",
     "toggleInspector": "Toggle details",
-    "inspector": "Details"
+    "inspector": "Details",
+    "update": {
+        "available": "A new version is available",
+        "versionAvailable": "Version {{version}} is available",
+        "betaAvailable": "Beta {{version}} is available",
+        "betaWarning": "This is a prerelease. It may be unstable.",
+        "view": "View release",
+        "dismiss": "Not now"
+    }
   }
 }
