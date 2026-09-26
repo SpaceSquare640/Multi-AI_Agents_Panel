@@ -178,6 +178,15 @@ export default function Chat() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [openTabIds, setOpenTabIds] = useState<string[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  // Read by replies that land after an `await`. Those callbacks closed
+  // over whatever tab was active when the send *started*, so reading
+  // `activeSessionId` there answers the wrong question: switch tabs
+  // mid-send and the reply would decide it had been seen, and the tab
+  // it landed in would never show its unread marker.
+  const activeSessionIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    activeSessionIdRef.current = activeSessionId;
+  }, [activeSessionId]);
   const [tabs, setTabs] = useState<Record<string, TabState>>({});
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -798,7 +807,7 @@ export default function Chat() {
           ...(prev[sessionId] ?? emptyTab()),
           messages,
           sending: false,
-          hasUnseenReply: sessionId !== activeSessionId,
+          hasUnseenReply: sessionId !== activeSessionIdRef.current,
         },
       }));
     } catch (err) {
@@ -862,7 +871,7 @@ export default function Chat() {
         return;
       }
       const messages = await invoke<Message[]>("list_messages", { sessionId });
-      patchTab(sessionId, { messages, sending: false, hasUnseenReply: sessionId !== activeSessionId });
+      patchTab(sessionId, { messages, sending: false, hasUnseenReply: sessionId !== activeSessionIdRef.current });
     } catch (err) {
       setError(String(err));
       patchTab(sessionId, { sending: false });
@@ -895,7 +904,7 @@ export default function Chat() {
           break;
         }
         const messages = await invoke<Message[]>("list_messages", { sessionId });
-        patchTab(sessionId, { messages, sending: false, hasUnseenReply: sessionId !== activeSessionId });
+        patchTab(sessionId, { messages, sending: false, hasUnseenReply: sessionId !== activeSessionIdRef.current });
       } catch (err) {
         setError(String(err));
         patchTab(sessionId, { sending: false });
@@ -926,7 +935,7 @@ export default function Chat() {
         return;
       }
       const messages = await invoke<Message[]>("list_messages", { sessionId });
-      patchTab(sessionId, { messages, sending: false, hasUnseenReply: sessionId !== activeSessionId });
+      patchTab(sessionId, { messages, sending: false, hasUnseenReply: sessionId !== activeSessionIdRef.current });
     } catch (err) {
       setError(String(err));
       patchTab(sessionId, { sending: false });

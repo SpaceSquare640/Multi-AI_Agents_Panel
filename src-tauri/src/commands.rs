@@ -2,7 +2,7 @@
 //! cloud model pickers, and local Ollama model management.
 
 use serde::{Deserialize, Serialize};
-use tauri::{Manager, State};
+use tauri::{AppHandle, Manager, State};
 
 use crate::cancel::CancelState;
 use crate::agent_manager::curated_models::{self, CuratedModel};
@@ -555,12 +555,56 @@ fn expand_file_references(storage: &Storage, agent_id: &str, content: &str) -> R
     Ok(expanded)
 }
 
+/// Runs `work` on the blocking thread pool and awaits its result.
+///
+/// Every command below that can reach a provider goes through here, and
+/// the reason lives in generated code rather than anywhere visible:
+/// `#[tauri::command]` on a *sync* fn expands to a plain inline call on
+/// the IPC thread, while on an `async` fn it expands to a spawn onto the
+/// async runtime. A sync command making a provider call — which
+/// `providers::http` deliberately gives no overall timeout — therefore
+/// holds the IPC thread for the whole request, and the window stops
+/// answering until the model does.
+///
+/// It also disabled the one control meant to rescue the user from that.
+/// `cancel_send` is itself a command, so it could not be dispatched
+/// while the send it was meant to cancel was occupying the thread: Stop
+/// could not work until this changed.
+///
+/// `spawn_blocking` rather than merely an `async` body, because the work
+/// genuinely blocks — `reqwest::blocking`, Python subprocesses, a
+/// `Mutex<Connection>`. An `async` body alone would move the stall off
+/// the UI thread onto a runtime worker, which is a thread the runtime
+/// needs for everything else.
+async fn off_thread<T, F>(work: F) -> Result<T, String>
+where
+    F: FnOnce() -> Result<T, String> + Send + 'static,
+    T: Send + 'static,
+{
+    tauri::async_runtime::spawn_blocking(work)
+        .await
+        .map_err(|e| format!("background task failed: {e}"))?
+}
+
 /// Sends a user message in a session, gets the (single, for an independent
 /// session) agent's reply, and persists both. Returns the assistant's
 /// message. The user's message is persisted even if the agent call then
 /// fails, so a retry doesn't lose it.
 #[tauri::command]
-pub fn send_chat_message(
+pub async fn send_chat_message(
+    app: AppHandle,
+    session_id: String,
+    content: String,
+) -> Result<Message, String> {
+    off_thread(move || {
+        send_chat_message_blocking(app.state::<Storage>(), app.state::<CancelState>(), session_id, content)
+    })
+    .await
+}
+
+/// The body of `send_chat_message`, still synchronous and unchanged.
+/// See `off_thread` for why it is reached from there.
+fn send_chat_message_blocking(
     storage: State<Storage>,
     cancels: State<CancelState>,
     session_id: String,
@@ -669,7 +713,27 @@ pub fn cancel_send(cancels: State<CancelState>, session_id: String) -> bool {
 /// the session transcript shows what the model did, not just its final
 /// reply.
 #[tauri::command]
-pub fn send_chat_message_with_tools(
+pub async fn send_chat_message_with_tools(
+    app: AppHandle,
+    session_id: String,
+    content: String,
+) -> Result<Message, String> {
+    off_thread(move || {
+        send_chat_message_with_tools_blocking(
+            app.state::<Storage>(),
+            app.state::<SkillDirs>(),
+            app.state::<SkillRuntimeState>(),
+            app.state::<CancelState>(),
+            session_id,
+            content,
+        )
+    })
+    .await
+}
+
+/// The body of `send_chat_message_with_tools`, still synchronous and
+/// unchanged. See `off_thread` for why it is reached from there.
+fn send_chat_message_with_tools_blocking(
     storage: State<Storage>,
     skill_dirs: State<SkillDirs>,
     skill_runtime: State<SkillRuntimeState>,
@@ -940,7 +1004,17 @@ fn run_one_group_turn(storage: &Storage, session_id: &str, mention: Option<&str>
 /// safety-net (a real user spoke), then runs exactly one agent turn —
 /// the `@mentioned` agent if any, otherwise whoever is next in rotation.
 #[tauri::command]
-pub fn send_group_message(
+pub async fn send_group_message(
+    app: AppHandle,
+    session_id: String,
+    content: String,
+) -> Result<GroupTurnResult, String> {
+    off_thread(move || send_group_message_blocking(app.state::<Storage>(), session_id, content)).await
+}
+
+/// The body of `send_group_message`, still synchronous and unchanged.
+/// See `off_thread` for why it is reached from there.
+fn send_group_message_blocking(
     storage: State<Storage>,
     session_id: String,
     content: String,
@@ -958,7 +1032,13 @@ pub fn send_group_message(
 /// turn in rotation. This is the path the E6001 loop safety-net actually
 /// guards, since nothing else prevents calling this repeatedly.
 #[tauri::command]
-pub fn advance_group_turn(storage: State<Storage>, session_id: String) -> Result<GroupTurnResult, String> {
+pub async fn advance_group_turn(app: AppHandle, session_id: String) -> Result<GroupTurnResult, String> {
+    off_thread(move || advance_group_turn_blocking(app.state::<Storage>(), session_id)).await
+}
+
+/// The body of `advance_group_turn`, still synchronous and unchanged.
+/// See `off_thread` for why it is reached from there.
+fn advance_group_turn_blocking(storage: State<Storage>, session_id: String) -> Result<GroupTurnResult, String> {
     run_one_group_turn(&storage, &session_id, None)
 }
 
@@ -970,7 +1050,20 @@ pub fn advance_group_turn(storage: State<Storage>, session_id: String) -> Result
 /// opt-in action — and there is no long-term memory store to write into
 /// yet, so that step isn't implemented (see Backlog).
 #[tauri::command]
-pub fn end_group_chat_meeting(
+pub async fn end_group_chat_meeting(
+    app: AppHandle,
+    session_id: String,
+    summarizer_agent_id: Option<String>,
+) -> Result<GroupTurnResult, String> {
+    off_thread(move || {
+        end_group_chat_meeting_blocking(app.state::<Storage>(), session_id, summarizer_agent_id)
+    })
+    .await
+}
+
+/// The body of `end_group_chat_meeting`, still synchronous and
+/// unchanged. See `off_thread` for why it is reached from there.
+fn end_group_chat_meeting_blocking(
     storage: State<Storage>,
     session_id: String,
     summarizer_agent_id: Option<String>,
@@ -1660,6 +1753,34 @@ pub fn run_task_dag(storage: State<Storage>, nodes: Vec<TaskNodeInput>) -> Resul
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The whole point of `off_thread`: the work must not run on the
+    /// thread that awaited it. That thread stands in for the IPC thread
+    /// here — if the work ran on it, the window would freeze again.
+    #[test]
+    fn off_thread_runs_the_work_somewhere_else() {
+        let caller = std::thread::current().id();
+        let worker = tauri::async_runtime::block_on(off_thread(|| Ok(std::thread::current().id()))).unwrap();
+        assert_ne!(worker, caller);
+    }
+
+    /// Errors must arrive byte-for-byte. The frontend tells a stopped
+    /// send apart from a failed one by matching `CANCELLED` exactly; a
+    /// wrapper that decorated error text would turn every Stop into an
+    /// error banner.
+    #[test]
+    fn off_thread_passes_errors_through_untouched() {
+        let err = tauri::async_runtime::block_on(off_thread::<(), _>(|| Err(CANCELLED.to_string()))).unwrap_err();
+        assert_eq!(err, CANCELLED);
+    }
+
+    /// A panic in the work becomes an ordinary error the frontend can
+    /// show, rather than taking the command handler down with it.
+    #[test]
+    fn off_thread_turns_a_panic_into_an_error() {
+        let err = tauri::async_runtime::block_on(off_thread::<(), _>(|| panic!("boom"))).unwrap_err();
+        assert!(err.starts_with("background task failed"), "{err}");
+    }
 
     /// Proves the E6004 boundary check actually blocks a cloud call
     /// before it happens, not just that the logic exists — no real
