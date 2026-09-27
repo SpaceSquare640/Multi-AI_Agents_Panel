@@ -666,5 +666,16 @@
         "view": "查看版本",
         "dismiss": "暫不更新"
     }
+  },
+  "firstAgent": {
+    "title": "建立您的第一個 Agent",
+    "lead": "Agent 是您對話的對象：一個模型，加上它扮演的角色。至少要有一個才能開始聊天。",
+    "checking": "正在檢查可用的模型…",
+    "createWith": "用 {{provider}} · {{model}} 建立",
+    "creating": "建立中…",
+    "noneFound": "找不到 API 金鑰，也沒有執行中的 Ollama。請到「{{screen}}」畫面新增金鑰或設定本地模型。",
+    "openModels": "到「{{screen}}」畫面設定",
+    "skip": "稍後再說",
+    "defaultName": "助理"
   }
 }

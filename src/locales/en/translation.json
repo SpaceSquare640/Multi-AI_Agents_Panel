@@ -675,5 +675,16 @@
         "view": "View release",
         "dismiss": "Not now"
     }
+  },
+  "firstAgent": {
+    "title": "Create your first agent",
+    "lead": "An agent is who you chat with: a model plus the role it plays. You need at least one to start a chat.",
+    "checking": "Checking which models you can use…",
+    "createWith": "Create with {{provider}} · {{model}}",
+    "creating": "Creating…",
+    "noneFound": "No API key and no running Ollama were found. Add a key or set up a local model on the {{screen}} screen.",
+    "openModels": "Set up on the {{screen}} screen",
+    "skip": "Later",
+    "defaultName": "Assistant"
   }
 }

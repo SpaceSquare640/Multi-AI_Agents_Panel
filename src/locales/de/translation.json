@@ -675,5 +675,16 @@
         "view": "Release ansehen",
         "dismiss": "Jetzt nicht"
     }
+  },
+  "firstAgent": {
+    "title": "Erstellen Sie Ihren ersten Agenten",
+    "lead": "Ein Agent ist Ihr Gesprächspartner: ein Modell und die Rolle, die es spielt. Um einen Chat zu beginnen, brauchen Sie mindestens einen.",
+    "checking": "Verfügbare Modelle werden geprüft…",
+    "createWith": "Mit {{provider}} · {{model}} erstellen",
+    "creating": "Wird erstellt…",
+    "noneFound": "Weder ein API-Schlüssel noch ein laufendes Ollama wurde gefunden. Fügen Sie auf dem Bildschirm „{{screen}}“ einen Schlüssel hinzu oder richten Sie ein lokales Modell ein.",
+    "openModels": "Auf dem Bildschirm „{{screen}}“ einrichten",
+    "skip": "Später",
+    "defaultName": "Assistent"
   }
 }

@@ -675,5 +675,16 @@
         "view": "Voir la version",
         "dismiss": "Pas maintenant"
     }
+  },
+  "firstAgent": {
+    "title": "Créez votre premier Agent",
+    "lead": "Un Agent est votre interlocuteur : un modèle et le rôle qu'il joue. Il en faut au moins un pour démarrer une conversation.",
+    "checking": "Vérification des modèles disponibles…",
+    "createWith": "Créer avec {{provider}} · {{model}}",
+    "creating": "Création…",
+    "noneFound": "Aucune clé API ni aucun Ollama en cours d'exécution n'a été trouvé. Ajoutez une clé ou configurez un modèle local dans l'écran « {{screen}} ».",
+    "openModels": "Configurer dans l'écran « {{screen}} »",
+    "skip": "Plus tard",
+    "defaultName": "Assistant"
   }
 }

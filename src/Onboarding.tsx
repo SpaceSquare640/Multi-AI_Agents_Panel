@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { invoke } from "@tauri-apps/api/core";
+import FirstAgentSetup from "./FirstAgentSetup";
+import type { Agent } from "./types";
 import { Icon, type IconName } from "./shell/Icons";
 import "./styles/screens/onboarding.css";
 
@@ -37,10 +40,23 @@ const CATEGORY_ICONS: IconName[] = ["key", "shield-alert", "chat", "check"];
  *  the same way Settings.tsx persists the theme choice. Can be
  *  re-opened later from Settings — the rules aren't optional, but
  *  re-reading them should always be possible. */
-export default function Onboarding({ onDismiss }: { onDismiss?: () => void }) {
+export default function Onboarding({
+  onDismiss,
+  onAgentCreated,
+  onOpenModels,
+}: {
+  onDismiss?: () => void;
+  /** The second step made a first agent. */
+  onAgentCreated?: (agent: Agent) => void;
+  /** The second step asked for the full form on the Models screen. */
+  onOpenModels?: () => void;
+}) {
   const { t } = useTranslation();
   const ruleCategories = t("onboarding.categories", { returnObjects: true }) as RuleCategory[];
   const [checked, setChecked] = useState(false);
+  // The design's "Step 1 of 3" never had its later steps built. This
+  // is the second: a first agent, for someone who has none.
+  const [step, setStep] = useState<"rules" | "agent">("rules");
   const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -79,9 +95,55 @@ export default function Onboarding({ onDismiss }: { onDismiss?: () => void }) {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, []);
 
+  // The agent step replaces the dialog's content, so focus has to move
+  // into it — otherwise it is left on a button that no longer exists.
+  useEffect(() => {
+    if (step !== "agent") return;
+    modalRef.current?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR)?.focus();
+  }, [step]);
+
   function acknowledge() {
     localStorage.setItem(ACK_STORAGE_KEY, "true");
-    onDismiss?.();
+    // A second step only for someone with nothing to chat with yet. The
+    // same dialog reopened from Settings to reread the rules must not
+    // start asking about agents.
+    invoke<Agent[]>("list_agents")
+      .then((agents) => (agents.length === 0 ? setStep("agent") : onDismiss?.()))
+      .catch(() => onDismiss?.());
+  }
+
+  if (step === "agent") {
+    return (
+      <div className="onboard">
+        <div
+          className="onboard-card"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="onboarding-title"
+          ref={modalRef}
+        >
+          <div className="onboard-mark">
+            <div>
+              <div className="onboard-app">{t("shell.appName")}</div>
+            </div>
+          </div>
+
+          <FirstAgentSetup
+            headingLevel={1}
+            headingId="onboarding-title"
+            onCreated={(agent) => (onAgentCreated ? onAgentCreated(agent) : onDismiss?.())}
+            onOpenModels={() => (onOpenModels ? onOpenModels() : onDismiss?.())}
+          />
+
+          <div className="onboard-foot">
+            <span className="spacer" />
+            <button className="btn btn-ghost" type="button" onClick={() => onDismiss?.()}>
+              {t("firstAgent.skip")}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Icon } from "./shell/Icons";
 import { ShellInspector, ShellSidebar, useIsActiveScreen } from "./shell/SidebarSlot";
+import FirstAgentSetup from "./FirstAgentSetup";
 import { invoke } from "@tauri-apps/api/core";
 import { ask, open as openFolderPicker } from "@tauri-apps/plugin-dialog";
 import type {
@@ -172,9 +173,24 @@ export function avatarSlot(
   return String((index < 0 ? 0 : index % 6) + 1);
 }
 
-export default function Chat() {
+export default function Chat({
+  onOpenModels,
+  startWithAgentId,
+  onStartedWithAgent,
+}: {
+  /** Leaves for the Models screen, where the full new-agent form lives. */
+  onOpenModels?: () => void;
+  /** An agent created outside this screen (Onboarding's second step)
+   *  to open a first chat with. Cleared through `onStartedWithAgent`. */
+  startWithAgentId?: string | null;
+  onStartedWithAgent?: () => void;
+} = {}) {
   const { t } = useTranslation();
   const [agents, setAgents] = useState<Agent[]>([]);
+  // Separate from `agents.length`, which is also 0 before the first
+  // load finishes — without it the first-agent setup would flash on
+  // every launch for someone who already has agents.
+  const [agentsLoaded, setAgentsLoaded] = useState(false);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [openTabIds, setOpenTabIds] = useState<string[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -258,7 +274,26 @@ export default function Chat() {
   async function refreshAgents() {
     const list = await invoke<Agent[]>("list_agents");
     setAgents(list);
+    setAgentsLoaded(true);
     if (list.length > 0 && !newSessionAgentId) setNewSessionAgentId(list[0].id);
+  }
+
+  /// Opens a new independent session with `agent`. The step after a
+  /// first agent is created: the user asked to chat, so creating one
+  /// lands them in a chat rather than back at a session picker.
+  async function startSessionWith(agent: Agent) {
+    setError(null);
+    try {
+      await refreshAgents();
+      const session = await invoke<Session>("create_independent_session", {
+        title: t("chat.defaultSessionTitle", { agentName: agent.name }),
+        agentId: agent.id,
+      });
+      await refreshSessions();
+      await openTab(session.id, "independent");
+    } catch (err) {
+      setError(String(err));
+    }
   }
 
   async function refreshSessions() {
@@ -300,6 +335,22 @@ export default function Chat() {
     refreshAgents().catch((e) => setError(String(e)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActiveScreen]);
+
+  /* An agent made in Onboarding, which sits outside this screen and
+     so cannot open a session here itself. Fetched fresh rather than
+     looked up in `agents`: this screen was already visible behind the
+     dialog, so the refetch-on-visible above has not seen it. */
+  useEffect(() => {
+    if (!startWithAgentId) return;
+    invoke<Agent[]>("list_agents")
+      .then((list) => {
+        const agent = list.find((a) => a.id === startWithAgentId);
+        return agent ? startSessionWith(agent) : undefined;
+      })
+      .catch((e) => setError(String(e)))
+      .finally(() => onStartedWithAgent?.());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startWithAgentId]);
 
   /// Opens a session as a tab (loading its messages/agent(s)/grants the
   /// first time) and brings it to the front. Already-open tabs keep
@@ -1342,7 +1393,17 @@ export default function Chat() {
         </div>
       )}
 
-      {!activeSessionId && <div className="workspace-body"><div className="pane"><p className="pane-intro">{t("chat.pickOrStartSession")}</p></div></div>}
+      {!activeSessionId && (
+        <div className="workspace-body">
+          <div className="pane">
+            {agentsLoaded && agents.length === 0 ? (
+              <FirstAgentSetup onCreated={(agent) => void startSessionWith(agent)} onOpenModels={() => onOpenModels?.()} />
+            ) : (
+              <p className="pane-intro">{t("chat.pickOrStartSession")}</p>
+            )}
+          </div>
+        </div>
+      )}
 
         {activeSessionId && activeTab && (
           <>

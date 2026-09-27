@@ -21,6 +21,9 @@ function App() {
   // back to true so the summary stays reachable later, since the rules
   // themselves aren't optional but re-reading them should always be.
   const [showOnboarding, setShowOnboarding] = useState(() => !hasAcknowledgedGuardrails());
+  // Set when Onboarding creates a first agent; Chat opens a session with
+  // it and clears this. See Chat's `startWithAgentId`.
+  const [startWithAgentId, setStartWithAgentId] = useState<string | null>(null);
 
   return (
     /* The v2 shell replaces v1's outer chrome — the flat tab strip and the
@@ -53,7 +56,11 @@ function App() {
        *  freshly-mounted page's IPC call getting stuck behind a
        *  previous page's still-in-flight one. */}
       <div className="app-tab-content" data-screen-pane hidden={tab !== "chat"}>
-        <Chat />
+        <Chat
+          onOpenModels={() => setTab("control-center")}
+          startWithAgentId={startWithAgentId}
+          onStartedWithAgent={() => setStartWithAgentId(null)}
+        />
       </div>
       <div className="app-tab-content screen-v2" data-screen-pane hidden={tab !== "control-center"}>
         <AIControlCenter onOpenUsage={() => setTab("usage")} onOpenManual={() => setTab("manual")} />
@@ -86,7 +93,20 @@ function App() {
           onOpenManual={() => setTab("manual")}
         />
       </div>
-      {showOnboarding && <Onboarding onDismiss={() => setShowOnboarding(false)} />}
+      {showOnboarding && (
+        <Onboarding
+          onDismiss={() => setShowOnboarding(false)}
+          onAgentCreated={(agent) => {
+            setShowOnboarding(false);
+            setTab("chat");
+            setStartWithAgentId(agent.id);
+          }}
+          onOpenModels={() => {
+            setShowOnboarding(false);
+            setTab("control-center");
+          }}
+        />
+      )}
     </AppShell>
   );
 }

@@ -666,5 +666,16 @@
         "view": "リリースを見る",
         "dismiss": "今はしない"
     }
+  },
+  "firstAgent": {
+    "title": "最初の Agent を作成",
+    "lead": "Agent は会話の相手です。モデルと、そのモデルが担う役割の組み合わせです。チャットを始めるには、少なくとも 1 つ必要です。",
+    "checking": "使用できるモデルを確認しています…",
+    "createWith": "{{provider}} · {{model}} で作成",
+    "creating": "作成中…",
+    "noneFound": "API キーも、実行中の Ollama も見つかりませんでした。「{{screen}}」画面でキーを追加するか、ローカルモデルを設定してください。",
+    "openModels": "「{{screen}}」画面で設定",
+    "skip": "後で",
+    "defaultName": "アシスタント"
   }
 }

@@ -71,7 +71,12 @@ export default function AgentManager({ onError }: { onError: (message: string) =
   const [templatePrompt, setTemplatePrompt] = useState("");
 
   async function refreshAgents() {
-    setAgents(await invoke<Agent[]>("list_agents"));
+    const list = await invoke<Agent[]>("list_agents");
+    setAgents(list);
+    // With an empty list the form is the only useful thing here, and
+    // it is where Chat's and Onboarding's "set up on the Models
+    // screen" button sends people — so it opens itself.
+    if (list.length === 0) setShowNewAgent(true);
   }
 
   async function refreshRoleTemplates() {

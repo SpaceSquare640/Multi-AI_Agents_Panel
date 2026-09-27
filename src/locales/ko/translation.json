@@ -666,5 +666,16 @@
         "view": "릴리스 보기",
         "dismiss": "나중에"
     }
+  },
+  "firstAgent": {
+    "title": "첫 Agent 만들기",
+    "lead": "Agent는 대화 상대입니다. 모델과 그 모델이 맡는 역할로 이루어집니다. 채팅을 시작하려면 하나 이상 필요합니다.",
+    "checking": "사용할 수 있는 모델을 확인하는 중…",
+    "createWith": "{{provider}} · {{model}}(으)로 만들기",
+    "creating": "만드는 중…",
+    "noneFound": "API 키도, 실행 중인 Ollama도 찾지 못했습니다. '{{screen}}' 화면에서 키를 추가하거나 로컬 모델을 설정하세요.",
+    "openModels": "'{{screen}}' 화면에서 설정",
+    "skip": "나중에",
+    "defaultName": "어시스턴트"
   }
 }
