@@ -1,0 +1,2 @@
+# Screenshots saved when a test fails; CI uploads them as an artifact.
+artifacts/
