@@ -15,7 +15,6 @@ mod session_manager;
 mod skill_manager;
 mod storage;
 mod update_check;
-mod usage_tracker;
 
 use std::sync::Mutex;
 
