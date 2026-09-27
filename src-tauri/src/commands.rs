@@ -140,21 +140,13 @@ pub fn delete_provider_key(storage: State<Storage>, id: String) -> Result<(), St
     Ok(())
 }
 
-#[tauri::command]
-pub fn get_usage_summary(storage: State<Storage>) -> Result<Vec<UsageSummary>, String> {
-    storage.usage_summary().map_err(|e| e.to_string())
-}
-
-/// Same as `get_usage_summary`, but with `total_estimated_cost_usd`
-/// actually filled in for OpenRouter keys — joins each key's recorded
-/// calls (`Storage::usage_log_rows_for_key`, real token counts) against
-/// the OpenRouter model catalog's *current* pricing (cached at most 24h,
-/// see `openrouter_catalog::list_models`) via `agent_manager::cost::estimate_usd`.
-/// A separate command from `get_usage_summary` rather than changing it
-/// in place: this one does real network/cache work for the catalog and
-/// per-key extra queries, which every caller of the plain summary
-/// (e.g. anything that just needs success/failure counts) shouldn't pay
-/// for. Non-OpenRouter keys, and OpenRouter calls whose model isn't in
+/// The per-key usage summary (`Storage::usage_summary`) with
+/// `total_estimated_cost_usd` filled in for OpenRouter keys — joins each
+/// key's recorded calls (`Storage::usage_log_rows_for_key`, real token
+/// counts) against the OpenRouter model catalog's *current* pricing
+/// (cached at most 24h, see `openrouter_catalog::list_models`) via
+/// `agent_manager::cost::estimate_usd`. Non-OpenRouter keys, and
+/// OpenRouter calls whose model isn't in
 /// the catalog or whose tokens weren't recorded, keep
 /// `total_estimated_cost_usd: None` — an honest "unknown," not a false
 /// zero.
@@ -1561,19 +1553,6 @@ pub async fn list_mcp_server_tools(storage: State<'_, Storage>, mcp_server_id: S
     mcp_manager::list_tools_screened(&config).await.map_err(|e| e.to_string())
 }
 
-#[tauri::command]
-pub async fn call_mcp_tool(
-    storage: State<'_, Storage>,
-    agent_id: String,
-    mcp_server_id: String,
-    tool_name: String,
-    arguments: serde_json::Value,
-) -> Result<String, String> {
-    mcp_manager::invoke_mcp_tool(&storage, &agent_id, &mcp_server_id, &tool_name, arguments)
-        .await
-        .map_err(|e| e.to_string())
-}
-
 /// Runs an MCP tool on `agent_id`'s behalf and persists the result into
 /// `session_id`'s message history (`role: "system"`), the same pattern
 /// as `run_skill_in_session` — visible in the transcript, not
@@ -1592,18 +1571,6 @@ pub async fn run_mcp_tool_in_session(
         .map_err(|e| e.to_string())?;
     let content = format!("[MCP tool \"{tool_name}\" result]\n{result}");
     storage.add_message(&session_id, Some(&agent_id), "system", &content).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-pub fn invoke_skill(
-    storage: State<Storage>,
-    runtime: State<SkillRuntimeState>,
-    agent_id: String,
-    skill_name: String,
-    payload: serde_json::Value,
-) -> Result<serde_json::Value, String> {
-    let guard = runtime.0.lock().unwrap();
-    skill_manager::invoke_skill(&storage, guard.as_ref(), &agent_id, &skill_name, payload).map_err(|e| e.to_string())
 }
 
 /// Runs a Skill on `agent_id`'s behalf and persists the result into
