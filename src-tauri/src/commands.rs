@@ -881,6 +881,84 @@ fn build_group_history_for_speaker(
         .collect())
 }
 
+/// Tells the speaking agent it is in a group: who it is, who else is
+/// here, and how to read the transcript it is about to receive.
+///
+/// Without this the agent is handed a transcript full of "[Name]: …"
+/// lines with no idea what they are, whether it is one of those names,
+/// or that the unprefixed lines are the user. Lists everyone *except*
+/// the speaker — the speaker is named once, as itself — and gives each
+/// other member's role where the agent was created from a template, so
+/// the speaker knows what perspectives are already in the room.
+fn group_context_message(speaker: &Agent, members: &[Agent]) -> ChatMessage {
+    let others: Vec<String> = members
+        .iter()
+        .filter(|a| a.id != speaker.id)
+        .map(|a| match &a.role_template {
+            Some(role) => format!("{} ({role})", a.name),
+            None => a.name.clone(),
+        })
+        .collect();
+    let others = if others.is_empty() { "none".to_string() } else { others.join(", ") };
+    let name = &speaker.name;
+    ChatMessage {
+        role: "system".to_string(),
+        content: format!(
+            "You are taking part in a group discussion as {name}.\n\
+             Other participants: {others}. The user also takes part.\n\
+             Messages from other participants appear as \"[Name]: …\"; messages without a prefix are from the user.\n\
+             Speak only as {name}. Never write lines for anyone else."
+        ),
+    }
+}
+
+/// The last thing a group speaker reads before answering.
+///
+/// This is the fix for agents that only echoed the previous speaker. The
+/// transcript used to end on someone else's words with nothing after
+/// them, and the most natural continuation of a transcript that ends on
+/// another participant is agreement or a paraphrase. It also guarantees
+/// the request never ends on the speaker's own message — which happens
+/// in a one-member group, where the provider can read a trailing
+/// assistant turn as text to continue rather than a turn to answer.
+///
+/// Built into the request only, never persisted: the transcript the user
+/// sees does not change.
+fn turn_note(speaker: &Agent) -> ChatMessage {
+    ChatMessage {
+        role: "user".to_string(),
+        content: format!(
+            "[Moderator: it is now {}'s turn.] Respond from your own role. Add something the discussion \
+             does not have yet — a new point, a concern, a disagreement, or a concrete next step. Do not \
+             repeat or summarize what others have already said. Reply in the language the discussion is held in.",
+            speaker.name
+        ),
+    }
+}
+
+/// Everything one group turn sends to the provider, in order: custom
+/// instructions, the speaker's own system prompt, the group context, the
+/// transcript as the speaker sees it, and last the turn note.
+///
+/// Split out of `run_one_group_turn` so the shape of the request can be
+/// tested without calling a provider.
+fn group_turn_request(storage: &Storage, session_id: &str, speaker: &Agent) -> Result<Vec<ChatMessage>, String> {
+    let members = session_members(storage, session_id)?;
+    let mut request = build_group_history_for_speaker(storage, session_id, &speaker.id)?;
+    // Each insert goes to position 0, so inserting in reverse of the
+    // wanted order leaves custom instructions first and the group
+    // context directly before the transcript.
+    request.insert(0, group_context_message(speaker, &members));
+    if let Some(system_prompt) = &speaker.system_prompt {
+        request.insert(0, ChatMessage { role: "system".to_string(), content: system_prompt.clone() });
+    }
+    if let Some(instructions) = agent_manager::custom_instructions::as_system_message(storage) {
+        request.insert(0, instructions);
+    }
+    request.push(turn_note(speaker));
+    Ok(request)
+}
+
 /// What `run_one_group_turn` (and therefore `send_group_message`/
 /// `advance_group_turn`) can produce: either a completed turn, or a
 /// pause for the local→cloud boundary confirmation decided in
@@ -962,15 +1040,9 @@ fn run_one_group_turn(storage: &Storage, session_id: &str, mention: Option<&str>
         }
     }
 
-    let mut history = build_group_history_for_speaker(storage, session_id, &speaker_id)?;
-    if let Some(system_prompt) = &agent.system_prompt {
-        history.insert(0, ChatMessage { role: "system".to_string(), content: system_prompt.clone() });
-    }
-    if let Some(instructions) = agent_manager::custom_instructions::as_system_message(storage) {
-        history.insert(0, instructions);
-    }
+    let request = group_turn_request(storage, session_id, &agent)?;
 
-    let reply = agent_manager::send_message(storage, &agent, &history).map_err(|e| e.to_string())?;
+    let reply = agent_manager::send_message(storage, &agent, &request).map_err(|e| e.to_string())?;
 
     // E9004 (see guardrails::screen_agent_reply_for_impersonation): advisory
     // only, per the Error Code Registry's defined handling for this code —
@@ -1084,6 +1156,9 @@ fn end_group_chat_meeting_blocking(
     }
 
     let mut history = build_group_history_for_speaker(&storage, &session_id, &summarizer.id)?;
+    // The summarizer is reading a group discussion too; without this it
+    // cannot tell the participants apart from the user.
+    history.insert(0, group_context_message(&summarizer, &members));
     history.push(ChatMessage {
         role: "user".to_string(),
         content: "Please summarize this meeting: the key points discussed, any decisions reached, and any open questions left for the user.".to_string(),
@@ -1753,6 +1828,88 @@ pub fn run_task_dag(storage: State<Storage>, nodes: Vec<TaskNodeInput>) -> Resul
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Two members, a user message, and one turn from the other member —
+    /// the smallest transcript where the speaker has something to respond to.
+    fn two_member_group(storage: &Storage) -> (Agent, Agent, String) {
+        let lead = storage
+            .create_agent("Ada", Some("Product Lead"), Some("PROMPT-ADA"), "cloud", "anthropic", "claude")
+            .unwrap();
+        let qa = storage.create_agent("Ben", Some("QA & Test Engineer"), None, "cloud", "anthropic", "claude").unwrap();
+        let session = storage.create_session("group", "Turn test").unwrap();
+        storage.add_agent_to_session(&session.id, &lead.id).unwrap();
+        storage.add_agent_to_session(&session.id, &qa.id).unwrap();
+        storage.add_message(&session.id, None, "user", "Should we ship on Friday?").unwrap();
+        storage.add_message(&session.id, Some(&qa.id), "assistant", "Only if the regression suite passes.").unwrap();
+        (lead, qa, session.id)
+    }
+
+    /// The fix for agents that only echoed the previous speaker: the
+    /// request must end on the turn note, addressed to the speaker.
+    #[test]
+    fn a_group_turn_ends_on_the_turn_note_for_the_speaker() {
+        let storage = Storage::open_in_memory().unwrap();
+        let (lead, _, session_id) = two_member_group(&storage);
+
+        let request = group_turn_request(&storage, &session_id, &lead).unwrap();
+        let last = request.last().unwrap();
+
+        assert_eq!(last.role, "user");
+        assert!(last.content.starts_with("[Moderator: it is now Ada's turn.]"), "{}", last.content);
+    }
+
+    /// Order matters: the group context belongs right after the agent's
+    /// own system prompt and right before the transcript, and the
+    /// transcript itself must be untouched — other members still
+    /// prefixed, the user still unprefixed.
+    #[test]
+    fn a_group_turn_places_the_context_between_the_prompt_and_the_transcript() {
+        let storage = Storage::open_in_memory().unwrap();
+        let (lead, _, session_id) = two_member_group(&storage);
+
+        let request = group_turn_request(&storage, &session_id, &lead).unwrap();
+        let roles: Vec<&str> = request.iter().map(|m| m.role.as_str()).collect();
+
+        assert_eq!(roles, ["system", "system", "user", "user", "user"]);
+        assert_eq!(request[0].content, "PROMPT-ADA");
+        assert!(request[1].content.starts_with("You are taking part in a group discussion as Ada."));
+        assert_eq!(request[2].content, "Should we ship on Friday?");
+        assert_eq!(request[3].content, "[Ben]: Only if the regression suite passes.");
+    }
+
+    /// The speaker is named once, as itself — never listed among the
+    /// others — and the others carry their roles.
+    #[test]
+    fn the_group_context_lists_everyone_but_the_speaker() {
+        let storage = Storage::open_in_memory().unwrap();
+        let (lead, _, session_id) = two_member_group(&storage);
+
+        let request = group_turn_request(&storage, &session_id, &lead).unwrap();
+        let context = &request[1].content;
+
+        assert!(context.contains("Other participants: Ben (QA & Test Engineer)."), "{context}");
+        assert!(!context.contains("Ada (Product Lead)"), "{context}");
+        assert!(context.contains("Speak only as Ada."), "{context}");
+    }
+
+    /// In a one-member group the agent speaks every turn, so its own
+    /// message is the last thing in the transcript. The request must
+    /// still end on the turn note, not on that message.
+    #[test]
+    fn a_one_member_group_never_ends_the_request_on_the_agents_own_words() {
+        let storage = Storage::open_in_memory().unwrap();
+        let solo = storage.create_agent("Solo", None, None, "cloud", "anthropic", "claude").unwrap();
+        let session = storage.create_session("group", "Solo").unwrap();
+        storage.add_agent_to_session(&session.id, &solo.id).unwrap();
+        storage.add_message(&session.id, None, "user", "Go on.").unwrap();
+        storage.add_message(&session.id, Some(&solo.id), "assistant", "My earlier answer.").unwrap();
+
+        let request = group_turn_request(&storage, &session.id, &solo).unwrap();
+
+        assert_eq!(request[request.len() - 2].role, "assistant");
+        assert_eq!(request.last().unwrap().role, "user");
+        assert!(request[0].content.contains("Other participants: none."), "{}", request[0].content);
+    }
 
     /// The whole point of `off_thread`: the work must not run on the
     /// thread that awaited it. That thread stands in for the IPC thread
