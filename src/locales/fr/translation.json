@@ -315,6 +315,7 @@
     "remove": "Supprimer",
     "modelIdPlaceholder": "ID du modèle",
     "addFallback": "+ Ajouter un repli",
+    "agentFallbackChain": "Repli de {{name}}",
     "createAgent": "Créer l'Agent",
     "customRoleTemplates": "Modèles de rôle personnalisés",
     "edit": "Modifier",

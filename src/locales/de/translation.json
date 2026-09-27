@@ -315,6 +315,7 @@
     "remove": "Entfernen",
     "modelIdPlaceholder": "Modell-ID",
     "addFallback": "+ Fallback hinzufügen",
+    "agentFallbackChain": "Fallback für {{name}}",
     "createAgent": "Agent erstellen",
     "customRoleTemplates": "Benutzerdefinierte Rollenvorlagen",
     "edit": "Bearbeiten",

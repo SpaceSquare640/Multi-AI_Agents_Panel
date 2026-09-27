@@ -313,6 +313,7 @@
     "remove": "제거",
     "modelIdPlaceholder": "모델 ID",
     "addFallback": "+ 대체 항목 추가",
+    "agentFallbackChain": "{{name}}의 대체 항목",
     "createAgent": "Agent 생성",
     "customRoleTemplates": "사용자 지정 역할 템플릿",
     "edit": "편집",

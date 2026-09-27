@@ -315,6 +315,7 @@
     "remove": "Remove",
     "modelIdPlaceholder": "Model id",
     "addFallback": "+ Add fallback",
+    "agentFallbackChain": "Fallback for {{name}}",
     "createAgent": "Create agent",
     "customRoleTemplates": "Custom role templates",
     "edit": "Edit",

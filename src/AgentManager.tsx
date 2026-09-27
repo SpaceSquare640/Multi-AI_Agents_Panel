@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import { ask, open as openFilePicker, save as saveFilePicker } from "@tauri-apps/plugin-dialog";
@@ -7,6 +7,7 @@ import {
   PROVIDER_OPTIONS,
   isLocalProvider,
   type Agent,
+  type AgentFallbackProvider,
   type CuratedModel,
   type OllamaModel,
   type OpenRouterModelsResult,
@@ -240,6 +241,66 @@ export default function AgentManager({ onError }: { onError: (message: string) =
    *  first. See `Storage::delete_agent` for what's cascaded (grants,
    *  session membership) vs preserved (messages, usage history, with the
    *  Agent reference nulled out). */
+  /* An existing agent's fallback chain: view, add to the end, remove.
+     Only the chain of the one row someone has opened is loaded — the
+     creation form above stages a chain for an agent that does not exist
+     yet; this edits one that does, straight against storage. There is no
+     reordering: storage has no command for it, so a step goes in at the
+     end, and moving one means removing it and adding it again. */
+  const [openChainAgentId, setOpenChainAgentId] = useState<string | null>(null);
+  const [openChain, setOpenChain] = useState<AgentFallbackProvider[]>([]);
+  const [chainProvider, setChainProvider] = useState<string>("openrouter");
+  const [chainModel, setChainModel] = useState("");
+  // Mirrors `openChainAgentId` for code running after an `await`, which
+  // would otherwise see the value from when it started.
+  const openChainIdRef = useRef<string | null>(null);
+
+  async function loadChain(agentId: string) {
+    const chain = await invoke<AgentFallbackProvider[]>("list_agent_fallback_providers", { agentId });
+    // A slow load must not paint one agent's chain under another's row.
+    if (openChainIdRef.current === agentId) setOpenChain(chain);
+  }
+
+  async function toggleChain(agentId: string) {
+    const next = openChainAgentId === agentId ? null : agentId;
+    openChainIdRef.current = next;
+    setOpenChainAgentId(next);
+    setOpenChain([]);
+    setChainModel("");
+    if (!next) return;
+    try {
+      await loadChain(next);
+    } catch (err) {
+      onError(String(err));
+    }
+  }
+
+  async function handleAddChainStep(agentId: string) {
+    const model = chainModel.trim();
+    if (!model) return;
+    try {
+      await invoke("add_agent_fallback_provider", {
+        agentId,
+        providerKind: isLocalProvider(chainProvider) ? "local" : "cloud",
+        providerName: chainProvider,
+        model,
+      });
+      setChainModel("");
+      await loadChain(agentId);
+    } catch (err) {
+      onError(String(err));
+    }
+  }
+
+  async function handleRemoveChainStep(agentId: string, stepId: string) {
+    try {
+      await invoke("remove_agent_fallback_provider", { id: stepId });
+      await loadChain(agentId);
+    } catch (err) {
+      onError(String(err));
+    }
+  }
+
   async function handleDeleteAgent(agentId: string, name: string) {
     const confirmed = await ask(t("chat.deleteAgentConfirm", { name }), {
       title: t("chat.deleteAgentConfirmTitle"),
@@ -248,6 +309,10 @@ export default function AgentManager({ onError }: { onError: (message: string) =
     if (!confirmed) return;
     try {
       await invoke("delete_agent", { agentId });
+      if (openChainIdRef.current === agentId) {
+        openChainIdRef.current = null;
+        setOpenChainAgentId(null);
+      }
       await refreshAgents();
     } catch (err) {
       onError(String(err));
@@ -353,24 +418,78 @@ export default function AgentManager({ onError }: { onError: (message: string) =
 
       <div className="sidebar-body">
         {agents.map((a) => (
-          <div className="agent-row" key={a.id}>
-            <span className="row row-tall agent-row-main">
-              <Icon name={a.providerKind === "local" ? "local" : "cloud"} size="sm" />
-              <span className="name">
-                {a.name}
-                <span className="row-sub">
-                  {a.providerName}/{a.model}
+          <div key={a.id}>
+            <div className="agent-row">
+              <span className="row row-tall agent-row-main">
+                <Icon name={a.providerKind === "local" ? "local" : "cloud"} size="sm" />
+                <span className="name">
+                  {a.name}
+                  <span className="row-sub">
+                    {a.providerName}/{a.model}
+                  </span>
                 </span>
               </span>
-            </span>
-            <button
-              className="tree-action"
-              type="button"
-              aria-label={t("chat.deleteAgent", { name: a.name })}
-              onClick={() => void handleDeleteAgent(a.id, a.name)}
-            >
-              <Icon name="trash" size="sm" />
-            </button>
+              <button
+                className="tree-action"
+                type="button"
+                aria-expanded={openChainAgentId === a.id}
+                aria-label={t("chat.agentFallbackChain", { name: a.name })}
+                onClick={() => void toggleChain(a.id)}
+              >
+                <Icon name="chevron" size="sm" />
+              </button>
+              <button
+                className="tree-action"
+                type="button"
+                aria-label={t("chat.deleteAgent", { name: a.name })}
+                onClick={() => void handleDeleteAgent(a.id, a.name)}
+              >
+                <Icon name="trash" size="sm" />
+              </button>
+            </div>
+            {openChainAgentId === a.id && (
+              <div className="fallback-editor agent-fallback">
+                <span className="label">{t("chat.fallbackLabel")}</span>
+                {openChain.length === 0 && <span className="field-hint">{t("chat.noneConfigured")}</span>}
+                {openChain.map((step, i) => (
+                  <span className="grant" key={step.id} aria-pressed="true">
+                    {i + 1}. {step.providerName}/{step.model}
+                    <button
+                      className="chip-remove"
+                      type="button"
+                      onClick={() => void handleRemoveChainStep(a.id, step.id)}
+                      aria-label={t("chat.removeFallbackStep", { step: `${step.providerName}/${step.model}` })}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+                <div className="fallback-add">
+                  <select className="select" value={chainProvider} onChange={(e) => setChainProvider(e.target.value)}>
+                    {PROVIDER_OPTIONS.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    className="input"
+                    type="text"
+                    placeholder={t("chat.modelIdPlaceholder")}
+                    value={chainModel}
+                    onChange={(e) => setChainModel(e.target.value)}
+                  />
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    type="button"
+                    disabled={!chainModel.trim()}
+                    onClick={() => void handleAddChainStep(a.id)}
+                  >
+                    {t("chat.addFallback")}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ))}
         {agents.length === 0 && <p className="tree-empty">{t("chat.noAgentsYet")}</p>}

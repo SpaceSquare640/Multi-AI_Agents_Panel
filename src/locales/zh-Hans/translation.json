@@ -313,6 +313,7 @@
     "remove": "移除",
     "modelIdPlaceholder": "模型 ID",
     "addFallback": "+ 添加备用",
+    "agentFallbackChain": "{{name}} 的备用",
     "createAgent": "创建 Agent",
     "customRoleTemplates": "自定义角色模板",
     "edit": "编辑",

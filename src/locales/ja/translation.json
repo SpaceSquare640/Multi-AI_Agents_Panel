@@ -313,6 +313,7 @@
     "remove": "削除",
     "modelIdPlaceholder": "モデル ID",
     "addFallback": "+ フォールバックを追加",
+    "agentFallbackChain": "{{name}} のフォールバック",
     "createAgent": "Agent を作成",
     "customRoleTemplates": "カスタムロールテンプレート",
     "edit": "編集",
