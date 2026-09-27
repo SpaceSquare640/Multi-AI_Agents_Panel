@@ -1454,7 +1454,7 @@ export default function Chat() {
                         disabled={importingSkill}
                         onClick={() => handleImportSkill()}
                       >
-                        {t("chat.importSkill")}
+                        {importingSkill ? t("chat.importingSkill") : t("chat.importCustomSkill")}
                       </button>
                     </div>
                     <p className="field-hint">{t("chat.skillImportWarning")}</p>
