@@ -110,7 +110,7 @@ jobs:
 
       - name: Upload screenshots of failures
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: e2e-failures
           path: harness/e2e/artifacts
